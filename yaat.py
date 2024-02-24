@@ -3,7 +3,7 @@ import torch, pandas, transformers
 
 # hyperparameters
 batch_size = 32
-block_size = 256
+block_size = 512
 max_iters = 5000
 eval_int = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -12,7 +12,7 @@ eval_iters = 250
 n_embd = 300
 n_head = 6
 n_layer = 6
-dropout = 0.35
+dropout = 0.30
 ### ---------
 
 # load data
