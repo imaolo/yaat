@@ -2,7 +2,7 @@ import torch.nn as nn
 import torch, pandas
 
 # hyperparameters
-batch_size = 64
+batch_size = 32
 block_size = 128
 max_iters = 5000
 eval_int = 100
