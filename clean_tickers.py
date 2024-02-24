@@ -50,6 +50,6 @@ eth_tickers.update_many({}, {'$unset': {key: "" for key in bad_keys.keys()}})
 myprint(eth_tickers.find_one(), "eth_tickers w/o bad keys")
 
 # export eth_tickers
-cmd = 'mongoexport --db=yaatdb1 --collection=eth_tickers --out=eth_tickers.json'
+cmd = 'mongoexport --db=yaatdb1 --collection=eth_tickers --out=data/eth_tickers.json'
 res = subprocess.run(cmd.split(' '))
 assert not res.returncode, f"Command failed - {cmd} \n\n stdout: \n {res.stdout} \n\n stderr: \n{res.stderr} \n\n"
