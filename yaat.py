@@ -18,9 +18,6 @@ n_layer = 6
 dropout = 0.25
 ### ---------
 
-# repro!
-torch.manual_seed(0)
-
 # load data
 try: data = torch.load('eth_tickers_last.pt')
 except:
