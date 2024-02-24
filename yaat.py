@@ -5,7 +5,7 @@ import torch, pandas
 batch_size = 64
 block_size = 256
 max_iters = 5000
-eval_int = 25
+eval_int = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 lr = 3e-4
 eval_iters = 500
