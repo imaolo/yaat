@@ -3,16 +3,16 @@ import torch, pandas
 
 # hyperparameters
 batch_size = 64
-block_size = 256
+block_size = 128
 max_iters = 5000
 eval_int = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 lr = 1e-4
 eval_iters = 250
-n_embd = 384
-n_head = 6
-n_layer = 6
-dropout = 0.25
+n_embd = 600
+n_head = 10
+n_layer = 10
+dropout = 0.3
 ### ---------
 
 # load data
