@@ -1,5 +1,5 @@
 import torch.nn as nn
-import torch, pandas
+import torch, pandas, transformers
 
 # hyperparameters
 batch_size = 32
@@ -104,6 +104,7 @@ class Transformer(nn.Module):
 # create model and optimizer
 mdl = Transformer().to(device)
 opt = torch.optim.AdamW(mdl.parameters(), lr=lr)
+lr_sched = transformers.get_linear_schedule_with_warmup(opt, num_warmup_steps=1000, num_training_steps=max_iters)
 
 # print the number of parameters in the model
 print(sum(p.numel() for p in mdl.parameters())/1e6, 'M parameters')
@@ -134,3 +135,4 @@ for iter in range(max_iters):
     opt.zero_grad(set_to_none=True)
     loss.backward()
     opt.step()
+    lr_sched.step()
