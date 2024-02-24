@@ -1,8 +1,5 @@
-from typing import Optional
-from tinygrad.helpers import fetch
-from torch.nn import functional as F
 import torch.nn as nn
-import torch, pandas, sys
+import torch, pandas
 
 # hyperparameters
 batch_size = 64
@@ -20,8 +17,8 @@ dropout = 0.25
 
 # load data
 try: data = torch.load('eth_tickers_last.pt')
-except:
-    data = torch.tensor(pandas.read_json('eth_tickers.json', lines=True)['last'].to_numpy(), dtype=torch.float32)
+except: # get tickers.zip and run the mongo pipelines
+    data = torch.tensor(pandas.read_json('data/eth_tickers.json', lines=True)['last'].to_numpy(), dtype=torch.float32)
     torch.save(data, 'eth_tickers_last.pt')
 
 # training and validation data
@@ -64,7 +61,7 @@ class Head(nn.Module):
 
         wei = self.query(x) @ self.key(x).transpose(-2,-1) * C**-0.5
         wei = wei.masked_fill(self.tril[:T, :T] == 0, float('-inf'))
-        return self.dropout(F.softmax(wei, dim=-1)) @ self.value(x)
+        return self.dropout(nn.functional.softmax(wei, dim=-1)) @ self.value(x)
 
 class Attention(nn.Module):
     def __init__(self, num_heads, head_size):
@@ -92,7 +89,7 @@ class Transformer(nn.Module):
         self.ln = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, 1)
 
-    def forward(self, idx, targets:Optional[torch.Tensor]=None):
+    def forward(self, idx, targets):
         B, T = idx.shape
 
         # add feature dimension
@@ -102,7 +99,7 @@ class Transformer(nn.Module):
         if targets is None: return logits, None
 
         B, T, C = logits.shape
-        return logits, F.mse_loss(logits.view(B*T, C), targets.view(B*T))
+        return logits, nn.functional.mse_loss(logits.view(B*T, C), targets.view(B*T))
 
 # create model and optimizer
 mdl = Transformer().to(device)
