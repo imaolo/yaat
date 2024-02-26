@@ -1,2 +1,4 @@
 data/
 *.pyc
+# hardcoded
+!data/eth_tickers.pt
