@@ -64,7 +64,6 @@ def conn_db():
         atexit.register(functools.partial(_killproc, mongod, 'mongod'))
         return pymongo.MongoClient(serverSelectionTimeoutMS=5000)
 
-# TODO - improve
 def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name:str, num_docs=typing.Optional[int]):
     print("1. add epoch, promote data.*.bybit to root, and drop data.*.bybit.info and data.*.phemex")
     data.aggregate([
