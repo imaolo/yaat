@@ -47,12 +47,9 @@ num_docs = 483380
 
 # functions
 
-def clean(dir:str): _runcmd(f"rm -rf {dir}")
-
-def clean_coll(coll:str):
-    mongoc = conn_db()
-    if db_name in mongoc.list_database_names() and coll in mongoc[db_name].list_collection_names():
-        mongoc[db_name][coll].drop()
+def clean(name:str, in_db=False):
+    if in_db: conn_db()[db_name][name].drop()
+    else: _runcmd(f"rm -rf {name}")
 
 def conn_db():
     try:
