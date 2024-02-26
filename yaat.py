@@ -1,6 +1,4 @@
-import torch.nn as nn
-import torch, transformers
-from data import fetch_data
+import torch, transformers, torch.nn as nn, data as mydatahelp
 
 # hyperparameters
 batch_size = 32
@@ -17,7 +15,7 @@ dropout = 0.30
 ### ---------
 
 # fetch data
-data = fetch_data()
+data = mydatahelp.fetch_data()
 
 # training and validation data
 train = data[:(n:=int(data.shape[0]*.9))]
