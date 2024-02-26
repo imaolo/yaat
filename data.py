@@ -118,12 +118,12 @@ def fetch() -> torch.Tensor:
 
     mongoc = conn_db()
 
-    def myexit(fields):
-        _runcmd(f"mongoexport --db {db_name} --collection {new_data_name} --type csv --fields '{','.join(fields)}' --out {new_csvfp}")
+    def export_load_save(fields):
+        _runcmd(f"mongoexport --db {db_name} --collection {new_data_name} --type csv --fields '{','.join(set(fields)-{'_id'})}' --out {new_csvfp}")
         return _pt_load_save(new_csvfp, new_ptfp)
 
     if db_name in mongoc.list_database_names() and new_data_name in mongoc[db_name].list_collection_names():
-        return myexit(set(mongoc[db_name][new_data_name].find_one().keys()) - {'_id'})
+        return export_load_save(mongoc[db_name][new_data_name].find_one().keys())
 
     if db_name not in mongoc.list_database_names() or data_name not in mongoc[db_name].list_collection_names():
         if not os.path.isfile(jsfp):
@@ -134,4 +134,4 @@ def fetch() -> torch.Tensor:
         _runcmd(f"mongoimport --db {db_name} --collection {data_name} --drop --file {_path(data_dir, f'{data_name}.json')} --numInsertionWorkers {os.cpu_count()} --writeConcern 1")
 
     transform_data(db:=mongoc[db_name], db[data_name], new_data_name, num_docs)
-    return myexit(set(mongoc[db_name][new_data_name].find_one().keys()) - {'_id'})
+    return export_load_save(mongoc[db_name][new_data_name].find_one().keys())
