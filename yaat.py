@@ -1,5 +1,5 @@
 import torch.nn as nn
-import torch, pandas, transformers
+import torch, transformers
 
 # hyperparameters
 batch_size = 32
@@ -18,6 +18,7 @@ dropout = 0.30
 # load data
 try: data = torch.load('eth_tickers_last.pt')
 except: # get tickers.zip and run the mongo pipelines
+    import pandas
     data = torch.tensor(pandas.read_json('data/eth_tickers.json', lines=True)['last'].to_numpy(), dtype=torch.float32)
     torch.save(data, 'eth_tickers_last.pt')
 
