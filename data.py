@@ -131,7 +131,7 @@ def fetch() -> torch.Tensor:
 
     if db_name not in mongoc.list_database_names() or data_name not in mongoc[db_name].list_collection_names():
         if not os.path.isfile(jsfp):
-            if not os.path.isfile(zfp): # retrieve raw data
+            if not os.path.isfile(zfp):
                 print("retrieving from gdrive.")
                 gdown.download('https://drive.google.com/uc?id=1lgvxFp7l67dyZEGmvkqeP4fMN5hAQQ-q', zfp, quiet=False)
             _runcmd(f"unzip {zfp} -d {data_dir}")
