@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torch, transformers
+from data import fetch_data
 
 # hyperparameters
 batch_size = 32
@@ -15,12 +16,8 @@ n_layer = 6
 dropout = 0.30
 ### ---------
 
-# load data
-try: data = torch.load('eth_tickers_last.pt')
-except: # get tickers.zip and run the mongo pipelines
-    import pandas
-    data = torch.tensor(pandas.read_json('data/eth_tickers.json', lines=True)['last'].to_numpy(), dtype=torch.float32)
-    torch.save(data, 'eth_tickers_last.pt')
+# fetch data
+data = fetch_data()
 
 # training and validation data
 train = data[:(n:=int(data.shape[0]*.9))]
