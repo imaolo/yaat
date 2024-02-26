@@ -73,7 +73,7 @@ def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name
         {'$unset': ['data.v.bybit.info', 'data.v.phemex']},
         {'$project': {'data': '$data.v.bybit', 'epoch': 1, '_id': 0}},
         {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$$ROOT', '$data']}}},
-        {'$project': {'data':0}},
+        {'$project': {'data': 0}},
         {'$out': new_data_name}
     ])
     new_data = db[new_data_name]
