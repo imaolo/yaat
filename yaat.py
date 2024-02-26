@@ -15,7 +15,7 @@ dropout = 0.30
 ### ---------
 
 # fetch data
-data = mydatahelp.fetch_data()
+data = mydatahelp.fetch()
 
 # training and validation data
 train = data[:(n:=int(data.shape[0]*.9))]
