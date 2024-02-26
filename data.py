@@ -25,9 +25,9 @@ def killproc(proc, proc_name):
         print(f"process {proc_name} didn't terminate gracefully, killing it...")
         proc.kill()
     print(f"process {proc_name} shutdown")
-def pt_load_save(fp):
-    data = torch.tensor(pandas.read_json(fp, lines=True)['last'].to_numpy(), dtype=torch.float32)
-    torch.save(data, fp) 
+def pt_load_save(fp_from, fp_to):
+    data = torch.tensor(pandas.read_json(fp_from, lines=True)['last'].to_numpy(), dtype=torch.float32)
+    torch.save(data, fp_to) 
     return data
 
 
@@ -52,7 +52,7 @@ def fetch_data() -> torch.Tensor:
 
     # early returns
     if os.path.isfile(new_ptfp): return torch.load(new_ptfp)
-    if os.path.isfile(new_jsfp): return pt_load_save(new_jsfp)
+    if os.path.isfile(new_jsfp): return pt_load_save(new_jsfp, new_ptfp)
 
     # start and connect to database and set its kill hook
     print("starting mongo")
@@ -122,4 +122,4 @@ def fetch_data() -> torch.Tensor:
     runcmd(f"mongoexport --db {db_name} --collection {new_data_name} --out {new_jsfp}") 
 
     # load & return tensor
-    return pt_load_save(new_jsfp)
+    return pt_load_save(new_jsfp, new_ptfp)
