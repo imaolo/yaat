@@ -82,10 +82,7 @@ def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name
     keys = set(list(new_data.aggregate([
         {'$project': {'kvarr': {'$objectToArray': '$$ROOT'}}},
         {'$unwind': '$kvarr'},
-        {'$group': {
-            '_id': None,
-            'collkeys': {'$addToSet': '$kvarr.k'}
-        }},
+        {'$group': {'_id': None, 'collkeys': {'$addToSet': '$kvarr.k'}}},
     ]))[0]['collkeys']) - {'_id'}
     _myprint(f"{new_data_name} keys", keys)
 
