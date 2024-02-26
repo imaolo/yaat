@@ -30,7 +30,6 @@ def pt_load_save(fp_from, fp_to):
     torch.save(data, fp_to) 
     return data
 
-
 # main function
 def fetch_data() -> torch.Tensor:
 
