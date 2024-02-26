@@ -30,7 +30,7 @@ def pt_load_save(fp_from, fp_to):
     torch.save(data, fp_to) 
     return data
 
-# configs - TODO - get from .env file
+# configs
 db_name = 'yaatdb1'
 data_name = 'tickers'
 new_data_name = 'eth_tickers' # just eth for now
