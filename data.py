@@ -28,7 +28,7 @@ def _killproc(proc, proc_name):
     print(f"process {proc_name} shutdown")
 def _pt_load_save(fp_from, fp_to):
     print(f"reading {fp_from} into {fp_to}")
-    data = torch.tensor(pandas.read_json(fp_from, lines=True)['last'].to_numpy(), dtype=torch.float32)
+    data = torch.tensor(pandas.read_csv(fp_from)['last'].to_numpy(), dtype=torch.float32)
     torch.save(data, fp_to) 
     return data
 
@@ -36,14 +36,14 @@ def _pt_load_save(fp_from, fp_to):
 
 db_name = 'yaatdb1'
 data_name = 'tickers'
-new_data_name = 'eth_tickers' # just eth for now
+new_data_name = 'new_tickers'
 data_dir = 'data'
 db_dir = _path(data_dir, 'db')
 zfp = f"{(data_fp:=_path(data_dir, data_name))}.zip"
 jsfp = f"{data_fp}.json"
 new_ptfp = f"{(new_data_fp:=_path(data_dir, new_data_name))}.pt"
-new_jsfp = f"{new_data_fp}.json"
-num_docs = 483380
+new_csvfp = f"{new_data_fp}.csv"
+num_docs = 8123464
 
 # functions
 
@@ -66,12 +66,14 @@ def conn_db():
 
 # TODO - improve
 def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name:str, num_docs=typing.Optional[int]):
-    print("1. add epoch and promote data.ETH.bybit to root")
+    print("1. add epoch, promote data.*.bybit to root, and drop data.*.bybit.info and data.*.phemex")
     data.aggregate([
-        {'$set': {'data.ETH.bybit.epoch': {'$toLong': '$datetime'}}},
-        {'$project': {'_id': 0, 'newDoc': '$data.ETH.bybit'}},
-        {'$unset': ['newDoc.info', 'newDoc.timestamp']},
-        {'$replaceRoot': {'newRoot': '$newDoc'}},
+        {'$project': {'data': {'$objectToArray': '$data'}, 'epoch': {'$toLong': '$datetime'}}},
+        {'$unwind': '$data'},
+        {'$unset': ['data.v.bybit.info', 'data.v.phemex']},
+        {'$project': {'data': '$data.v.bybit', 'epoch': 1, '_id': 0}},
+        {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$$ROOT', '$data']}}},
+        {'$project': {'data':0}},
         {'$out': new_data_name}
     ])
     new_data = db[new_data_name]
@@ -112,16 +114,16 @@ def fetch() -> torch.Tensor:
     if os.path.isfile(new_ptfp):
         print(f"loading from {new_ptfp}")
         return torch.load(new_ptfp)
-    if os.path.isfile(new_jsfp): return _pt_load_save(new_jsfp, new_ptfp)
+    if os.path.isfile(new_csvfp): return _pt_load_save(new_csvfp, new_ptfp)
 
     mongoc = conn_db()
 
-    def myexit():
-        _runcmd(f"mongoexport --db {db_name} --collection {new_data_name} --out {new_jsfp}")
-        return _pt_load_save(new_jsfp, new_ptfp)
+    def myexit(fields):
+        _runcmd(f"mongoexport --db {db_name} --collection {new_data_name} --type csv --fields '{','.join(fields)}' --out {new_csvfp}")
+        return _pt_load_save(new_csvfp, new_ptfp)
 
     if db_name in mongoc.list_database_names() and new_data_name in mongoc[db_name].list_collection_names():
-        return myexit()
+        return myexit(set(mongoc[db_name][new_data_name].find_one().keys()) - {'_id'})
 
     if db_name not in mongoc.list_database_names() or data_name not in mongoc[db_name].list_collection_names():
         if not os.path.isfile(jsfp):
@@ -132,4 +134,4 @@ def fetch() -> torch.Tensor:
         _runcmd(f"mongoimport --db {db_name} --collection {data_name} --drop --file {_path(data_dir, f'{data_name}.json')} --numInsertionWorkers {os.cpu_count()} --writeConcern 1")
 
     transform_data(db:=mongoc[db_name], db[data_name], new_data_name, num_docs)
-    return myexit()
+    return myexit(set(mongoc[db_name][new_data_name].find_one().keys()) - {'_id'})
