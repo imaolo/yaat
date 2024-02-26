@@ -90,14 +90,12 @@ def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name
     _myprint(f"{new_data_name} keys", keys)
 
     print("get set of null or dne attr keys")
-    bad_keys = {}
-    for k in keys:
-        res = list(new_data.aggregate([
-            {'$match': {'$or': [{k: {'$exists': False}}, {k: None}]}},
-            {'$count': 'num_docs'}
-        ]))
-        if res: bad_keys[k] = res[0]['num_docs']
-    _myprint(f"{new_data_name} null or dne keys", bad_keys)
+    key_ndne_counts: dict = list(new_data.aggregate([{'$facet': {k: [
+        {'$match': {'$or': [{k: {'$exists': False}}, {k: None}]}},
+        {'$count': 'count'}
+    ] for k in keys}}]))[0]
+    bad_keys = {k:v[0]['count'] for k, v in key_ndne_counts.items() if v}
+    _myprint(f"{new_data_name} null or dne keys and counts", bad_keys)
 
     print("unset bad keys")
     new_data.update_many({}, {'$unset': {key: "" for key in bad_keys.keys()}})
