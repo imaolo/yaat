@@ -52,17 +52,17 @@ def clean(name:str, in_db=False):
     else: _runcmd(f"rm -rf {name}")
 
 def conn_db():
-    try:
-        mongoc = pymongo.MongoClient(serverSelectionTimeoutMS=5000)
-        mongoc.admin.command('ping')
-        return mongoc
+    def ping(client):
+        client.admin.command('ping')
+        return client
+    try: return ping(pymongo.MongoClient(serverSelectionTimeoutMS=5000))
     except (mongoerrs.ServerSelectionTimeoutError, mongoerrs.ConnectionFailure):
         print("starting mongo")
         mongod = subprocess.Popen(['mongod', '--dbpath', db_dir], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         assert mongod.poll() is None
         print("mongo started")
         atexit.register(functools.partial(_killproc, mongod, 'mongod'))
-        return pymongo.MongoClient(serverSelectionTimeoutMS=5000)
+        return ping(pymongo.MongoClient(serverSelectionTimeoutMS=5000))
 
 def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name:str, num_docs=typing.Optional[int]):
     print("1. add epoch, promote data.*.bybit to root, and drop data.*.bybit.info and data.*.phemex")
