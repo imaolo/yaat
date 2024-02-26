@@ -66,7 +66,7 @@ def conn_db():
 
 # TODO - improve
 def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name:str, num_docs=typing.Optional[int]):
-    print("step 1. promote data.ETH.bybit to root and add epoch")
+    print("1. add epoch and promote data.ETH.bybit to root")
     data.aggregate([
         {'$set': {'data.ETH.bybit.epoch': {'$toLong': '$datetime'}}},
         {'$project': {'_id': 0, 'newDoc': '$data.ETH.bybit'}},
