@@ -66,7 +66,7 @@ def conn_db():
 
 # TODO - improve
 def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name:str, num_docs=typing.Optional[int]):
-    print("get bybit eth attr")
+    print("step 1. promote data.ETH.bybit to root and add epoch")
     data.aggregate([
         {'$set': {'data.ETH.bybit.epoch': {'$toLong': '$datetime'}}},
         {'$project': {'_id': 0, 'newDoc': '$data.ETH.bybit'}},
@@ -77,7 +77,7 @@ def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name
     new_data = db[new_data_name]
     _myprint(new_data_name, new_data.find_one())
 
-    print("get set of attr keys")
+    print("2. get the set of document keys")
     keys = set(list(new_data.aggregate([
         {'$project': {'kvarr': {'$objectToArray': '$$ROOT'}}},
         {'$unwind': '$kvarr'},
@@ -89,7 +89,7 @@ def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name
     keys.remove('_id')
     _myprint(f"{new_data_name} keys", keys)
 
-    print("get set of null or dne attr keys")
+    print("3. get the set of keys which have null or dne document values")
     key_ndne_counts: dict = list(new_data.aggregate([{'$facet': {k: [
         {'$match': {'$or': [{k: {'$exists': False}}, {k: None}]}},
         {'$count': 'count'}
@@ -97,14 +97,13 @@ def transform_data(db:mongodb.Database, data:mongocoll.Collection, new_data_name
     bad_keys = {k:v[0]['count'] for k, v in key_ndne_counts.items() if v}
     _myprint(f"{new_data_name} null or dne keys and counts", bad_keys)
 
-    print("unset bad keys")
+    print("4. unset null or dne document attributes")
     new_data.update_many({}, {'$unset': {key: "" for key in bad_keys.keys()}})
     _myprint(f"{new_data_name} w/o bad keys", new_data.find_one())
 
     if num_docs:
-        print("counting docuemnts.")
+        print("5. verifying transformation")
         assert db[new_data_name].count_documents({}) == num_docs
-        print("documents counted.")
 
 def fetch() -> torch.Tensor:
     if not os.path.exists(data_dir): os.makedirs(data_dir)
