@@ -1,5 +1,7 @@
-import os, gdown
+import os
 from util import path, myprint, runcmd, conn_db
+try: import gdown
+except: raise ImportError(f"{os.path.basename(__file__)} requires gdown")
 
 # The original tickers collection is poorly structured. We want to clean and restructure it into a new collection.
 # We also don't want to start mongo all the time. This script starts the database, imports the data, processes it (agg pipelines)
