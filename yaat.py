@@ -1,4 +1,4 @@
-import os, pandas, gdown, torch, transformers, torch.nn as nn
+import os, pandas, torch, transformers, torch.nn as nn
 from util import runcmd
 
 # hyperparameters
@@ -19,7 +19,10 @@ dropout = 0.30
 addext = lambda ext: 'data/tickers.'+ext
 anyexist = lambda *exts: any(os.path.isfile(addext(ext)) for ext in exts)
 if not os.path.isdir('data'): os.makedirs('data')
-if not anyexist('pt', 'csv', 'zip'): gdown.download('https://drive.google.com/uc?id=11Jt2PpKcKZLaifZXjlCAVpSqdh4VG8Vt', addext('zip'), quiet=False) 
+if not anyexist('pt', 'csv', 'zip'):
+    try: import gdown
+    except: raise ImportError(f"{os.path.basename(__file__)} needs gdown once to dowload the data")
+    gdown.download('https://drive.google.com/uc?id=11Jt2PpKcKZLaifZXjlCAVpSqdh4VG8Vt', addext('zip'), quiet=False) 
 if not anyexist('pt', 'csv'): runcmd(f"unzip {addext('zip')}")
 if anyexist('pt'): data = torch.load(addext('pt'))
 else:
