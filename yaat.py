@@ -1,4 +1,5 @@
-import torch, transformers, torch.nn as nn, data as mydatahelp
+import os, pandas, gdown, torch, transformers, torch.nn as nn
+from util import runcmd
 
 # hyperparameters
 batch_size = 32
@@ -14,8 +15,16 @@ n_layer = 6
 dropout = 0.30
 ### ---------
 
-# fetch data
-data = mydatahelp.fetch()
+# load data (l1, l2, l3, l4 cache!)
+addext = lambda ext: 'data/tickers.'+ext
+anyexist = lambda *exts: any(os.path.isfile(addext(ext)) for ext in exts)
+if not os.path.isdir('data'): os.makedirs('data')
+if not anyexist('pt', 'csv', 'zip'): gdown.download('https://drive.google.com/uc?id=11Jt2PpKcKZLaifZXjlCAVpSqdh4VG8Vt', addext('zip'), quiet=False) 
+if not anyexist('pt', 'csv'): runcmd(f"unzip {addext('zip')}")
+if anyexist('pt'): data = torch.load(addext('pt'))
+else:
+    data = torch.tensor(pandas.read_csv(addext('csv'))['last'].to_numpy(), dtype=torch.float32)
+    torch.save(data, addext('pt'))
 
 # training and validation data
 train = data[:(n:=int(data.shape[0]*.9))]
