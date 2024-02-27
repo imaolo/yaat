@@ -31,8 +31,8 @@ train = data[:(n:=int(data.shape[0]*.9))]
 val = data[n:]
 
 # batching
-mean = torch.mean(train, dim=0)
-std = torch.std(train, dim=0)
+mean = torch.mean(train)
+std = torch.std(train)
 def get_batch(split='train'):
     data = train if split == 'train' else val
     ix = torch.randint(len(data) - block_size, (batch_size,))
