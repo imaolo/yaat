@@ -1,4 +1,4 @@
-import subprocess, pprint, select, atexit, functools
+import subprocess, pprint, select
 
 def path(*fp): return '/'.join(fp)
 
@@ -26,17 +26,3 @@ def killproc(proc, proc_name):
             print(f"process {proc_name} didn't terminate gracefully, killing it...")
             proc.kill()
         print(f"process {proc_name} shutdown")
-
-def conn_db(dir):
-    import pymongo, pymongo.errors as mongoerrs
-    def getnping():
-        (c := pymongo.MongoClient(serverSelectionTimeoutMS=5000)).admin.command('ping')
-        return c
-    try: return getnping()
-    except (mongoerrs.ServerSelectionTimeoutError, mongoerrs.ConnectionFailure):
-        print(f"starting mongo @ {dir}")
-        mongod = subprocess.Popen(['mongod', '--dbpath', dir], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        assert mongod.poll() is None
-        print("mongo started")
-        atexit.register(functools.partial(killproc, mongod, 'mongod'))
-        return getnping()
