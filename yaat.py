@@ -134,8 +134,8 @@ for iter in range(max_iters):
     if not iter % eval_int:
         losses = estimate_loss(mdl)
         print(f"step {iter}: train loss {losses['train']:.4f}, val loss {losses['val']:.4f}")
-    xb, yb = get_batch('train')
 
+    xb, yb = get_batch('train')
     logits, loss = mdl(xb, yb)
     opt.zero_grad(set_to_none=True)
     loss.backward()
