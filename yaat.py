@@ -30,7 +30,7 @@ else:
 train = data[:(n:=int(data.shape[0]*.9))]
 val = data[n:]
 
-# batching helper
+# batching
 mean = torch.mean(train, dim=0)
 std = torch.std(train, dim=0)
 def get_batch(split='train'):
