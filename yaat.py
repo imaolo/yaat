@@ -1,15 +1,15 @@
-import os, pandas, gdown, torch, transformers, torch.nn as nn
+import os, random, pandas, gdown, torch, transformers, torch.nn as nn
 from util import runcmd
 
 # hyperparameters
-batch_size = 32
-block_size = 512
+batch_size = 8
+block_size = 128
 max_iters = 5000
 eval_int = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 lr = 1e-4
 eval_iters = 250
-n_embd = 300
+n_embd = 128
 n_head = 6
 n_layer = 6
 dropout = 0.30
@@ -21,20 +21,22 @@ anyexist = lambda *exts: any(os.path.isfile(addext(ext)) for ext in exts)
 if not os.path.isdir('data'): os.makedirs('data')
 if not anyexist('pt', 'csv', 'zip'): gdown.download('https://drive.google.com/uc?id=11Jt2PpKcKZLaifZXjlCAVpSqdh4VG8Vt', addext('zip'), quiet=False) 
 if not anyexist('pt', 'csv'): runcmd(f"unzip {addext('zip')}")
-if anyexist('pt'): data = torch.load(addext('pt'))
+if anyexist('pt'): tickers = torch.load(addext('pt'))
 else:
-    data = torch.tensor(pandas.read_csv(addext('csv'))['last'].to_numpy(), dtype=torch.float32)
-    torch.save(data, addext('pt'))
+    df = pandas.read_csv(addext('csv'))
+    tickers = {sym: torch.tensor(df[df['symbol'] == sym]['last'].to_numpy(), dtype=torch.float32) for sym in df['symbol'].unique()}
+    torch.save(tickers, addext('pt'))
 
 # training and validation data
-train = data[:(n:=int(data.shape[0]*.9))]
-val = data[n:]
+train = {sym: data[:n] for sym, data in tickers.items() if len(data[(n:=int(data.shape[0]*.9)):]) > block_size}
+val = {sym: data[n:] for sym, data in tickers.items() if len(data[n:]) > block_size}
 
 # batching
-mean = torch.mean(train)
-std = torch.std(train)
+means = {sym: torch.mean(data) for sym, data in train.items()}
+stds = {sym: torch.std(data) for sym, data in train.items()}
 def get_batch(split='train'):
     data = train if split == 'train' else val
+    data, std, mean = data[sym:=random.choice(list(data.keys()))], means[sym], stds[sym]
     ix = torch.randint(len(data) - block_size, (batch_size,))
     x = torch.stack([data[i:i+block_size] for i in ix]).to(device)
     y = torch.stack([data[i+1:i+block_size+1] for i in ix]).to(device)
