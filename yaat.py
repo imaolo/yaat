@@ -151,8 +151,8 @@ plotd = cap if (plotd:=math.ceil(math.sqrt(len(val)))) > (cap:=math.ceil(math.sq
 for i, (sym, data)in enumerate(val.items()):
     if len(data) < (end_idx:=block_size+gen) or i > plotd**2: continue
     # get actuals and predicted data
-    ix = torch.randint(len(data) - (end_idx), (1,))
-    context = torch.stack([data[i:i+block_size] for i in ix])
+    ix = torch.randint(len(data) - (end_idx), (1,)).to(device)
+    context = torch.stack([data[i:i+block_size] for i in ix]).to(device)
     preds = denormalize(mdl.generate(context, gen)[0][block_size:end_idx], sym).detach().numpy()
     act = tickers[sym][block_size:end_idx].detach().numpy()
 
