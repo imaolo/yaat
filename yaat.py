@@ -3,23 +3,24 @@ from util import get_tickers
 
 # hyperparameters
 batch_size = 8
-block_size = 256
+block_size = 512
 max_iters = 5000
 eval_int = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 lr = 1e-4
-eval_iters = 250
+eval_iters = 384
 n_embd = 256
-n_head = 6
-n_layer = 6
+n_head = 8
+n_layer = 8
 dropout = 0.30
+train_split = 0.8
 ### ---------
 
 # load data
 tickers = get_tickers()
 
 # process data
-train = {sym: data[:n] for sym, data in tickers.items() if len(data[(n:=int(data.shape[0]*.9)):]) > block_size}
+train = {sym: data[:n] for sym, data in tickers.items() if len(data[(n:=int(data.shape[0]*train_split)):]) > block_size}
 val = {sym: data[n:] for sym, data in tickers.items() if len(data[n:]) > block_size}
 means = {sym: torch.mean(data) for sym, data in train.items()}
 stds = {sym: torch.std(data) for sym, data in train.items()}
