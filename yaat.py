@@ -2,7 +2,7 @@ import random, math, torch, transformers, torch.nn as nn, matplotlib.pyplot as p
 from util import get_tickers
 
 # hyperparameters
-batch_size = 8
+batch_size = 32
 block_size = 512
 max_iters = 5000
 eval_int = 100
