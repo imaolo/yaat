@@ -1,10 +1,10 @@
-import os, random, pandas, gdown, torch, transformers, torch.nn as nn
-from util import runcmd
+import random, torch, transformers, torch.nn as nn
+from util import get_tickers
 
 # hyperparameters
 batch_size = 8
 block_size = 128
-max_iters = 200
+max_iters = 5000
 eval_int = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 lr = 1e-4
@@ -15,17 +15,8 @@ n_layer = 6
 dropout = 0.30
 ### ---------
 
-# load data (l1, l2, l3, l4 cache!)
-addext = lambda ext: 'data/tickers.'+ext
-anyexist = lambda *exts: any(os.path.isfile(addext(ext)) for ext in exts)
-if not os.path.isdir('data'): os.makedirs('data')
-if not anyexist('pt', 'csv', 'zip'): gdown.download('https://drive.google.com/uc?id=11Jt2PpKcKZLaifZXjlCAVpSqdh4VG8Vt', addext('zip'), quiet=False) 
-if not anyexist('pt', 'csv'): runcmd(f"unzip {addext('zip')}")
-if anyexist('pt'): tickers = torch.load(addext('pt'))
-else:
-    df = pandas.read_csv(addext('csv'))
-    tickers = {sym: torch.tensor(df[df['symbol'] == sym]['last'].to_numpy(), dtype=torch.float32) for sym in df['symbol'].unique()}
-    torch.save(tickers, addext('pt'))
+# load data
+tickers = get_tickers()
 
 # process data
 train = {sym: data[:n] for sym, data in tickers.items() if len(data[(n:=int(data.shape[0]*.9)):]) > block_size}
