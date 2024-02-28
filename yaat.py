@@ -1,15 +1,15 @@
-import random, torch, transformers, torch.nn as nn
+import random, math, torch, transformers, torch.nn as nn, matplotlib.pyplot as plt, matplotlib.image as mpimg
 from util import get_tickers
 
 # hyperparameters
 batch_size = 8
-block_size = 128
-max_iters = 5000
+block_size = 256
+max_iters = 500
 eval_int = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 lr = 1e-4
 eval_iters = 250
-n_embd = 128
+n_embd = 256
 n_head = 6
 n_layer = 6
 dropout = 0.30
@@ -26,9 +26,7 @@ stds = {sym: torch.std(data) for sym, data in train.items()}
 
 # helpers
 def normalize(x, sym): return (x - means[sym]) / stds[sym]
-def denormalize(x, sym):
-    print(x.shape, stds[sym].shape, means[sym].shape)
-    return (x * stds[sym]) + means[sym]
+def denormalize(x, sym): return (x * stds[sym]) + means[sym]
 def get_batch(split='train'):
     data = train if split == 'train' else val
     data = data[sym:=random.choice(list(data.keys()))]
@@ -147,15 +145,23 @@ for iter in range(max_iters):
     opt.step()
     lr_sched.step()
 
-# generate
-pred = denormalize(mdl.generate(tickers[sym:='ETH/USDT'][0:block_size].unsqueeze(0), gen:=100)[0][block_size:block_size+gen], sym)
+# generate & plot
+gen, cap = 100, 8
+plotd = cap if (plotd:=math.ceil(math.sqrt(len(val)))) > (cap:=math.ceil(math.sqrt(cap))) else plotd
+for i, (sym, data)in enumerate(val.items()):
+    if len(data) < (end_idx:=block_size+gen) or i > plotd**2: continue
+    # get actuals and predicted data
+    ix = torch.randint(len(data) - (end_idx), (1,))
+    context = torch.stack([data[i:i+block_size] for i in ix])
+    preds = denormalize(mdl.generate(context, gen)[0][block_size:end_idx], sym).detach().numpy()
+    act = tickers[sym][block_size:end_idx].detach().numpy()
 
-# # plot
-# import matplotlib.pyplot as plt
-# pred = pred.detach().numpy()
-# act = tickers[sym][block_size:block_size+gen].detach().numpy()
-# x = torch.arange(len(pred)).detach().numpy()
-# plt.plot(x, act, label='Actual', color='blue')
-# plt.plot(x, pred, label='Predicted', color='red')
-# plt.legend()
-# plt.show()
+    # add to plot
+    x = torch.arange(len(preds)).detach().numpy()
+    plt.subplot(plotd+1, plotd+1, i+1)
+    plt.plot(x, act, label='Actual', color='blue')
+    plt.plot(x, preds, label='Predicted', color='red')
+    plt.legend()
+    plt.title(sym)
+plt.tight_layout()
+plt.savefig('data/plot.png')
