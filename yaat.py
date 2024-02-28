@@ -156,5 +156,15 @@ for iter in range(max_iters):
     opt.step()
     lr_sched.step()
 
-context = torch.zeros((1, block_size), dtype=torch.float32, device=device)
-print(denormalize(mdl.generate(context, 50)[0], 'ETH/USDT').tolist()) # just to test
+# generate
+pred = denormalize(mdl.generate(tickers[sym:='ETH/USDT'][0:block_size].unsqueeze(0), gen:=100)[0][block_size:block_size+gen], sym)
+
+# # plot
+# import matplotlib.pyplot as plt
+# pred = pred.detach().numpy()
+# act = tickers[sym][block_size:block_size+gen].detach().numpy()
+# x = torch.arange(len(pred)).detach().numpy()
+# plt.plot(x, act, label='Actual', color='blue')
+# plt.plot(x, pred, label='Predicted', color='red')
+# plt.legend()
+# plt.show()
