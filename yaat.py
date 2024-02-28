@@ -20,10 +20,10 @@ train_split = 0.8
 tickers = get_tickers()
 
 # process data
-train = {sym: data[:n] for sym, data in tickers.items() if len(data[(n:=int(data.shape[0]*train_split)):]) > block_size}
-val = {sym: data[n:] for sym, data in tickers.items() if len(data[n:]) > block_size}
-means = {sym: torch.mean(data) for sym, data in train.items()}
-stds = {sym: torch.std(data) for sym, data in train.items()}
+train = {sym: data[:n].to(device) for sym, data in tickers.items() if len(data[(n:=int(data.shape[0]*train_split)):]) > block_size}
+val = {sym: data[n:].to(device) for sym, data in tickers.items() if len(data[n:]) > block_size}
+means = {sym: torch.mean(data).to(device) for sym, data in train.items()}
+stds = {sym: torch.std(data).to(device) for sym, data in train.items()}
 
 # helpers
 def normalize(x, sym): return (x - means[sym]) / stds[sym]
