@@ -1,4 +1,4 @@
-import random, math, torch, transformers, torch.nn as nn, matplotlib.pyplot as plt, matplotlib.image as mpimg
+import random, math, torch, transformers, torch.nn as nn, matplotlib.pyplot as plt
 from util import get_tickers
 
 # hyperparameters
