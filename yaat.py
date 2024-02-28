@@ -4,7 +4,7 @@ from util import runcmd
 # hyperparameters
 batch_size = 8
 block_size = 128
-max_iters = 5000
+max_iters = 200
 eval_int = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 lr = 1e-4
@@ -27,20 +27,24 @@ else:
     tickers = {sym: torch.tensor(df[df['symbol'] == sym]['last'].to_numpy(), dtype=torch.float32) for sym in df['symbol'].unique()}
     torch.save(tickers, addext('pt'))
 
-# training and validation data
+# process data
 train = {sym: data[:n] for sym, data in tickers.items() if len(data[(n:=int(data.shape[0]*.9)):]) > block_size}
 val = {sym: data[n:] for sym, data in tickers.items() if len(data[n:]) > block_size}
-
-# batching
 means = {sym: torch.mean(data) for sym, data in train.items()}
 stds = {sym: torch.std(data) for sym, data in train.items()}
+
+# helpers
+def normalize(x, sym): return (x - means[sym]) / stds[sym]
+def denormalize(x, sym):
+    print(x.shape, stds[sym].shape, means[sym].shape)
+    return (x * stds[sym]) + means[sym]
 def get_batch(split='train'):
     data = train if split == 'train' else val
-    data, std, mean = data[sym:=random.choice(list(data.keys()))], means[sym], stds[sym]
+    data = data[sym:=random.choice(list(data.keys()))]
     ix = torch.randint(len(data) - block_size, (batch_size,))
     x = torch.stack([data[i:i+block_size] for i in ix]).to(device)
     y = torch.stack([data[i+1:i+block_size+1] for i in ix]).to(device)
-    return (x - mean) / std, (y - mean) / std
+    return normalize(x, sym), normalize(y, sym)
 
 ### define model ###
 
@@ -96,17 +100,25 @@ class Transformer(nn.Module):
         self.ln = nn.LayerNorm(n_embd)
         self.lm_head = nn.Linear(n_embd, 1)
 
-    def forward(self, idx, targets):
+    def forward(self, idx, targets=None):
         B, T = idx.shape
 
         # add feature dimension
         idxemb = self.in_proj(idx.unsqueeze(-1))
-        posemb = self.wpe(torch.arange(T, device=device).unsqueeze(0).repeat(batch_size, 1))
+        posemb = self.wpe(torch.arange(T, device=device).unsqueeze(0).repeat(B, 1))
         logits = self.lm_head(self.ln(self.blocks(idxemb + posemb)))
         if targets is None: return logits, None
 
         B, T, C = logits.shape
         return logits, nn.functional.mse_loss(logits.view(B*T, C), targets.view(B*T))
+
+    def generate(self, idx:torch.Tensor, num_tokens:int):
+        for _ in range(num_tokens):
+            idx_ = idx[:, -block_size:]
+            logits, loss = self(idx_)
+            logit = logits[:, -1, :] # only one
+            idx = torch.cat((idx, logit) , dim=1)
+        return idx
 
 # create model, optimizer, and lr
 mdl = Transformer().to(device)
@@ -143,3 +155,6 @@ for iter in range(max_iters):
     loss.backward()
     opt.step()
     lr_sched.step()
+
+context = torch.zeros((1, block_size), dtype=torch.float32, device=device)
+print(denormalize(mdl.generate(context, 50)[0], 'ETH/USDT').tolist()) # just to test
