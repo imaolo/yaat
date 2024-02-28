@@ -153,7 +153,7 @@ for i, (sym, data)in enumerate(val.items()):
     # get actuals and predicted data
     ix = torch.randint(len(data) - (end_idx), (1,)).to(device)
     context = torch.stack([data[i:i+block_size] for i in ix]).to(device)
-    preds = denormalize(mdl.generate(context, gen)[0][block_size:end_idx], sym).detach().numpy()
+    preds = denormalize(mdl.generate(context, gen)[0][block_size:end_idx], sym).detach().cpu().numpy()
     act = tickers[sym][block_size:end_idx].detach().numpy()
 
     # add to plot
