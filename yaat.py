@@ -4,7 +4,7 @@ from util import get_tickers
 # hyperparameters
 batch_size = 8
 block_size = 256
-max_iters = 500
+max_iters = 5000
 eval_int = 100
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 lr = 1e-4
