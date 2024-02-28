@@ -31,7 +31,7 @@ def denormalize(x, sym): return (x * stds[sym]) + means[sym]
 def get_batch(split='train'):
     data = train if split == 'train' else val
     data = data[sym:=random.choice(list(data.keys()))]
-    ix = torch.randint(len(data) - block_size, (batch_size,))
+    ix = torch.randint(len(data) - block_size, (batch_size,)).to(device)
     x = torch.stack([data[i:i+block_size] for i in ix]).to(device)
     y = torch.stack([data[i+1:i+block_size+1] for i in ix]).to(device)
     return normalize(x, sym), normalize(y, sym)
