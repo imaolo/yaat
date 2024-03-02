@@ -11,9 +11,10 @@ except: raise ImportError(f"{os.path.basename(__file__)} requires pymongo")
 # uploaded and be the main dataset.
     
 db_name = 'yaatdb'
-data_name = 'old_tickers'
+data_name = 'tickers_'
 new_data_name = 'tickers'
 data_dir = 'data'
+model_dir = path(data_dir, 'model_data')
 db_dir = path(data_dir, 'db')
 data_fp = path(data_dir, data_name)
 new_data_fp = path(data_dir, new_data_name)
@@ -36,11 +37,12 @@ if __name__ == '__main__':
     runcmd(f"rm -rf {data_dir}")
     os.makedirs(data_dir)
     os.makedirs(db_dir)
+    os.makedirs(model_dir)
 
     gdown.download('https://drive.google.com/uc?id=1lgvxFp7l67dyZEGmvkqeP4fMN5hAQQ-q', data_fp+'.zip', quiet=False)
 
     runcmd(f"unzip {data_fp}.zip -d {data_dir}")
-    runcmd(f"mv {new_data_fp}.json {data_fp}.json") # it has the name we want to use
+    runcmd(f"mv data/tickers.json {data_fp}.json") # its name is tickers.json
 
     mongoc = conn_db(db_dir)
 
@@ -53,47 +55,50 @@ if __name__ == '__main__':
     db = mongoc[db_name]
     data = db[data_name]
 
-    print("1. add epoch, promote data.*.bybit to root, and drop data.*.bybit.info and data.*.phemex")
+    # shorthands
+    fields =  ['ask', 'baseVolume', 'bid', 'last', 'date', 'quoteVolume', 'symbol']
+    conds = lambda f: [{f: {'$exists': True}}, {f: {'$ne': None}}]
+
+    print("1. add date, promote data.*.bybit to root, and drop data.*.bybit.info and data.*.phemex")
     data.aggregate([
-        {'$project': {'data': {'$objectToArray': '$data'}, 'epoch': {'$toLong': '$datetime'}}},
+        {'$project': {
+            'data': {'$objectToArray': '$data'},
+            'date': {'$dateToString': {
+                'format': '%Y-%m-%d %H:%M:%S',
+                'date': '$datetime',
+                'timezone': 'UTC'
+            }}
+        }},
         {'$unwind': '$data'},
         {'$unset': ['data.v.bybit.info', 'data.v.phemex']},
-        {'$project': {'data': '$data.v.bybit', 'epoch': 1, '_id': 0}},
+        {'$project': {'data': '$data.v.bybit', 'date': 1, '_id': 0}},
         {'$replaceRoot': {'newRoot': {'$mergeObjects': ['$$ROOT', '$data']}}},
-        {'$project': {'data': 0}},
+        {'$project': {f:1 for f in fields}},
+        {'$match': {'$and': [cond for f in fields for cond in conds(f)]}},
         {'$out': new_data_name}
     ])
     new_data = db[new_data_name]
     myprint(new_data_name, new_data.find_one())
 
-    print("2. get the set of document keys")
-    keys = set(list(new_data.aggregate([
-        {'$project': {'kvarr': {'$objectToArray': '$$ROOT'}}},
-        {'$unwind': '$kvarr'},
-        {'$group': {'_id': None, 'collkeys': {'$addToSet': '$kvarr.k'}}},
-    ]))[0]['collkeys']) - {'_id'}
-    myprint(f"{new_data_name} keys", keys)
+    print("2. Get the set of unique symbols")
+    symbols = db[new_data_name].distinct("symbol")
+    exch_currs = [sym.split("/")[0] for sym in symbols]
 
-    print("3. get the set of keys which have null or dne document values")
-    key_ndne_counts: dict = list(new_data.aggregate([{'$facet': {k: [
-        {'$match': {'$or': [{k: {'$exists': False}}, {k: None}]}},
-        {'$count': 'count'}
-    ] for k in keys}}]))[0]
-    bad_keys = {k:v[0]['count'] for k, v in key_ndne_counts.items() if v}
-    myprint(f"{new_data_name} null or dne keys and counts", bad_keys)
+    print("3. make new collections and export")
+    postfix = lambda x: x+'_tickers'
+    for sym, exch_sym in zip(exch_currs, symbols):
+        db[new_data_name].aggregate([
+            {'$match': {'symbol': exch_sym}},
+            {'$project': {'symbol':0}},
+            {'$out': postfix(sym)}
+        ])
+        doc = db[postfix(sym)].find_one()
+        myprint(sym, doc)
+        fields = doc.keys()
+        runcmd(f"mongoexport " \
+            f"--db {db_name} " \
+            f"--collection {postfix(sym)} " \
+            f"--type csv --fields {','.join(set(fields)-{'_id'})} " \
+            f"--out {path(model_dir, postfix(sym))}.csv")
 
-    print("4. unset null or dne document attributes")
-    new_data.update_many({}, {'$unset': {key: "" for key in bad_keys.keys()}})
-    myprint(f"{new_data_name} w/o bad keys", new_data.find_one())
-    
-    print("5. verifying transformation")
-    assert db[new_data_name].count_documents({}) == 8123464
-
-    fields = mongoc[db_name][new_data_name].find_one().keys()
-    runcmd(f"mongoexport " \
-        f"--db {db_name} " \
-        f"--collection {new_data_name} " \
-        f"--type csv --fields '{','.join(set(fields)-{'_id'})}' " \
-        f"--out {new_data_fp}.csv")
-
-    runcmd(f"zip {new_data_fp}.zip {new_data_fp}.csv")
+    runcmd(f"zip -r {model_dir}.zip {model_dir}")
