@@ -1,7 +1,4 @@
-import argparse
-import os
-import torch
-
+import argparse, torch
 from Informer2020.exp_informer import Exp_Informer
 
 parser = argparse.ArgumentParser(description='[Informer] Long Sequences Forecasting')
