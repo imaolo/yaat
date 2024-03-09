@@ -14,11 +14,12 @@ class Entry:
 
     def __init__(self):
         self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs, self._data_attrs = (set() for _ in range(5))
+        self.exists_ok = True
 
     def __setattr__(self, key:str, val:Any):
         if hasattr(self, '_attrs') and key in self._attrs:
             if key in self._readonly_attrs: assert not hasattr(self, key), key
-            elif key in self._dir_attrs: pass # TODO create directory
+            elif key in self._dir_attrs: Maester.create_folder(val, exists_ok=self.exists_ok)
             elif key in self._append_attrs: pass # TODO append
             elif key in self._data_attrs: pass # TODO set
         super().__setattr__(key, val)
@@ -29,13 +30,15 @@ class Entry:
         return self.__dict__[key]
 
     def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, \
-                is_dir:bool=False, is_data:bool=False, type:Optional[str]=None):
+                is_dir:bool=False, is_data:bool=False, type:Optional[str]=None, exists_ok:bool=True):
+        exists_ok_prev, self.exist_ok = self.exists_ok, exists_ok
         self._attrs.add(key)
         if append: self._append_attrs.add(key)
-        if is_dir: self._dir_attrs(key)
-        if is_data: self._data_attrs(key)
+        if is_dir: self._dir_attrs.add(key)
+        if is_data: self._data_attrs.add(key)
         if readonly: self._readonly_attrs.add(key)
         setattr(self, key, val)
+        self.exists_ok = exists_ok_prev
 
     def set_error(self, errm:Optional[str]): pass # TODO
     def to_json(self) -> str: pass # TODO
@@ -81,4 +84,4 @@ class _Maester:
     def clean(self, path:str): pass
 
     # TODO - rest of maester...
-Maester = _Maester() # TODO
+Maester = _Maester()

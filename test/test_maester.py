@@ -1,5 +1,6 @@
-from yaat.maester import Entry
-import unittest
+from yaat.maester import Entry, Maester
+from yaat.util import path
+import unittest, os
 
 class TestEntry(unittest.TestCase):
 
@@ -22,6 +23,11 @@ class TestEntry(unittest.TestCase):
     def test_readonly_regattr(self):
         self.e.regattr('val1', 1, readonly=True)
         with self.assertRaises(AssertionError): self.e.val1 = 1
+
+    def test_dir_regattr(self):
+        self.e.regattr('dir_name', 'trash_dir', is_dir=True, exists_ok=True)
+        self.assertTrue(self.e.dir_name in os.listdir(Entry.local_root_dir))
+        os.rmdir(path(Entry.local_root_dir, self.e.dir_name))
 
     def test_set_error(self): pass # TODO
     def test_to_json(self): pass # TODO
