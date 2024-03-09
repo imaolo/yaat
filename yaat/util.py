@@ -1,4 +1,4 @@
-import subprocess, pprint, select, os, torch, pandas, gdown
+import subprocess, pprint, select
 
 def path(*fp): return '/'.join(fp)
 
@@ -26,16 +26,3 @@ def killproc(proc, proc_name):
             print(f"process {proc_name} didn't terminate gracefully, killing it...")
             proc.kill()
         print(f"process {proc_name} shutdown")
-
-def get_tickers():
-    addext = lambda ext: 'data/tickers.'+ext
-    anyexist = lambda *exts: any(os.path.isfile(addext(ext)) for ext in exts)
-    if not os.path.isdir('data'): os.makedirs('data')
-    if not anyexist('pt', 'csv', 'zip'): gdown.download('https://drive.google.com/uc?id=11Jt2PpKcKZLaifZXjlCAVpSqdh4VG8Vt', addext('zip'), quiet=False) 
-    if not anyexist('pt', 'csv'): runcmd(f"unzip {addext('zip')}")
-    if anyexist('pt'): tickers = torch.load(addext('pt'))
-    else:
-        df = pandas.read_csv(addext('csv'))
-        tickers = {sym: torch.tensor(df[df['symbol'] == sym]['last'].to_numpy(), dtype=torch.float32) for sym in df['symbol'].unique()}
-        torch.save(tickers, addext('pt'))
-    return tickers

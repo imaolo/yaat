@@ -1,5 +1,5 @@
-import random, math, torch, transformers, torch.nn as nn, matplotlib.pyplot as plt
-from util import get_tickers
+import os, random, math, torch, transformers, torch.nn as nn, matplotlib.pyplot as plt, pandas, gdown
+from yaat.util import runcmd
 
 # hyperparameters
 batch_size = 32
@@ -16,19 +16,18 @@ dropout = 0.30
 train_split = 0.8
 ### ---------
 
-# def get_tickers():
-#     addext = lambda ext: 'data/tickers.'+ext
-#     anyexist = lambda *exts: any(os.path.isfile(addext(ext)) for ext in exts)
-#     if not os.path.isdir('data'): os.makedirs('data')
-#     if not anyexist('pt', 'csv', 'zip'): gdown.download('https://drive.google.com/uc?id=11Jt2PpKcKZLaifZXjlCAVpSqdh4VG8Vt', addext('zip'), quiet=False) 
-#     if not anyexist('pt', 'csv'): runcmd(f"unzip {addext('zip')}")
-#     if anyexist('pt'): tickers = torch.load(addext('pt'))
-#     else:
-#         df = pandas.read_csv(addext('csv'))
-#         tickers = {sym: torch.tensor(df[df['symbol'] == sym]['last'].to_numpy(), dtype=torch.float32) for sym in df['symbol'].unique()}
-#         torch.save(tickers, addext('pt'))
-#     return tickers
-
+def get_tickers():
+    addext = lambda ext: 'data/tickers.'+ext
+    anyexist = lambda *exts: any(os.path.isfile(addext(ext)) for ext in exts)
+    if not os.path.isdir('data'): os.makedirs('data')
+    if not anyexist('pt', 'csv', 'zip'): gdown.download('https://drive.google.com/uc?id=11Jt2PpKcKZLaifZXjlCAVpSqdh4VG8Vt', addext('zip'), quiet=False) 
+    if not anyexist('pt', 'csv'): runcmd(f"unzip {addext('zip')}")
+    if anyexist('pt'): tickers = torch.load(addext('pt'))
+    else:
+        df = pandas.read_csv(addext('csv'))
+        tickers = {sym: torch.tensor(df[df['symbol'] == sym]['last'].to_numpy(), dtype=torch.float32) for sym in df['symbol'].unique()}
+        torch.save(tickers, addext('pt'))
+    return tickers
 
 # load data
 tickers = get_tickers()

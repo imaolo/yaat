@@ -1,5 +1,5 @@
 import os, subprocess, atexit, functools, pandas, torch, itertools
-from util import path, myprint, runcmd, killproc
+from yaat.util import path, myprint, runcmd, killproc
 
 # not formal dependencies
 try: import gdown, pymongo, pymongo.errors as mongoerrs
