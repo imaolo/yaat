@@ -14,7 +14,7 @@ class Entry:
 
     def __init__(self):
         self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs, self._data_attrs = (set() for _ in range(5))
-        self.exists_ok = True
+        self.exists_ok = True # hack
 
     def __setattr__(self, key:str, val:Any):
         if hasattr(self, '_attrs') and key in self._attrs:
@@ -31,12 +31,12 @@ class Entry:
 
     def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, \
                 is_dir:bool=False, is_data:bool=False, type:Optional[str]=None, exists_ok:bool=True):
-        exists_ok_prev, self.exists_ok = self.exists_ok, exists_ok
         self._attrs.add(key)
         if append: self._append_attrs.add(key)
         if is_dir: self._dir_attrs.add(key)
         if is_data: self._data_attrs.add(key)
         if readonly: self._readonly_attrs.add(key)
+        exists_ok_prev, self.exists_ok = self.exists_ok, exists_ok
         setattr(self, key, val)
         self.exists_ok = exists_ok_prev
 
