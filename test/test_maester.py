@@ -1,7 +1,6 @@
 import unittest, os
 os.environ['ROOT'] = 'twork'
 
-
 from yaat.maester import Entry, Maester
 from yaat.util import path, runcmd
 
