@@ -18,7 +18,7 @@ class Entry:
         if hasattr(self, '_attrs') and key in self._attrs:
             if key in self._readonly_attrs: assert not hasattr(self, key), key
             elif key in self._dir_attrs: Maester.create_folder(path(type(self).root, val), exists_ok=self.exists_ok)
-            elif key in self._append_attrs: pass #  TODO Maester.append_file(path(type(self).root, key), val)
+            elif key in self._append_attrs: Maester.append_file(path(type(self).root, key), val)
             elif key in self._data_attrs: pass # TODO set
         super().__setattr__(key, val)
 
@@ -58,7 +58,7 @@ class ModelEntry(Entry):
         self.regattr('weights', weights, is_data=True)
 
 class DataEntry(Entry):
-    root:str = 'data'
+    root:str = 'data_entries'
     def __init__(self, name:str, data:Any):
         super().__init__()
         self.regattr('name', name, readonly=True, is_dir=True)
@@ -80,11 +80,10 @@ class _Maester:
         if self.dbx: _create_folder(self.dbx.files_create_folder_v2, fp, files.CreateFolderError)
         if self.local: _create_folder(os.mkdir, path(self.local, fp), FileExistsError)
 
-    # TODO
-    # def append_file(self, fp: str, data:str):
-    #     if self.dbx: pass # TODO
-    #     if self.local:
-    #         with open(path(self.local, fp), 'a') as f: f.write(data)
+    def append_file(self, fp: str, data:str):
+        if self.dbx: pass # TODO
+        if self.local:
+            with open(path(self.local, fp), 'a') as f: f.writelines([data])
 
     # TODO
     def clean(self, path:str): pass
