@@ -12,8 +12,8 @@ class Entry:
         self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs = (set() for _ in range(4))
         self.mem_th = mem_th
         self.exists_ok = True # hack
-        self.name = self.regattr('name', name, is_dir=True)
-        self.status = self.regattr('status', status.name, append=True, type='text')
+        self.regattr('name', name, is_dir=True)
+        self.regattr('status', status.name, append=True, type='text')
 
     def __setattr__(self, key:str, val:Any):
         if hasattr(self, '_attrs') and key in self._attrs:
@@ -45,7 +45,6 @@ class Entry:
         exists_ok_prev, self.exists_ok = self.exists_ok, exists_ok
         setattr(self, key, val)
         self.exists_ok = exists_ok_prev
-        return getattr(self, key)
 
     def set_error(self, errm:Optional[str]):
         self.status = self.Status.error.name
@@ -55,14 +54,14 @@ class ModelEntry(Entry):
     root:str = 'models'
     def __init__(self, name:str, args:Dict[str, str | int], status:Entry.Status=Entry.Status.created, weights: Optional[Any]=None):
         super().__init__(name, status)
-        self.args = self.regattr('args', args, readonly=True, type='json')
-        self.weights = self.regattr('weights', weights, write=True)
+        self.regattr('args', args, readonly=True, type='json')
+        self.regattr('weights', weights)
 
 class DataEntry(Entry):
     root:str = 'data_entries'
     def __init__(self, name:str, data:Any, status:Entry.Status=Entry.Status.created):
         super().__init__(name, status)
-        self.data = self.regattr('data', data, readonly=True, is_data=True, type='csv')
+        self.regattr('data', data, readonly=True, is_data=True, type='csv')
 
 class _Maester:
     def __init__(self, root:str='data'):
