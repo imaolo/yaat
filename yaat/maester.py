@@ -1,8 +1,7 @@
-from yaat.util import path
+from yaat.util import path, getenv
 from typing import List, Any, Dict, Optional
 from enum import Enum, auto
 from dropbox import Dropbox, files
-from pandas import DataFrame
 import os, sys
 
 class Entry:
@@ -69,35 +68,25 @@ class DataEntry(Entry):
         self.data = self.regattr('data', data, readonly=True, is_data=True, type='csv')
 
 class _Maester:
-    def __init__(self, dbx:Optional[Dropbox]=None, local:str='data'):
-        assert dbx or local
-        self.dbx, self.local = dbx, local
+    def __init__(self, local:str='data'):
+        self.local = local
+        if not os.path.isdir(local): os.mkdir(local)
+        self.create_folder(Entry.root)
         self.create_folder(ModelEntry.root)
         self.create_folder(DataEntry.root)
 
     def create_folder(self, fp: str, exists_ok:bool=True):
-        def _create_folder(call, arg, err):
-            try: call(arg)
-            except err as e:
-                if exists_ok: return
-                raise e
-        if self.dbx: _create_folder(self.dbx.files_create_folder_v2, fp, files.CreateFolderError)
-        if self.local: _create_folder(os.mkdir, path(self.local, fp), FileExistsError)
+        if os.path.isdir(fp:=path(self.local, fp)) and exists_ok: return
+        os.mkdir(fp)
 
     def append_file(self, fp: str, data:str):
-        if self.dbx: pass # TODO
-        if self.local:
-            with open(path(self.local, fp), 'a') as f: f.write(data)
+        with open(path(self.local, fp), 'a') as f: f.write(data)
 
     def write_file(self, fp:str, data:str):
-        if self.dbx: pass # TODO
-        if self.local:
-            with open(path(self.local, fp), 'w') as f: f.write(data)
+        with open(path(self.local, fp), 'w') as f: f.write(data)
 
     def get_file(self, fp:str) -> str:
-        if self.dbx: pass # TODO
-        if self.local:
-            if not os.path.exists(path(self.local, fp)): return None
-            with open(path(self.local, fp), 'r') as f: return f.read()
+        if not os.path.exists(path(self.local, fp)): return None
+        with open(path(self.local, fp), 'r') as f: return f.read()
     # TODO - rest of maester...
-Maester = _Maester() # TODO env vars
+Maester = _Maester(getenv("LOCDIR", "maester", req=False)) # TODO env vars
