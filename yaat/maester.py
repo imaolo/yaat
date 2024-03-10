@@ -37,6 +37,7 @@ class Entry:
         exists_ok_prev, self.exists_ok = self.exists_ok, exists_ok
         setattr(self, key, val)
         self.exists_ok = exists_ok_prev
+        return getattr(self, key)
 
     def set_error(self, errm:Optional[str]): pass # TODO
     def to_json(self) -> str: pass # TODO
@@ -52,17 +53,17 @@ class ModelEntry(Entry):
     root:str = 'models'
     def __init__(self, name:str, args:Dict[str, str | int], status:Entry.Status = Entry.Status.created, weights: Optional[Any]=None):
         super().__init__()
-        self.regattr('name', name, readonly=True, is_dir=True)
-        self.regattr('args', args, readonly=True, type='json')
-        self.regattr('status', status, append=True, type='text')
-        self.regattr('weights', weights, is_data=True)
+        self.name = self.regattr('name', name, readonly=True, is_dir=True)
+        self.args = self.regattr('args', args, readonly=True, type='json')
+        self.status = self.regattr('status', status, append=True, type='text')
+        self.weights = self.regattr('weights', weights, is_data=True)
 
 class DataEntry(Entry):
     root:str = 'data_entries'
     def __init__(self, name:str, data:Any):
         super().__init__()
-        self.regattr('name', name, readonly=True, is_dir=True)
-        self.regattr('data', data, readonly=True, is_data=True, type='csv')
+        self.name = self.regattr('name', name, readonly=True, is_dir=True)
+        self.data = self.regattr('data', data, readonly=True, is_data=True, type='csv')
 
 class _Maester:
     def __init__(self, dbx:Optional[Dropbox]=None, local:str='data'):
