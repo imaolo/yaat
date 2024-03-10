@@ -1,9 +1,14 @@
 from yaat.maester import Entry, Maester
-from yaat.util import path
+from yaat.util import path, runcmd
 import unittest, os
 
 class TestEntry(unittest.TestCase):
     test_num:int=0
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        runcmd(f"rm -rf {path(Maester.local, Entry.root)}")
+        return super().setUpClass()
 
     def setUp(self, mem_th=Entry.def_mem_threshold):
         self.e = Entry("test"+str(self.test_num), mem_th=mem_th)
@@ -22,12 +27,12 @@ class TestEntry(unittest.TestCase):
 
     def test_regattr1(self):
         self.e.regattr('val1', 1)
-        self.assertEqual(self.e.val1, 1)
+        self.assertEqual(self.e.val1, '1')
 
     def test_regattr2(self):
         self.val1 = 1
         self.e.regattr('val1', 2)
-        self.assertEqual(self.e.val1, 2)
+        self.assertEqual(self.e.val1, '2')
 
     def test_readonly_regattr(self):
         self.e.regattr('val1', 1, readonly=True)
@@ -67,7 +72,7 @@ class TestEntry(unittest.TestCase):
     def test_write_file1(self):
         fn, data = 'mydata', '12234'
         self.rm(fn)
-        self.e.regattr(fn, data, write=True)
+        self.e.regattr(fn, data)
         self.assertEqual(self.e.mydata, data)
         with open(path(Maester.local, self.e.root, fn)) as f:
             self.assertEqual(f.read(), data)
@@ -75,12 +80,11 @@ class TestEntry(unittest.TestCase):
         with open(path(Maester.local, self.e.root, fn)) as f:
             self.assertEqual(f.read(), data)
 
-    @unittest.skip("file spill broken temporarily")
     def test_getattr_file(self):
         self.tearDown()
         self.setUp(mem_th=10)
         fn, data = 'mydata', str([str(i) for i in range(11)])
-        self.e.regattr(fn, data, write=True)
+        self.e.regattr(fn, data)
         self.assertEqual(self.e.mydata, data)
         self.assertTrue(fn not in self.__dict__)
 
