@@ -27,8 +27,8 @@ class Entry:
         # TODO retrieve
         return self.__dict__[key]
 
-    def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, \
-                is_dir:bool=False, is_data:bool=False, type:Optional[str]=None, exists_ok:bool=True):
+    def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, is_dir:bool=False, \
+                is_data:bool=False, type:Optional[str]=None, exists_ok:bool=True) -> Any:
         self._attrs.add(key)
         if append: self._append_attrs.add(key)
         if is_dir: self._dir_attrs.add(key)
