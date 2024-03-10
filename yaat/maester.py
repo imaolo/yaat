@@ -12,16 +12,17 @@ class Entry:
 
     def __init__(self, name, mem_th:int=def_mem_threshold):
         Maester.create_folder(self.root)
-        self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs, self._write_attrs = (set() for _ in range(5))
+        self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs = (set() for _ in range(4))
         self.name, self.status, self.mem_th = name, self.Status.created, mem_th
         self.exists_ok = True # hack
 
     def __setattr__(self, key:str, val:Any):
         if hasattr(self, '_attrs') and key in self._attrs:
+            val = str(val)
             if key in self._readonly_attrs: assert not hasattr(self, key), f"{self.__dict__}. \n\n {key}"
             elif key in self._dir_attrs: Maester.create_folder(path(type(self).root, val), exists_ok=self.exists_ok)
             elif key in self._append_attrs: Maester.append_file(path(type(self).root, key), val)
-            elif key in self._write_attrs: Maester.write_file(path(type(self).root, key), val)
+            else: Maester.write_file(path(type(self).root, key), val)
             if sys.getsizeof(val) < self.mem_th: super().__setattr__(key, val)
             return
         super().__setattr__(key, val)
@@ -36,12 +37,11 @@ class Entry:
             if data: return data
         return _super()
 
-    def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, is_dir:bool=False, \
-                write:bool=False, type:Optional[str]=None, exists_ok:bool=True) -> Any:
+    def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, \
+                is_dir:bool=False, type:Optional[str]=None, exists_ok:bool=True) -> Any:
         self._attrs.add(key)
         if append: self._append_attrs.add(key)
         if is_dir: self._dir_attrs.add(key)
-        if write: self._write_attrs.add(key)
         if readonly: self._readonly_attrs.add(key)
         exists_ok_prev, self.exists_ok = self.exists_ok, exists_ok
         setattr(self, key, val)
