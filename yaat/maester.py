@@ -41,8 +41,8 @@ class Entry:
 
     def set_error(self, errm:Optional[str]): pass # TODO
     def to_json(self) -> str: pass # TODO
+    def from_csv(self, paths:str) -> List[DataFrame]: pass # TODO return pandas.read_csv(path)
 
-    def from_csv(self, paths:str) -> List[DataFrame]: return pandas.read_csv(path)
     @staticmethod
     def to_pddf(paths: List[str]): pass # TODO
 
@@ -85,9 +85,6 @@ class _Maester:
         if self.dbx: pass # TODO
         if self.local:
             with open(path(self.local, fp), 'a') as f: f.writelines([data])
-
-    # TODO
-    def clean(self, path:str): pass
 
     # TODO - rest of maester...
 Maester = _Maester() # TODO env vars
