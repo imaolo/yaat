@@ -35,7 +35,7 @@ class Entry:
             return self._super_getattr(key)
         assert key in self._attrs
         if key not in self.__dict__:
-            if data:= Maester.get_file(path(Maester.root, type(self).root, key)):
+            if data:=Maester.get_file(path(Maester.root, type(self).root, key)):
                 return data
         return self._super_getattr(key)
 
