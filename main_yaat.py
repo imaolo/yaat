@@ -1,5 +1,22 @@
-# from dropbox import Dropbox
-import argparse, torch #, uuid, os, numpy as np
+
+import argparse, torch, dropbox #, uuid, os, numpy as np
+
+
+# codecodedbx = dropbox.Dropbox('YOUR_ACCESS_TOKEN')
+
+
+# def get_tickers():
+#     addext = lambda ext: 'data/tickers.'+ext
+#     anyexist = lambda *exts: any(os.path.isfile(addext(ext)) for ext in exts)
+#     if not os.path.isdir('data'): os.makedirs('data')
+#     if not anyexist('pt', 'csv', 'zip'): gdown.download('https://drive.google.com/uc?id=11Jt2PpKcKZLaifZXjlCAVpSqdh4VG8Vt', addext('zip'), quiet=False) 
+#     if not anyexist('pt', 'csv'): runcmd(f"unzip {addext('zip')}")
+#     if anyexist('pt'): tickers = torch.load(addext('pt'))
+#     else:
+#         df = pandas.read_csv(addext('csv'))
+#         tickers = {sym: torch.tensor(df[df['symbol'] == sym]['last'].to_numpy(), dtype=torch.float32) for sym in df['symbol'].unique()}
+#         torch.save(tickers, addext('pt'))
+#     return tickers
 
 class ArgParser:
     main_parser = argparse.ArgumentParser(description='[YAAT] Yet Another Automated Trader')
@@ -35,9 +52,10 @@ class ArgParser:
         # these arguments are shared by all sub commands
 
         # env
-        self.informer_parser.add_argument('--root_path', type=str, default='./data', help='root path of the data file')
+        self.informer_parser.add_argument('--root_path', type=str, default='data', help='root path of the data file')
         self.informer_parser.add_argument('--data_path', type=str, default='tickers.csv', help='data file')
         self.informer_parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
+        self.informer_parser.add_argument('--dbx', type=str, default=None, help='drop box key if remote data')
 
         # define model
         self.informer_parser.add_argument('--features', type=str, default='M', help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
@@ -96,6 +114,14 @@ class ArgParser:
     def addTraderArgs(self): pass
 
 args = ArgParser.parseArgs()
+
+if args.cmd == 'informer':
+    # download the data
+    if args.dbx:
+        
+    print(args.dbx)
+
+elif args.cmd == 'trader': pass
 
 # TODO
 # if specified, startup, connect, dispatch all commands to gpu instance
