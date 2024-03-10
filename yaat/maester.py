@@ -10,9 +10,10 @@ class Entry:
     root:str = 'entries'
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
 
-    def __init__(self):
+    def __init__(self, name):
         Maester.create_folder(self.root)
         self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs, self._write_attrs = (set() for _ in range(5))
+        self.name, self.status = name, self.Status.created
         self.exists_ok = True # hack
 
     def __setattr__(self, key:str, val:Any):
@@ -47,36 +48,25 @@ class Entry:
         self.exists_ok = exists_ok_prev
         return getattr(self, key)
 
-    def to_json(self) -> str: pass # TODO
-    def from_csv(self, paths:str) -> List[DataFrame]: pass # TODO return pandas.read_csv(path)
-
-    def set_error(self, errm:Optional[str]): raise NotImplementedError("override this")
-
-    @staticmethod
-    def to_pddf(paths: List[str]): pass # TODO
-
-    @classmethod
-    def from_json(cls, jsond:str) -> 'Entry': return cls(**json.loads(jsond))
+    def set_error(self, errm:Optional[str]):
+        self.status = self.Status.error
+        Maester.write_file(path(self.root, self.name), errm)
 
 class ModelEntry(Entry):
     root:str = 'models'
     def __init__(self, name:str, args:Dict[str, str | int], status:Entry.Status = Entry.Status.created, weights: Optional[Any]=None):
-        super().__init__()
+        super().__init__(name)
         self.name = self.regattr('name', name, readonly=True, is_dir=True)
         self.args = self.regattr('args', args, readonly=True, type='json')
         self.status = self.regattr('status', status, append=True, type='text')
         self.weights = self.regattr('weights', weights, write=True)
 
-    def set_error(self, errm:Optional[str]): pass # TODO
-
 class DataEntry(Entry):
     root:str = 'data_entries'
     def __init__(self, name:str, data:Any):
-        super().__init__()
+        super().__init__(name)
         self.name = self.regattr('name', name, readonly=True, is_dir=True)
         self.data = self.regattr('data', data, readonly=True, is_data=True, type='csv')
-
-    def set_error(self, errm:Optional[str]): pass # TODO
 
 class _Maester:
     def __init__(self, dbx:Optional[Dropbox]=None, local:str='data'):

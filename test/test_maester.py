@@ -3,8 +3,11 @@ from yaat.util import path
 import unittest, os
 
 class TestEntry(unittest.TestCase):
+    test_num:int=0
 
-    def setUp(self): self.e = Entry()
+    def setUp(self):
+        self.e = Entry("test"+str(self.test_num))
+        self.test_num+=1
     def tearDown(self): del self.e
 
     # helper
@@ -53,9 +56,6 @@ class TestEntry(unittest.TestCase):
     def test_set_error(self): pass # TODO
     def test_to_json(self): pass # TODO
 
-    def test_from_json(self):
-        self.assertSetEqual(Entry.from_json( "{}")._attrs, set())
-
     def test_from_csv(self): pass # TODO
     def test_to_pddf(self): pass # TODO
 
@@ -91,4 +91,9 @@ class TestEntry(unittest.TestCase):
         Entry.mem_threshold = old_thresh
 
     def test_set_error(self):
-        with self.assertRaises(NotImplementedError): self.e.set_error(None)
+        errm = "foo"
+        self.assertEqual(self.e.status, self.e.Status.created)
+        self.e.set_error(errm)
+        self.assertEqual(self.e.status, self.e.Status.error)
+        with open(path(Maester.local, self.e.root, self.e.name), 'r') as f:
+            self.assertEqual(f.read(), errm)
