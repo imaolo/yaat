@@ -2,6 +2,8 @@ from yaat.maester import Entry, Maester
 from yaat.util import path, runcmd
 import unittest, os
 
+os.environ['LOCDIR'] = 'twork'
+
 class TestEntry(unittest.TestCase):
     test_num:int=0
 
