@@ -1,12 +1,13 @@
-import subprocess, pprint, select
+from dotenv import load_dotenv
+from typing import Any
+import subprocess, pprint, select, os
 
-def path(*fp): return '/'.join(fp)
+load_dotenv()
 
-def myprint(header, obj):
-    print(f"{'='*15} {header} {'='*15}")
-    pprint.pprint(obj)
-
-def runcmd(cmd):
+def path(*fp:str) -> str: return '/'.join(fp)
+def getenv(key:str, default=None, req=True) -> Any: return os.environ[key] if req else os.getenv(key, default)
+def myprint(header:str, obj:Any): print(f"{'='*15} {header} {'='*15}"); pprint.pprint(obj)
+def runcmd(cmd:str):
     def ass(proc): assert proc.returncode is None or proc.returncode == 0, f"Command failed - {cmd} \n\n returncode: {proc.returncode} \n\n stdout: \n {proc.stdout.read()} \n\n stderr: \n{proc.stderr.read()} \n\n"
     print(f"running command: {cmd}")
     proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
@@ -17,8 +18,7 @@ def runcmd(cmd):
         if proc.poll() is not None: break
     ass(proc)
     print(f"command succeeded: {cmd}")
-
-def killproc(proc, proc_name):
+def killproc(proc:Any, proc_name:str):
         print(f"shutting down process: {proc_name}")
         proc.terminate()
         try: proc.wait(timeout=10)
