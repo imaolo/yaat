@@ -84,7 +84,7 @@ class _Maester:
     def append_file(self, fp: str, data:str):
         if self.dbx: pass # TODO
         if self.local:
-            with open(path(self.local, fp), 'a') as f: f.writelines([data])
+            with open(path(self.local, fp), 'a') as f: f.write(data)
 
     # TODO - rest of maester...
 Maester = _Maester() # TODO env vars
