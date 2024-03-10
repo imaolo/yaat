@@ -3,9 +3,10 @@ from typing import List, Any, Dict, Optional
 from enum import Enum, auto
 from dropbox import Dropbox, files
 from pandas import DataFrame
-import json, os
+import json, os, sys
 
 class Entry:
+    mem_threshold: int = 10e6
     root:str = 'entries'
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
 
@@ -20,11 +21,18 @@ class Entry:
             elif key in self._dir_attrs: Maester.create_folder(path(type(self).root, val), exists_ok=self.exists_ok)
             elif key in self._append_attrs: Maester.append_file(path(type(self).root, key), val)
             elif key in self._write_attrs: Maester.write_file(path(type(self).root, key), val)
+            if sys.getsizeof(val) < self.mem_threshold: super().__setattr__(key, val)
+            return
         super().__setattr__(key, val)
 
     def __getattr__(self, key) -> Any:
-        if key not in self.__dict__: raise AttributeError
-        # TODO retrieve
+        if '_attrs' not in self.__dict__ or key not in self.__dict__['_attrs']:
+            if key not in self.__dict__: raise AttributeError
+            return self.__dict__[key]
+        if key not in self.__dict__:
+            data = Maester.get_file(path(type(self).root, key))
+            if data: return data
+            raise AttributeError
         return self.__dict__[key]
 
     def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, is_dir:bool=False, \
@@ -91,5 +99,10 @@ class _Maester:
         if self.local:
             with open(path(self.local, fp), 'w') as f: f.write(data)
 
+    def get_file(self, fp:str) -> str:
+        if self.dbx: pass # TODO
+        if self.local:
+            if not os.path.exists(path(self.local, fp)): return None
+            with open(path(self.local, fp), 'r') as f: return f.read()
     # TODO - rest of maester...
 Maester = _Maester() # TODO env vars

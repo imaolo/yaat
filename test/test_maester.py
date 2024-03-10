@@ -80,3 +80,12 @@ class TestEntry(unittest.TestCase):
         self.e.mydata = data
         with open(path(Maester.local, self.e.root, fn)) as f:
             self.assertEqual(f.read(), data)
+
+    def test_getattr_file(self):
+        old_thresh = Entry.mem_threshold
+        Entry.mem_threshold = 10
+        fn, data = 'mydata', str([str(i) for i in range(11)])
+        self.e.regattr(fn, data, write=True)
+        self.assertEqual(self.e.mydata, data)
+        self.assertTrue(fn not in self.__dict__)
+        Entry.mem_threshold = old_thresh
