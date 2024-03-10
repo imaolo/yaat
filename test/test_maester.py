@@ -18,10 +18,10 @@ class TestEntry(unittest.TestCase):
         cls.rm(Entry.root)
         return super().setUpClass()
 
-    # @classmethod
-    # def tearDownClass(cls) -> None:
-    #     runcmd(f"rm -rf {path(Maester.root, Entry.root)}")
-    #     return super().tearDownClass()
+    @classmethod
+    def tearDownClass(cls) -> None:
+        runcmd(f"rm -rf {path(Maester.root)}")
+        return super().tearDownClass()
 
     def setUp(self, mem_th=Entry.def_mem_threshold):
         self.e = Entry("test"+str(self.test_num), mem_th=mem_th)
@@ -77,14 +77,13 @@ class TestEntry(unittest.TestCase):
         self.e.attr = data
         with open(attr_fp) as f: self.assertEqual(f.read(), data)
 
-    @unittest.skip("to be fixed soon")
     def test_getattr_file(self):
         self.tearDown()
         self.setUp(mem_th=10)
-        fn, data = 'mydata', str([str(i) for i in range(11)])
-        self.e.regattr(fn, data)
-        self.assertEqual(self.e.mydata, data)
-        self.assertTrue(fn not in self.__dict__)
+        self.rm(attr_fp:=path(self.root, attr:='attr'))
+        self.e.regattr(attr, data:='12234')
+        self.assertEqual(self.e.attr, data)
+        self.assertTrue(attr not in self.__dict__)
 
     @unittest.skip("need Entry attributes")
     def test_set_error(self):
