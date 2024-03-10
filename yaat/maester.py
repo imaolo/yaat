@@ -89,4 +89,4 @@ class _Maester:
         if not os.path.exists(path(self.local, fp)): return None
         with open(path(self.local, fp), 'r') as f: return f.read()
     # TODO - rest of maester...
-Maester = _Maester(getenv("LOCDIR", "maester", req=False)) # TODO env vars
+Maester = _Maester(getenv('LOCDIR', "data", req=False)) # TODO env vars
