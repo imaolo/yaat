@@ -3,26 +3,26 @@ from typing import List, Any, Dict, Optional
 from enum import Enum, auto
 from dropbox import Dropbox, files
 from pandas import DataFrame
-import json, os, sys
+import os, sys
 
 class Entry:
-    mem_threshold: int = 10e6
+    def_mem_threshold:int = 10e6
     root:str = 'entries'
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
 
-    def __init__(self, name):
+    def __init__(self, name, mem_th:int=def_mem_threshold):
         Maester.create_folder(self.root)
         self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs, self._write_attrs = (set() for _ in range(5))
-        self.name, self.status = name, self.Status.created
+        self.name, self.status, self.mem_th = name, self.Status.created, mem_th
         self.exists_ok = True # hack
 
     def __setattr__(self, key:str, val:Any):
         if hasattr(self, '_attrs') and key in self._attrs:
-            if key in self._readonly_attrs: assert not hasattr(self, key), key
+            if key in self._readonly_attrs: assert not hasattr(self, key), f"{self.__dict__}. \n\n {key}"
             elif key in self._dir_attrs: Maester.create_folder(path(type(self).root, val), exists_ok=self.exists_ok)
             elif key in self._append_attrs: Maester.append_file(path(type(self).root, key), val)
             elif key in self._write_attrs: Maester.write_file(path(type(self).root, key), val)
-            if sys.getsizeof(val) < self.mem_threshold: super().__setattr__(key, val)
+            if sys.getsizeof(val) < self.mem_th: super().__setattr__(key, val)
             return
         super().__setattr__(key, val)
 
