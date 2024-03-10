@@ -6,20 +6,19 @@ from pandas import DataFrame
 import json, os, pandas
 
 class Entry:
-    models_dir:str = 'models'
-    data_dir:str = 'data'
-
+    root:str = 'entries'
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
 
     def __init__(self):
+        Maester.create_folder(self.root)
         self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs, self._data_attrs = (set() for _ in range(5))
         self.exists_ok = True # hack
 
     def __setattr__(self, key:str, val:Any):
         if hasattr(self, '_attrs') and key in self._attrs:
             if key in self._readonly_attrs: assert not hasattr(self, key), key
-            elif key in self._dir_attrs: Maester.create_folder(val, exists_ok=self.exists_ok)
-            elif key in self._append_attrs: pass # TODO append
+            elif key in self._dir_attrs: Maester.create_folder(path(type(self).root, val), exists_ok=self.exists_ok)
+            elif key in self._append_attrs: pass #  TODO Maester.append_file(path(type(self).root, key), val)
             elif key in self._data_attrs: pass # TODO set
         super().__setattr__(key, val)
 
@@ -50,16 +49,18 @@ class Entry:
     def from_json(cls, jsond:str) -> 'Entry': return cls(**json.loads(jsond))
 
 class ModelEntry(Entry):
+    root:str = 'models'
     def __init__(self, name:str, args:Dict[str, str | int], status:Entry.Status = Entry.Status.created, weights: Optional[Any]=None):
-        super().__init__(self)
+        super().__init__()
         self.regattr('name', name, readonly=True, is_dir=True)
         self.regattr('args', args, readonly=True, type='json')
         self.regattr('status', status, append=True, type='text')
         self.regattr('weights', weights, is_data=True)
 
 class DataEntry(Entry):
+    root:str = 'data'
     def __init__(self, name:str, data:Any):
-        super().__init__(self)
+        super().__init__()
         self.regattr('name', name, readonly=True, is_dir=True)
         self.regattr('data', data, readonly=True, is_data=True, type='csv')
 
@@ -67,10 +68,10 @@ class _Maester:
     def __init__(self, dbx:Optional[Dropbox]=None, local:str='data'):
         assert dbx or local
         self.dbx, self.local = dbx, local
-        self.create_folder(Entry.models_dir)
-        self.create_folder(Entry.data_dir)
+        self.create_folder(ModelEntry.root)
+        self.create_folder(DataEntry.root)
 
-    def create_folder(self, fp:str, exists_ok:bool=True):
+    def create_folder(self, fp: str, exists_ok:bool=True):
         def _create_folder(call, arg, err):
             try: call(arg)
             except err as e:
@@ -79,7 +80,11 @@ class _Maester:
         if self.dbx: _create_folder(self.dbx.files_create_folder_v2, fp, files.CreateFolderError)
         if self.local: _create_folder(os.mkdir, path(self.local, fp), FileExistsError)
 
-    def append_file(self): pass # TODO
+    # TODO
+    # def append_file(self, fp: str, data:str):
+    #     if self.dbx: pass # TODO
+    #     if self.local:
+    #         with open(path(self.local, fp), 'a') as f: f.write(data)
 
     # TODO
     def clean(self, path:str): pass
