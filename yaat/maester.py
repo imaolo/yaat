@@ -58,7 +58,7 @@ class ModelEntry(Entry):
         self.regattr('weights', weights)
 
 class DataEntry(Entry):
-    root:str = 'data_entries'
+    root:str = 'data'
     def __init__(self, name:str, data:Any, status:Entry.Status=Entry.Status.created):
         super().__init__(name, status)
         self.regattr('data', data, readonly=True, is_data=True, type='csv')
