@@ -1,8 +1,10 @@
 import unittest, os
+from yaat.util import path, runcmd
+runcmd("rm -rf twork")
 os.environ['ROOT'] = 'twork'
 
-from yaat.maester import Entry, Maester
-from yaat.util import path, runcmd
+# import after env set
+from yaat.maester import Maester, Entry, ModelEntry
 
 class TestEntry(unittest.TestCase):
     test_num:int=0
@@ -12,16 +14,6 @@ class TestEntry(unittest.TestCase):
     def rm(p:str):
         if os.path.isdir(p): runcmd(f"rm -rf {p}")
         elif os.path.isfile(p): os.remove(p)
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.rm(Entry.root)
-        return super().setUpClass()
-
-    @classmethod
-    def tearDownClass(cls) -> None:
-        runcmd(f"rm -rf {path(Maester.root)}")
-        return super().tearDownClass()
 
     def setUp(self, mem_th=Entry.def_mem_threshold):
         self.e = Entry("test"+str(self.test_num), mem_th=mem_th)
@@ -92,3 +84,14 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(self.e.status, self.e.Status.error.name)
         with open(path(Maester.root, self.e.root, self.e.name+"_error"), 'r') as f:
             self.assertEqual(f.read(), errm)
+
+class TestModelEntry(unittest.TestCase):
+    test_num:int=0
+    root = path(Maester.root, ModelEntry.root)
+
+    def setUp(self, mem_th=Entry.def_mem_threshold):
+        self.me = ModelEntry("model_test"+str(self.test_num), {'arg':1})
+        self.test_num+=1
+    def tearDown(self): del self.me
+
+    def test_model_entry_simple(self): pass
