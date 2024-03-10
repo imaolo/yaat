@@ -11,7 +11,7 @@ class Entry:
 
     def __init__(self):
         Maester.create_folder(self.root)
-        self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs, self._data_attrs = (set() for _ in range(5))
+        self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs, self._write_attrs = (set() for _ in range(5))
         self.exists_ok = True # hack
 
     def __setattr__(self, key:str, val:Any):
@@ -19,7 +19,7 @@ class Entry:
             if key in self._readonly_attrs: assert not hasattr(self, key), key
             elif key in self._dir_attrs: Maester.create_folder(path(type(self).root, val), exists_ok=self.exists_ok)
             elif key in self._append_attrs: Maester.append_file(path(type(self).root, key), val)
-            elif key in self._data_attrs: pass # TODO set
+            elif key in self._write_attrs: Maester.write_file(path(type(self).root, key), val)
         super().__setattr__(key, val)
 
     def __getattr__(self, key) -> Any:
@@ -28,11 +28,11 @@ class Entry:
         return self.__dict__[key]
 
     def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, is_dir:bool=False, \
-                is_data:bool=False, type:Optional[str]=None, exists_ok:bool=True) -> Any:
+                write:bool=False, type:Optional[str]=None, exists_ok:bool=True) -> Any:
         self._attrs.add(key)
         if append: self._append_attrs.add(key)
         if is_dir: self._dir_attrs.add(key)
-        if is_data: self._data_attrs.add(key)
+        if write: self._write_attrs.add(key)
         if readonly: self._readonly_attrs.add(key)
         exists_ok_prev, self.exists_ok = self.exists_ok, exists_ok
         setattr(self, key, val)
@@ -56,7 +56,7 @@ class ModelEntry(Entry):
         self.name = self.regattr('name', name, readonly=True, is_dir=True)
         self.args = self.regattr('args', args, readonly=True, type='json')
         self.status = self.regattr('status', status, append=True, type='text')
-        self.weights = self.regattr('weights', weights, is_data=True)
+        self.weights = self.regattr('weights', weights, write=True)
 
 class DataEntry(Entry):
     root:str = 'data_entries'
@@ -85,6 +85,11 @@ class _Maester:
         if self.dbx: pass # TODO
         if self.local:
             with open(path(self.local, fp), 'a') as f: f.write(data)
+
+    def write_file(self, fp:str, data:str):
+        if self.dbx: pass # TODO
+        if self.local:
+            with open(path(self.local, fp), 'w') as f: f.write(data)
 
     # TODO - rest of maester...
 Maester = _Maester() # TODO env vars

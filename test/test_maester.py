@@ -66,14 +66,17 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(self.e.mydata, data)
         with open(path(Maester.local, self.e.root, fn)) as f:
             self.assertEqual(f.read(), data)
+        self.e.mydata = data
+        with open(path(Maester.local, self.e.root, fn)) as f:
+            self.assertEqual(f.read(), data+data)
 
-    def test_append_file2(self):
+    def test_write_file1(self):
         fn, data = 'mydata', '12234'
         self.rm(fn)
-        self.e.regattr(fn, data, append=True)
+        self.e.regattr(fn, data, write=True)
         self.assertEqual(self.e.mydata, data)
         with open(path(Maester.local, self.e.root, fn)) as f:
             self.assertEqual(f.read(), data)
         self.e.mydata = data
         with open(path(Maester.local, self.e.root, fn)) as f:
-            self.assertEqual(f.read(), data+data)
+            self.assertEqual(f.read(), data)
