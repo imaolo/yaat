@@ -4,7 +4,7 @@ runcmd("rm -rf twork")
 os.environ['ROOT'] = 'twork'
 
 # import after env set
-from yaat.maester import Maester, Entry, ModelEntry
+from yaat.maester import Maester, Entry, ModelEntry, DataEntry
 
 class TestEntry(unittest.TestCase):
     test_num:int=0
@@ -86,12 +86,7 @@ class TestEntry(unittest.TestCase):
             self.assertEqual(f.read(), errm)
 
 class TestModelEntry(unittest.TestCase):
-    test_num:int=0
-    root = path(Maester.root, ModelEntry.root)
+    def test_model_entry_simple(self): ModelEntry("model_test", {'arg':1})
 
-    def setUp(self, mem_th=Entry.def_mem_threshold):
-        self.me = ModelEntry("model_test"+str(self.test_num), {'arg':1})
-        self.test_num+=1
-    def tearDown(self): del self.me
-
-    def test_model_entry_simple(self): pass
+class TestDataEntry(unittest.TestCase):
+    def test_data_entry_simple(self): DataEntry("model_test", {'arg':1})

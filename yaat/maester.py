@@ -61,7 +61,7 @@ class DataEntry(Entry):
     root:str = 'data'
     def __init__(self, name:str, data:Any, status:Entry.Status=Entry.Status.created):
         super().__init__(name, status)
-        self.regattr('data', data, readonly=True, is_data=True, type='csv')
+        self.regattr('data', data, readonly=True, type='csv')
 
 class _Maester:
     def __init__(self, root:str='data'):
