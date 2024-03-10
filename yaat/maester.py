@@ -20,7 +20,7 @@ class Entry:
             val = str(val)
             p = path(Maester.root, type(self).root)
             if key in self._readonly_attrs: assert not hasattr(self, key), f"{self.__dict__}. \n\n {key}"
-            elif key in self._dir_attrs: Maester.create_folder(path(p, val), exists_ok=self.exists_ok)
+            elif key in self._dir_attrs: Maester.create_folder(path(type(self).root, val), exists_ok=self.exists_ok)
             elif key in self._append_attrs: Maester.append_file(path(p, key), val)
             else: Maester.write_file(path(p, key), val)
             if sys.getsizeof(val) < self.mem_th: super().__setattr__(key, val)
@@ -66,13 +66,13 @@ class DataEntry(Entry):
 class _Maester:
     def __init__(self, root:str='data'):
         self.root = root
-        self.create_folder(p:=self.root)
-        self.create_folder(path(p, Entry.root))
-        self.create_folder(path(p, ModelEntry.root))
-        self.create_folder(path(p, DataEntry.root))
+        if not os.path.isdir(root): os.mkdir(root)
+        self.create_folder(Entry.root)
+        self.create_folder(ModelEntry.root)
+        self.create_folder(DataEntry.root)
 
     def create_folder(self, fp: str, exists_ok:bool=True):
-        if os.path.isdir(fp) and exists_ok: return
+        if os.path.isdir(fp:=path(self.root, fp)) and exists_ok: return
         os.mkdir(fp)
 
     def append_file(self, fp: str, data:str):
