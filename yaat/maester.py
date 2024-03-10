@@ -37,7 +37,7 @@ class Entry:
         return _super_getattr()
 
     def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, \
-                is_dir:bool=False, type:Optional[str]=None, exists_ok:bool=True) -> Any:
+                is_dir:bool=False, type:Optional[str]=None, exists_ok:bool=True):
         self._attrs.add(key)
         if append: self._append_attrs.add(key)
         if is_dir: self._dir_attrs.add(key)
