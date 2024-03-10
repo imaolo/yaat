@@ -47,9 +47,10 @@ class Entry:
         self.exists_ok = exists_ok_prev
         return getattr(self, key)
 
-    def set_error(self, errm:Optional[str]): pass # TODO
     def to_json(self) -> str: pass # TODO
     def from_csv(self, paths:str) -> List[DataFrame]: pass # TODO return pandas.read_csv(path)
+
+    def set_error(self, errm:Optional[str]): raise NotImplementedError("override this")
 
     @staticmethod
     def to_pddf(paths: List[str]): pass # TODO
@@ -66,12 +67,16 @@ class ModelEntry(Entry):
         self.status = self.regattr('status', status, append=True, type='text')
         self.weights = self.regattr('weights', weights, write=True)
 
+    def set_error(self, errm:Optional[str]): pass # TODO
+
 class DataEntry(Entry):
     root:str = 'data_entries'
     def __init__(self, name:str, data:Any):
         super().__init__()
         self.name = self.regattr('name', name, readonly=True, is_dir=True)
         self.data = self.regattr('data', data, readonly=True, is_data=True, type='csv')
+
+    def set_error(self, errm:Optional[str]): pass # TODO
 
 class _Maester:
     def __init__(self, dbx:Optional[Dropbox]=None, local:str='data'):

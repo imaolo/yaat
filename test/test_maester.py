@@ -89,3 +89,6 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(self.e.mydata, data)
         self.assertTrue(fn not in self.__dict__)
         Entry.mem_threshold = old_thresh
+
+    def test_set_error(self):
+        with self.assertRaises(NotImplementedError): self.e.set_error(None)
