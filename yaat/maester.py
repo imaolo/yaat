@@ -50,7 +50,7 @@ class Entry:
 
     def set_error(self, errm:Optional[str]):
         self.status = self.Status.error
-        Maester.write_file(path(self.root, self.name), errm)
+        Maester.write_file(path(self.root, self.name+"_error"), errm)
 
 class ModelEntry(Entry):
     root:str = 'models'

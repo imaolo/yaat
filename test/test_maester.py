@@ -95,5 +95,5 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(self.e.status, self.e.Status.created)
         self.e.set_error(errm)
         self.assertEqual(self.e.status, self.e.Status.error)
-        with open(path(Maester.local, self.e.root, self.e.name), 'r') as f:
+        with open(path(Maester.local, self.e.root, self.e.name+"_error"), 'r') as f:
             self.assertEqual(f.read(), errm)
