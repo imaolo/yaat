@@ -1,7 +1,6 @@
 from yaat.util import path, getenv
-from typing import List, Any, Dict, Optional
+from typing import Any, Dict, Optional
 from enum import Enum, auto
-from dropbox import Dropbox, files
 import os, sys
 
 class Entry:
@@ -10,7 +9,6 @@ class Entry:
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
 
     def __init__(self, name, mem_th:int=def_mem_threshold):
-        Maester.create_folder(self.root)
         self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs = (set() for _ in range(4))
         self.name, self.status, self.mem_th = name, self.Status.created, mem_th
         self.exists_ok = True # hack
@@ -18,23 +16,26 @@ class Entry:
     def __setattr__(self, key:str, val:Any):
         if hasattr(self, '_attrs') and key in self._attrs:
             val = str(val)
+            p = path(Maester.root, type(self).root)
             if key in self._readonly_attrs: assert not hasattr(self, key), f"{self.__dict__}. \n\n {key}"
-            elif key in self._dir_attrs: Maester.create_folder(path(type(self).root, val), exists_ok=self.exists_ok)
-            elif key in self._append_attrs: Maester.append_file(path(type(self).root, key), val)
-            else: Maester.write_file(path(type(self).root, key), val)
+            elif key in self._dir_attrs: Maester.create_folder(path(p, val), exists_ok=self.exists_ok)
+            elif key in self._append_attrs: Maester.append_file(path(p, key), val)
+            else: Maester.write_file(path(p, key), val)
             if sys.getsizeof(val) < self.mem_th: super().__setattr__(key, val)
             return
         super().__setattr__(key, val)
 
+    def _super_getattr(self, key):
+        if key not in self.__dict__: raise AttributeError
+        return self.__dict__[key]
     def __getattr__(self, key) -> Any:
-        def _super():
-            if key not in self.__dict__: raise AttributeError
-            return self.__dict__[key]
-        if '_attrs' not in self.__dict__ or key not in self.__dict__['_attrs']: return _super()
+        if '_attrs' not in self.__dict__ or key not in self.__dict__['_attrs']:
+            return self._super_getattr(key)
+        assert key in self._attrs
         if key not in self.__dict__:
-            data = Maester.get_file(path(type(self).root, key))
-            if data: return data
-        return _super()
+            if data:= Maester.get_file(path(type(self).root, key)):
+                return data
+        return self._super_getattr(key)
 
     def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, \
                 is_dir:bool=False, type:Optional[str]=None, exists_ok:bool=True) -> Any:
@@ -68,25 +69,25 @@ class DataEntry(Entry):
         self.data = self.regattr('data', data, readonly=True, is_data=True, type='csv')
 
 class _Maester:
-    def __init__(self, local:str='data'):
-        self.local = local
-        self.create_folder(local)
-        self.create_folder(Entry.root)
-        self.create_folder(ModelEntry.root)
-        self.create_folder(DataEntry.root)
+    def __init__(self, root:str='data'):
+        self.root = root
+        self.create_folder(p:=self.root)
+        self.create_folder(path(p, Entry.root))
+        self.create_folder(path(p, ModelEntry.root))
+        self.create_folder(path(p, DataEntry.root))
 
     def create_folder(self, fp: str, exists_ok:bool=True):
-        if os.path.isdir(fp:=path(self.local, fp)) and exists_ok: return
+        if os.path.isdir(fp) and exists_ok: return
         os.mkdir(fp)
 
     def append_file(self, fp: str, data:str):
-        with open(path(self.local, fp), 'a') as f: f.write(data)
+        with open(fp, 'a') as f: f.write(data)
 
     def write_file(self, fp:str, data:str):
-        with open(path(self.local, fp), 'w') as f: f.write(data)
+        with open(fp, 'w') as f: f.write(data)
 
     def get_file(self, fp:str) -> str:
-        if not os.path.exists(path(self.local, fp)): return None
-        with open(path(self.local, fp), 'r') as f: return f.read()
+        if not os.path.exists(fp): return None
+        with open(fp, 'r') as f: return f.read()
     # TODO - rest of maester...
-Maester = _Maester(getenv('LOCDIR', "data", req=False)) # TODO env vars
+Maester = _Maester(getenv('ROOT', "data", req=False))
