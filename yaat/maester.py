@@ -33,7 +33,7 @@ class Entry:
             return self._super_getattr(key)
         assert key in self._attrs
         if key not in self.__dict__:
-            if data:= Maester.get_file(path(type(self).root, key)):
+            if data:= Maester.get_file(path(Maester.root, type(self).root, key)):
                 return data
         return self._super_getattr(key)
 
@@ -86,8 +86,8 @@ class _Maester:
     def write_file(self, fp:str, data:str):
         with open(fp, 'w') as f: f.write(data)
 
-    def get_file(self, fp:str) -> str:
-        if not os.path.exists(fp): return None
+    def get_file(self, fp:str, req=False) -> Optional[str]:
+        if not req and not os.path.isfile(fp): return None
         with open(fp, 'r') as f: return f.read()
     # TODO - rest of maester...
 Maester = _Maester(getenv('ROOT', "data", req=False))
