@@ -53,12 +53,6 @@ class TestEntry(unittest.TestCase):
             self.e.regattr('dir_name', dirnam, is_dir=True, exists_ok=False)
         os.rmdir(path(Maester.local, Entry.root, self.e.dir_name))
 
-    def test_set_error(self): pass # TODO
-    def test_to_json(self): pass # TODO
-
-    def test_from_csv(self): pass # TODO
-    def test_to_pddf(self): pass # TODO
-
     def test_append_file1(self):
         fn, data = 'mydata', '12234'
         self.rm(fn)
