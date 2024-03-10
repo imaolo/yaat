@@ -27,14 +27,14 @@ class Entry:
         super().__setattr__(key, val)
 
     def __getattr__(self, key) -> Any:
-        if '_attrs' not in self.__dict__ or key not in self.__dict__['_attrs']:
+        def _super():
             if key not in self.__dict__: raise AttributeError
             return self.__dict__[key]
+        if '_attrs' not in self.__dict__ or key not in self.__dict__['_attrs']: return _super()
         if key not in self.__dict__:
             data = Maester.get_file(path(type(self).root, key))
             if data: return data
-            raise AttributeError
-        return self.__dict__[key]
+        return _super()
 
     def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, is_dir:bool=False, \
                 write:bool=False, type:Optional[str]=None, exists_ok:bool=True) -> Any:
