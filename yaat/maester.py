@@ -70,7 +70,7 @@ class DataEntry(Entry):
 class _Maester:
     def __init__(self, local:str='data'):
         self.local = local
-        if not os.path.isdir(local): os.mkdir(local)
+        self.create_folder(local)
         self.create_folder(Entry.root)
         self.create_folder(ModelEntry.root)
         self.create_folder(DataEntry.root)
