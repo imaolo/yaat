@@ -6,7 +6,6 @@ from pandas import DataFrame
 import json, os, pandas
 
 class Entry:
-    local_root_dir:str = 'data'
     models_dir:str = 'models'
     data_dir:str = 'data'
 
@@ -65,7 +64,7 @@ class DataEntry(Entry):
         self.regattr('data', data, readonly=True, is_data=True, type='csv')
 
 class _Maester:
-    def __init__(self, dbx:Optional[Dropbox]=None, local:bool=True):
+    def __init__(self, dbx:Optional[Dropbox]=None, local:str='data'):
         assert dbx or local
         self.dbx, self.local = dbx, local
         self.create_folder(Entry.models_dir)
@@ -78,10 +77,12 @@ class _Maester:
                 if exists_ok: return
                 raise e
         if self.dbx: _create_folder(self.dbx.files_create_folder_v2, fp, files.CreateFolderError)
-        if self.local: _create_folder(os.mkdir, path(Entry.local_root_dir, fp), FileExistsError)
+        if self.local: _create_folder(os.mkdir, path(self.local, fp), FileExistsError)
+
+    def append_file(self): pass # TODO
 
     # TODO
     def clean(self, path:str): pass
 
     # TODO - rest of maester...
-Maester = _Maester()
+Maester = _Maester() # TODO env vars

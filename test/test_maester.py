@@ -4,8 +4,6 @@ import unittest, os
 
 class TestEntry(unittest.TestCase):
 
-    root = Entry.local_root_dir
-
     def setUp(self): self.e = Entry()
     def tearDown(self): del self.e
 
@@ -28,25 +26,25 @@ class TestEntry(unittest.TestCase):
 
     def test_dir_regattr1(self):
         self.e.regattr('dir_name', 'trash_dir', is_dir=True, exists_ok=True)
-        self.assertTrue(self.e.dir_name in os.listdir(self.root))
-        os.rmdir(path(self.root, self.e.dir_name))
+        self.assertTrue(self.e.dir_name in os.listdir(Maester.local))
+        os.rmdir(path(Maester.local, self.e.dir_name))
 
     def test_dir_regattr2(self):
         dirnam = 'trash_dir'
-        try: os.rmdir(path(self.root, dirnam))
+        try: os.rmdir(path(Maester.local, dirnam))
         except FileNotFoundError: pass
         self.e.regattr('dir_name', dirnam, is_dir=True, exists_ok=False)
-        self.assertTrue(self.e.dir_name in os.listdir(self.root))
-        os.rmdir(path(self.root, self.e.dir_name))
+        self.assertTrue(self.e.dir_name in os.listdir(Maester.local))
+        os.rmdir(path(Maester.local, self.e.dir_name))
 
     def test_dir_regattr2(self):
         dirnam = 'trash_dir'
-        try: os.rmdir(path(self.root, dirnam))
+        try: os.rmdir(path(Maester.local, dirnam))
         except FileNotFoundError: pass
         self.e.regattr('dir_name', dirnam, is_dir=True, exists_ok=True)
         with self.assertRaises(FileExistsError):
             self.e.regattr('dir_name', dirnam, is_dir=True, exists_ok=False)
-        os.rmdir(path(self.root, self.e.dir_name))
+        os.rmdir(path(Maester.local, self.e.dir_name))
 
     def test_set_error(self): pass # TODO
     def test_to_json(self): pass # TODO
