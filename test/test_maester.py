@@ -10,6 +10,11 @@ class TestEntry(unittest.TestCase):
         runcmd(f"rm -rf {path(Maester.local, Entry.root)}")
         return super().setUpClass()
 
+    @classmethod
+    def tearDownClass(cls) -> None:
+        runcmd(f"rm -rf {path(Maester.local, Entry.root)}")
+        return super().tearDownClass()
+
     def setUp(self, mem_th=Entry.def_mem_threshold):
         self.e = Entry("test"+str(self.test_num), mem_th=mem_th)
         self.test_num+=1
