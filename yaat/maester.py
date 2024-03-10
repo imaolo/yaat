@@ -3,7 +3,7 @@ from typing import List, Any, Dict, Optional
 from enum import Enum, auto
 from dropbox import Dropbox, files
 from pandas import DataFrame
-import json, os, pandas
+import json, os
 
 class Entry:
     root:str = 'entries'
