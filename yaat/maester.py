@@ -13,7 +13,7 @@ class Entry:
         self.mem_th = mem_th
         self.exists_ok = True # hack
         self.regattr('name', name, is_dir=True)
-        self.regattr('status', status.name, append=True, type='text')
+        self.regattr('status', status.name, append=True)
 
     def __setattr__(self, key:str, val:Any):
         if hasattr(self, '_attrs') and key in self._attrs:
@@ -37,7 +37,7 @@ class Entry:
         return _super_getattr()
 
     def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, \
-                is_dir:bool=False, type:Optional[str]=None, exists_ok:bool=True):
+                is_dir:bool=False, exists_ok:bool=True):
         self._attrs.add(key)
         if append: self._append_attrs.add(key)
         if is_dir: self._dir_attrs.add(key)
@@ -54,14 +54,14 @@ class ModelEntry(Entry):
     root:str = 'models'
     def __init__(self, name:str, args:Dict[str, str | int], status:Entry.Status=Entry.Status.created, weights: Optional[Any]=None):
         super().__init__(name, status)
-        self.regattr('args', args, readonly=True, type='json')
+        self.regattr('args', args, readonly=True)
         self.regattr('weights', weights)
 
 class DataEntry(Entry):
     root:str = 'data'
     def __init__(self, name:str, data:Any, status:Entry.Status=Entry.Status.created):
         super().__init__(name, status)
-        self.regattr('data', data, readonly=True, type='csv')
+        self.regattr('data', data, readonly=True)
 
 class _Maester:
     def __init__(self, root:str='data'):
