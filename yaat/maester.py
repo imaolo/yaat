@@ -8,10 +8,12 @@ class Entry:
     root:str = 'entries'
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
 
-    def __init__(self, name, mem_th:int=def_mem_threshold):
+    def __init__(self, name:str, status:Status=Status.created, mem_th:int=def_mem_threshold):
         self._attrs, self._readonly_attrs, self._dir_attrs, self._append_attrs = (set() for _ in range(4))
-        self.name, self.status, self.mem_th = name, self.Status.created, mem_th
+        self.mem_th = mem_th
         self.exists_ok = True # hack
+        self.name = self.regattr('name', name, is_dir=True)
+        self.status = self.regattr('status', status.name, append=True, type='text')
 
     def __setattr__(self, key:str, val:Any):
         if hasattr(self, '_attrs') and key in self._attrs:
@@ -49,23 +51,20 @@ class Entry:
         return getattr(self, key)
 
     def set_error(self, errm:Optional[str]):
-        self.status = self.Status.error
-        Maester.write_file(path(self.root, self.name+"_error"), errm)
+        self.status = self.Status.error.name
+        Maester.write_file(path(Maester.root, self.root, self.name+"_error"), errm)
 
 class ModelEntry(Entry):
     root:str = 'models'
-    def __init__(self, name:str, args:Dict[str, str | int], status:Entry.Status = Entry.Status.created, weights: Optional[Any]=None):
-        super().__init__(name)
-        self.name = self.regattr('name', name, readonly=True, is_dir=True)
+    def __init__(self, name:str, args:Dict[str, str | int], status:Entry.Status=Entry.Status.created, weights: Optional[Any]=None):
+        super().__init__(name, status)
         self.args = self.regattr('args', args, readonly=True, type='json')
-        self.status = self.regattr('status', status, append=True, type='text')
         self.weights = self.regattr('weights', weights, write=True)
 
 class DataEntry(Entry):
     root:str = 'data_entries'
-    def __init__(self, name:str, data:Any):
-        super().__init__(name)
-        self.name = self.regattr('name', name, readonly=True, is_dir=True)
+    def __init__(self, name:str, data:Any, status:Entry.Status=Entry.Status.created):
+        super().__init__(name, status)
         self.data = self.regattr('data', data, readonly=True, is_data=True, type='csv')
 
 class _Maester:

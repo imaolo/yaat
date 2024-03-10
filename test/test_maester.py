@@ -1,6 +1,7 @@
 import unittest, os
 os.environ['ROOT'] = 'twork'
 
+
 from yaat.maester import Entry, Maester
 from yaat.util import path, runcmd
 
@@ -79,17 +80,16 @@ class TestEntry(unittest.TestCase):
 
     def test_getattr_file(self):
         self.tearDown()
-        self.setUp(mem_th=10)
+        self.setUp(mem_th=100)
         self.rm(attr_fp:=path(self.root, attr:='attr'))
-        self.e.regattr(attr, data:='12234')
+        self.e.regattr(attr, data:=str([str(i) for i in range(500)]))
         self.assertEqual(self.e.attr, data)
         self.assertTrue(attr not in self.__dict__)
 
-    @unittest.skip("need Entry attributes")
     def test_set_error(self):
         errm = "foo"
-        self.assertEqual(self.e.status, self.e.Status.created)
+        self.assertEqual(self.e.status, self.e.Status.created.name)
         self.e.set_error(errm)
-        self.assertEqual(self.e.status, self.e.Status.error)
+        self.assertEqual(self.e.status, self.e.Status.error.name)
         with open(path(Maester.root, self.e.root, self.e.name+"_error"), 'r') as f:
             self.assertEqual(f.read(), errm)
