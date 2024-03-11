@@ -5,8 +5,12 @@ import subprocess, pprint, select, os
 load_dotenv()
 
 def path(*fp:str) -> str: return '/'.join(fp)
-def getenv(key:str, default=None, req=True) -> Any: return os.environ[key] if req else os.getenv(key, default)
+def exists(fp:str): return os.path.isdir(fp) or os.path.isfile(fp)
+def getenv(key:str, default=None) -> Any: return os.getenv(key, default) if default else os.environ[key]
 def myprint(header:str, obj:Any): print(f"{'='*15} {header} {'='*15}"); pprint.pprint(obj)
+def rm(fp:str):
+     if os.path.isdir(fp): runcmd(f"rm -rf {fp}")
+     if os.path.isfile(fp): os.remove(fp)
 def runcmd(cmd:str):
     def ass(proc): assert proc.returncode is None or proc.returncode == 0, f"Command failed - {cmd} \n\n returncode: {proc.returncode} \n\n stdout: \n {proc.stdout.read()} \n\n stderr: \n{proc.stderr.read()} \n\n"
     print(f"running command: {cmd}")
