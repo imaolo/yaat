@@ -3,9 +3,13 @@ from typing import Any, Dict, Optional
 from enum import Enum, auto
 import os, sys
 
+ROOT = getenv('ROOT', "data")
+MEMTH_ENTRY = getenv('MEMTH_ENTRY', 500e6)
+MEMTH_ATTR = MEMTH_ENTRY
+
 class Attribute:
-    def __init__(self, fp:str, data:Optional[Any]=None, mem_th:int=getenv("MEMTH", 10e6), \
-                 readonly:bool=False, append:bool=False, is_dir:bool=False, exist_ok:bool=True) -> None:
+    def __init__(self, fp:str, data:Optional[Any]=None, mem_th:int=MEMTH_ATTR, readonly:bool=False, \
+                 append:bool=False, is_dir:bool=False, exist_ok:bool=True) -> None:
         self.fp, self.mem_th = fp, mem_th
         self.readonly, self.append, self.is_dir, self.exist_ok = readonly, append, is_dir, exist_ok
         self._data = str(data) if data and sys.getsizeof(data) < mem_th else None
