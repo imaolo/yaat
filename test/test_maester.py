@@ -1,5 +1,5 @@
 import unittest, os, sys, random, pickle, time
-from yaat.util import rm, path, exists, getenv, read
+from yaat.util import rm, path, exists, getenv, read, objsz
 from yaat.maester import Attribute
 from typing import Any
 
@@ -42,17 +42,18 @@ class TestAttribute(unittest.TestCase):
         self.assertEqual(read(self.attr.fp), '1432543254325432')
 
     def test_mem_th_not_enough(self):
-        attr = self.create_attr(getid(self), self.data*10, mem_th=sys.getsizeof(self.data))
-        self.assertIsNone(attr._buf, msg=f"{sys.getsizeof(attr._buf)}, {attr._buf}, {attr.mem_th}, {sys.getsizeof(self.data*1000)}")
+        attr = self.create_attr(getid(self), self.data, mem_th=objsz(self.data))
+        self.assertIsNone(attr._buf, msg=f"{objsz(attr._buf)}, {attr._buf}, {attr.mem_th}, {objsz(read(attr.fp))}")
 
     def test_mem_th_enough(self):
-        attr = self.create_attr(getid(self), self.data, mem_th=sys.getsizeof(self.data)*2)
+        attr = self.create_attr(getid(self), self.data, mem_th=objsz(self.data)+1)
         self.assertIsNotNone(attr._buf)
 
     def test_readonly(self):
         attr = self.create_attr(getid(self), self.data, readonly=True)
         self.assertEqual(read(attr.fp), self.data)
-        with self.assertRaises(AssertionError): attr.buf = 1
+        with self.assertRaises(AssertionError): attr.buf = attr.buf
+        with self.assertRaises(AssertionError): attr.buf += attr.buf
 
     def test_append(self):
         self.attr.buf += self.data
