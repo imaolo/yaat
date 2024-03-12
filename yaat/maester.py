@@ -1,6 +1,6 @@
 from yaat.util import getenv, rm, write, read, siblings, leaf, append
-from typing import Any, List, Optional, Type, Callable
-import os, sys
+from typing import Any, Optional, Type, Callable
+import sys
 
 ROOT = getenv('ROOT', "data")
 MEMTH_ENTRY = getenv('MEMTH_ENTRY', 500e6)
