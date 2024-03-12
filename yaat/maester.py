@@ -1,48 +1,74 @@
-from yaat.util import path, getenv, exists, rm
-from typing import Any, Dict, Optional
-from enum import Enum, auto
+from yaat.util import getenv, rm, write, read, siblings, leaf, append
+from typing import Any, List, Optional, Type, Callable
 import os, sys
 
 ROOT = getenv('ROOT', "data")
 MEMTH_ENTRY = getenv('MEMTH_ENTRY', 500e6)
 MEMTH_ATTR = MEMTH_ENTRY
 
+class AttributeBuffer:
+
+    def __set_name__(self, owner:Type['Attribute'], name:str):
+        self.obj, self.pname, self.last_read, self.last_write = None, '_'+name, 0, 0
+        setattr(owner, self.pname, None)
+
+    def __get__(self, obj:Optional['Attribute']=None, objtype=None) -> Any:
+        if not self.obj or obj: self.obj = obj
+        assert self.obj
+
+        assert self.obj.mem_th > 0, obj._buf
+
+        if buf:=getattr(self.obj, self.pname): return buf
+        if not obj: return self.obj.reader(self.obj.fp)
+
+        setattr(self, self.pname, data if sys.getsizeof(data:=self.obj.reader(self.obj.fp)) < self.obj.mem_th else None)
+        return data
+
+    def __set__(self, obj:'Attribute', val:Any):
+        assert not obj.readonly
+        setattr(obj, self.pname, val if sys.getsizeof(val) < obj.mem_th else None)
+        obj.writer(obj.fp, val)
+
+    def __iadd__(self, val:Any):
+        assert self.obj.appender
+        self.obj.appender(self.obj.fp, val)
+        setattr(self.obj, self.pname, self.obj.reader(self.obj.fp))
+        return getattr(self.obj, self.pname)
+
+    def __delete__(self, obj:'Attribute'): rm(obj.fp); del obj._buf
+
 class Attribute:
-    def __init__(self, fp:str, data:Optional[Any]=None, mem_th:int=MEMTH_ATTR, readonly:bool=False, \
-                 append:bool=False, is_dir:bool=False, exist_ok:bool=True) -> None:
-        self.fp, self.mem_th = fp, mem_th
-        self.readonly, self.append, self.is_dir, self.exist_ok = readonly, append, is_dir, exist_ok
-        self._data = str(data) if data and sys.getsizeof(data) < mem_th else None
+    buf: AttributeBuffer = AttributeBuffer()
 
-        if readonly: assert not exists(fp), f"{os.listdir(path(*self.fp.split('/')[:-1]))}, {self.fp}"
-        if is_dir: return os.makedirs(self.fp, exist_ok=exist_ok)
+    def __init__(self, fp:str, data:Any, mem_th:int=MEMTH_ATTR, readonly:bool=False, exist_ok:bool=True, \
+                 writer:Callable=write, reader:Callable=read, appender:Optional[Callable]=append) -> None:
+        if readonly: assert not (l:=leaf(fp)) in (s:=siblings(fp)), f"{s}, {l}"
+        self.fp, self.mem_th, self.readonly, self.exist_ok =  fp, mem_th, False, exist_ok
+        self.writer, self.reader, self.appender = writer, reader, appender
 
-        os.makedirs(path(*self.fp.split('/')[:-1]), exist_ok=exist_ok)
-        with open(self.fp, 'a' if append else 'w') as f: f.write(str(data))
+        # write, then read only
+        self.buf, self.readonly = data, readonly
 
-    @property
-    def data(self) -> Any:
-        if self._data: return str(self._data)
-        with open(self.fp, 'r') as f:
-            if sys.getsizeof(data:=f.read()) < self.mem_th: self._data = data
-            return str(data)
-
-    @data.setter
-    def data(self, data: Any):
-        assert not (self.readonly or self.is_dir)
-        with open(self.fp, 'a' if self.append else 'w') as f: f.write(str(data))
-        self._data = str(data) if data and sys.getsizeof(data) < self.mem_th else None
-
-    @data.deleter
-    def data(self): rm(self.fp); self._data = None
-
-    def __getstate__(self): state = self.__dict__.copy(); state['_data'] = None; return state
-    
+    def __getstate__(self): state = self.__dict__.copy(); state['buf'] = None; return state
     def __setstate__(self, state): self.__dict__.update(state); return state
+
+# TODO
+# class Entry:
+#     root:str = 'entries'
+#     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
+#     def __init__(self, fp:str, mem_th:int=MEMTH_ENTRY):
+#         self.dir = Attribute(fp, is_dir=True)
+#         self.status = Attribute(path(fp, 'status'), data=self.Status.created.name , append=True)
+#         self.num_error = 0
+
+#     def set_error(self, errm:str):
+#         self.status.data = self.Status.error.name
+#         self.error = Attribute(path(self.fp, 'error_'+self.num_error), data=errm)
+
 # TODO
 # class Entry:
 #     def_mem_threshold:int = 10e6
-#     root:str = 'entries'
+#     root:str = 'entries's
 #     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
 
 #     def __init__(self, fp:str, mem_th:int=def_mem_threshold):
