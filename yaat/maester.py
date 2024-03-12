@@ -23,12 +23,12 @@ class AttributeBuffer:
         return data
 
     def __set__(self, obj:'Attribute', val:Any):
-        assert not obj.readonly
+        assert not obj.readonly and not obj.appendonly, f"invalid write, try append +=, {obj.readonly=}, {obj.appendonly=}"
         setattr(obj, self.pname, val if objsz(val) < obj.mem_th else None)
         obj.writer(obj.fp, val)
 
     def __iadd__(self, val:Any):
-        assert self.obj.appender
+        assert self.obj.appender and not self.obj.readonly, f"invalid append, {self.obj.appender=}, {self.obj.readonly=}"
         self.obj.appender(self.obj.fp, val)
         setattr(self.obj, self.pname, self.obj.reader(self.obj.fp))
         return getattr(self.obj, self.pname)
@@ -49,17 +49,18 @@ class Attribute:
     def __getstate__(self): state = self.__dict__.copy(); state['buf'] = None; return state
     def __setstate__(self, state): self.__dict__.update(state); return state
 
-class Entry:
-    root:str = 'entries'
-    class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
-    def __init__(self, fp:str, mem_th:int=MEMTH_ENTRY):
-        self.fp = fp; mkdirs(fp, False)
-        self.status = Attribute(path(fp, 'status'), data=self.Status.created.name)
-        self.num_error = 0
+# TODO
+# class Entry:
+#     root:str = 'entries'
+#     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
+#     def __init__(self, fp:str, mem_th:int=MEMTH_ENTRY):
+#         self.fp = fp; mkdirs(fp, False)
+#         self.status = Attribute(path(fp, 'status'), data=self.Status.created.name)
+#         self.num_error = 0
 
-    def set_error(self, errm:str):
-        self.status.data = self.Status.error.name
-        self.error = Attribute(path(self.fp, 'error_'+self.num_error), data=errm)
+#     def set_error(self, errm:str):
+#         self.status.data = self.Status.error.name
+#         self.error = Attribute(path(self.fp, 'error_'+self.num_error), data=errm)
 
 # TODO
 # class Entry:
