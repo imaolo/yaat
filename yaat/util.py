@@ -11,7 +11,7 @@ def myprint(header:str, obj:Any): print(f"{'='*15} {header} {'='*15}"); pprint.p
 def siblings(fp:str) -> List[str]: return os.listdir(path(*fp.split('/')[:-1]))
 def leaf(fp:str) -> str: return fp.split('/')[-1]
 def read(fp:str) -> List[str]:
-    with open(fp, 'r') as f: return f.readlines(fp)
+    with open(fp, 'r') as f: return f.readlines()
 def rm(fp:str):
      if os.path.isdir(fp): runcmd(f"rm -rf {fp}")
      if os.path.isfile(fp): os.remove(fp)
