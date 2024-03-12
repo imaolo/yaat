@@ -1,73 +1,105 @@
-import unittest, os, sys, random, pickle
-from yaat.util import rm, path, exists
+import unittest, os, sys, random, pickle, time
+from yaat.util import rm, path, exists, getenv, read
 from yaat.maester import Attribute
+from typing import Any
+
+DEBUG=getenv("DEBUG", 0)
+
+def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
 
 class TestAttribute(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.dp = 'twork_'+cls.__name__
+        cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
         if os.path.isdir(cls.dp): rm(cls.dp)
         os.mkdir(cls.dp)
-
     @classmethod
     def tearDownClass(cls) -> None:
-        if os.path.isdir(cls.dp): rm(cls.dp)
+        if not DEBUG: rm(cls.dp)
 
-    def setUp(self) -> None: self.data = ''.join([str(i) for i in range(random.randint(2, 15))])
+    def setUp(self) -> None:
+        self.data = ''.join([str(i) for i in range(random.randint(2, 5))])
+        self.attr = self.create_attr(f"{getid(self)}_{int(time.time()*1e3)}", self.data)
+    def tearDown(self) -> None: del self.attr.buf
+    
+    def create_attr(self, name:str, data:Any, *args, **kwargs): return Attribute(path(self.dp, name), data, *args, **kwargs)
 
-    def create_attr(self, name:str, *args, **kwargs): return Attribute(path(self.dp, name), *args, **kwargs)
+    ### Tests ###
 
-    def test_attr_file_empty(self):
-        if exists(p:=path(self.dp, 'test_attr_def_empty_file')): rm(p)
-        attr = self.create_attr('test_attr_def_empty')
+    def test_empty(self):
+        if exists(p:=path(self.dp, getid(self))): rm(p)
+        attr = self.create_attr(getid(self), data='')
         self.assertTrue(attr.fp.split('/')[-1] in os.listdir(self.dp))
-        with open(attr.fp, 'r') as f: self.assertEqual(f.read(), str(None))
+        self.assertEqual(read(attr.fp), '')
 
-    def test_attr_file_simple_write(self):
-        attr = self.create_attr('test_attr_def_simple_data_file', data=self.data)
-        with open(attr.fp, 'r') as f: self.assertEqual(f.read(), self.data)
+    def test_write(self):
+        self.assertEqual(read(self.attr.fp), self.data)
+        self.assertEqual(read(self.attr.fp), self.attr.buf, msg=f"{type(self.attr.buf)}")
 
-    def test_attr_file_write_twice(self):
-        attr = self.create_attr('test_attr_def_file_write', data=self.data)
-        attr.data = self.data+'1'
-        with open(attr.fp, 'r') as f: self.assertEqual(f.read(), self.data+'1')
+    def test_write_twice(self):
+        self.attr.buf = '1432543254325432'
+        self.assertEqual(read(self.attr.fp), '1432543254325432')
 
-    def test_attr_mem_th_not_enough(self):
-        attr = self.create_attr('test_attr_mem_th_not_enough', data=self.data, mem_th=sys.getsizeof(self.data))
-        with open(attr.fp, 'r') as f: self.assertEqual(f.read(), self.data)
-        self.assertIsNone(attr._data)
+    def test_mem_th_not_enough(self):
+        attr = self.create_attr(getid(self), self.data*10, mem_th=sys.getsizeof(self.data))
+        self.assertIsNone(attr._buf, msg=f"{sys.getsizeof(attr._buf)}, {attr._buf}, {attr.mem_th}, {sys.getsizeof(self.data*1000)}")
 
-    def test_attr_mem_th_not_enough(self):
-        attr = self.create_attr('test_attr_mem_th_not_enough', data=self.data, mem_th=sys.getsizeof(self.data)+1)
-        with open(attr.fp, 'r') as f: self.assertEqual(f.read(), self.data)
-        self.assertIsNotNone(attr._data)
+    def test_mem_th_enough(self):
+        attr = self.create_attr(getid(self), self.data, mem_th=sys.getsizeof(self.data)*2)
+        self.assertIsNotNone(attr._buf)
 
-    def test_attr_readonly(self):
-        attr = self.create_attr('test_attr_readonly', data=self.data, readonly=True)
-        with open(attr.fp, 'r') as f: self.assertEqual(f.read(), self.data)
-        with self.assertRaises(AssertionError): attr.data = 1
+    def test_readonly(self):
+        attr = self.create_attr(getid(self), self.data, readonly=True)
+        self.assertEqual(read(attr.fp), self.data)
+        with self.assertRaises(AssertionError): attr.buf = 1
 
-    def test_attr_append(self):
-        attr = self.create_attr('test_attr_append', data=self.data, append=True)
-        attr.data = self.data
-        with open(attr.fp, 'r') as f: self.assertEqual(f.read(), self.data+self.data)
+    def test_append(self):
+        self.attr.buf += self.data
+        self.assertEqual(self.attr.buf, self.data+self.data)
 
-    def test_attr_dir_simple(self):
-        attr = self.create_attr('test_attr_dir', data=self.data, is_dir=True)
-        self.assertTrue(os.path.isdir(attr.fp))
-
-    def test_attr_deleter(self):
-        attr = self.create_attr('test_attr_deleter', data=self.data)
+    def test_delete(self):
+        attr = self.create_attr(getid(self), self.data)
         self.assertTrue(os.path.isfile(attr.fp))
-        del attr.data
+        del attr.buf
         self.assertFalse(os.path.isfile(attr.fp))
 
-    def test_attr_pickle(self):
-        attr1 = self.create_attr('test_attr_deleter', data=self.data)
-        with open(path(self.dp, 'test_attr_deleter.pk'), 'wb') as f: pickle.dump(attr1, f)
-        with open(path(self.dp, 'test_attr_deleter.pk'), 'rb') as f: attr2 = pickle.load(f)
-        self.assertEqual(attr1.data, attr2.data)
+    def test_pickle(self):
+        attr1 = self.create_attr(getid(self), self.data)
+        with open(path(self.dp, f'{getid(self)}.pk'), 'wb') as f: pickle.dump(attr1, f)
+        with open(path(self.dp, f'{getid(self)}.pk'), 'rb') as f: attr2 = pickle.load(f)
+        self.assertEqual(attr1.buf, attr2.buf)
+
+# TODO
+# class TestEntry(unittest.TestCase):
+#     test_num:int = 0
+
+#     @classmethod
+#     def setUpClass(cls) -> None:
+#         cls.dp = 'twork'+cls.__name__
+#         if os.path.isdir(cls.dp): rm(cls.dp)
+#         os.mkdir(cls.dp)
+#     @classmethod
+#     def tearDownClass(cls) -> None:
+#         if not DEBUG: rm(cls.dp)
+
+#     def setUp(self) -> None:
+#         self.entry = Entry(path(self.dp, f"test_{type(self).__name__}_{self.test_num}"))
+#         self.test_num += 1
+#     def tearDown(self) -> None:
+#         rm(self.entry.dir.fp)
+#         del self.entry
+
+#     ### Tests ###
+
+#     def test_constructor(self):
+#         self.assertTrue(os.path.isdir(self.entry.dir.fp))
+#         self.assertEqual(self.entry.status.data, Entry.Status.created.name)
+#         with open(self.entry.status.fp, 'r') as f : self.assertEqual(f.read(), Entry.Status.created.name)
+
+#     def test_status_update(self):
+#         self.entry.status.data = Entry.Status.running.name
+#         with open(self.entry.status.fp, 'r') as f : self.assertEqual(f.read(), Entry.Status.created.name+Entry.Status.running.name)
 # TODO
 # # class TestEntry(unittest.TestCase):
 # #     test_num:int=0
@@ -90,14 +122,14 @@ class TestAttribute(unittest.TestCase):
 #     ### Tests ### 
 
 #     def test_wattr_init(self):
-#         self.assertEqual(self.wattr.data, '1')
+#         self.assertEqual(self.wattr.buf, '1')
 
 #     def test_wattr_write(self):
-#         self.wattr.data = 2
-#         self.assertEqual(self.wattr.data, '2')
+#         self.wattr.buf = 2
+#         self.assertEqual(self.wattr.buf, '2')
 
 #     def test_rattr_init(self):
-#         self.assertEqual(self.rattr.data, '2')
+#         self.assertEqual(self.rattr.buf, '2')
     
 #     def write_rarttr_werr(self):
 #         with self.assertRaises(AssertionError): self.rattr = 1
