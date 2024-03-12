@@ -8,8 +8,10 @@ def path(*fp:str) -> str: return '/'.join(fp)
 def exists(fp:str): return os.path.isdir(fp) or os.path.isfile(fp)
 def getenv(key:str, default=None) -> Any: return os.getenv(key, default) if default is not None else os.environ[key]
 def myprint(header:str, obj:Any): print(f"{'='*15} {header} {'='*15}"); pprint.pprint(obj)
+def mkdirs(*args, **kwargs): os.makedirs(*args, **kwargs)
 def objsz(obj:Any) -> int: return len(pickle.dumps(obj))
 def siblings(fp:str) -> List[str]: return os.listdir(path(*fp.split('/')[:-1]))
+def parent(fp:str) -> List[str]: return path(*fp.split('/')[-2])
 def leaf(fp:str) -> str: return fp.split('/')[-1]
 def read(fp:str) -> str:
     with open(fp, 'r') as f: return f.read()
