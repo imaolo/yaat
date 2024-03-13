@@ -175,7 +175,7 @@ class TestMaester(TestMaesterSetup):
         cls.maester = Maester(cls.dp, mem=0)
     @classmethod
     def tearDownClass(cls) -> None:
-        if not DEBUG: rm(cls.dp)
+        if not DEBUG: rm('twork')
 
     ### Tests ###
 
