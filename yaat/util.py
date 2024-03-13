@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from typing import Any, List, Dict
-import subprocess, pprint, select, os, pickle, json
+import subprocess, pprint, select, os, pickle, json, time
 
 load_dotenv()
 
@@ -8,6 +8,7 @@ def path(*fp:str) -> str: return '/'.join(fp)
 def exists(fp:str): return os.path.isdir(fp) or os.path.isfile(fp)
 def getenv(key:str, default=None) -> Any: return os.getenv(key, default) if default is not None else os.environ[key]
 def myprint(header:str, obj:Any): print(f"{'='*15} {header} {'='*15}"); pprint.pprint(obj)
+def gettime() -> int: return int(time.perf_counter_ns())
 def mkdirs(*args, mode=0o755, **kwargs): os.makedirs(*args, mode=mode, **kwargs)
 def objsz(obj:Any) -> int: return len(pickle.dumps(obj))
 def filesz(fp: str) -> int: return os.path.getsize(fp)
