@@ -158,10 +158,11 @@ class TestDataSetEntry(TestMaesterSetup):
 
     def test_pickle(self):
         data = bytes(int(1e6))
-        de = DatasetEntry(path(self.dp, 'mydataset2'), data=data, mem=objsz(data)*2)
+        de = DatasetEntry(path(self.dp, 'mydataset2'), data=data, mem=0)
         de.save()
         self.assertLess(filesz(de.obj.fp), objsz(data)/3)
         de1 = DatasetEntry.load(de.obj.fp)
+        self.assertIsNone(de1.dataset._buf)
         self.assertEqual(de1.dataset.data, data)
 
 class TestMaester(TestMaesterSetup):
