@@ -67,17 +67,6 @@ class Entry:
         self.error = Attribute(path(self.fp, 'error_'+str(self.num_err)), data=errm)
         self.num_err += 1
 
-# TODO
-# class Entry:
-#     def_mem_threshold:int = 10e6
-#     root:str = 'entries's
-#     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
-
-#     def __init__(self, fp:str, mem_th:int=def_mem_threshold):
-#         self.fp, self.mem_th = path(fp, type(self).root), mem_th
-#         Maester.create_folder(self.fp, exists_ok=False)
-#         self.status = Attribute(path(self.fp, 'status'), self.Status.created.name, append=True)
-
 # class ModelEntry(Entry):
 #     root:str = 'models'
 #     # def __init__(self, name:str, args:Dict[str, str | int], status:Entry.Status=Entry.Status.created, weights: Optional[Any]=None):
