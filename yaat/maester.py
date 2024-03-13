@@ -89,23 +89,5 @@ class DataEntry(Entry):
 #         self.create_folder(Entry.root)
 #         self.create_folder(ModelEntry.root)
 #         self.create_folder(DataEntry.root)
-    
-#     def create_entry(self, name:str): pass
-    
-#     def exists(self, fp:str) -> bool: return os.path.isdir(fp) or os.path.isfile(fp)
-
-#     def create_folder(self, fp: str, exists_ok:bool=True):
-#         if os.path.isdir(fp:=path(self.root, fp)) and exists_ok: return
-#         os.mkdir(fp)
-
-#     def append_file(self, fp: str, data:str):
-#         with open(path(self.root, fp), 'a') as f: f.write(data)
-
-#     def write_file(self, fp:str, data:str):
-#         with open(path(self.root, fp), 'w') as f: f.write(data)
-
-#     def get_file(self, fp:str, req=False) -> Optional[str]:
-#         if not req and not os.path.isfile(fp): return None
-#         with open(fp, 'r') as f: return f.read()
 #     # TODO - rest of maester...
 # Maester = _Maester(root=getenv('ROOT', "data"), mem_th=getenv("MEMTH", 10e6))
