@@ -1,5 +1,5 @@
 import unittest, os, random, pickle
-from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs, dict2str, gettime
+from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs, dict2str, gettime, serialize, construct
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
 import torch
@@ -70,9 +70,9 @@ class TestAttribute(TestMaesterSetup):
         self.assertFalse(os.path.isfile(attr.fp))
 
     def test_pickle(self):
-        attr1 = self.create_attr(getid(self), self.data)
-        with open(path(self.dp, f'{getid(self)}.pk'), 'wb') as f: pickle.dump(attr1, f)
-        with open(path(self.dp, f'{getid(self)}.pk'), 'rb') as f: attr2 = pickle.load(f)
+        attr1 = self.create_attr(getid(self), self.data, mem=1)
+        serialize(p:=path(self.dp, getid(self)), attr1)
+        attr2 = construct(p)
         self.assertEqual(attr1.data, attr2.data)
 
     def test_appendonly(self):
