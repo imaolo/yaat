@@ -21,7 +21,7 @@ class TestAttribute(unittest.TestCase):
     def setUp(self) -> None:
         self.data = ''.join([str(i) for i in range(random.randint(2, 5))])
         self.attr = self.create_attr(f"{getid(self)}_{int(time.time()*1e3)}", self.data)
-    def tearDown(self) -> None: del self.attr.buf
+    def tearDown(self) -> None: del self.attr.data
     
     def create_attr(self, name:str, data:Any, *args, **kwargs): return Attribute(path(self.dp, name), data, *args, **kwargs)
 
@@ -35,7 +35,7 @@ class TestAttribute(unittest.TestCase):
 
     def test_write(self):
         self.assertEqual(read(self.attr.fp), self.data)
-        self.assertEqual(read(self.attr.fp), self.attr.buf, msg=f"{type(self.attr.buf)}")
+        self.assertEqual(read(self.attr.fp), self.attr.data, msg=f"{type(self.attr.data)}")
 
     def test_write_twice(self):
         self.attr.buf = '1432543254325432'
@@ -52,24 +52,30 @@ class TestAttribute(unittest.TestCase):
     def test_readonly(self):
         attr = self.create_attr(getid(self), self.data, readonly=True)
         self.assertEqual(read(attr.fp), self.data)
-        with self.assertRaises(AssertionError): attr.buf = attr.buf
-        with self.assertRaises(AssertionError): attr.buf += attr.buf
+        with self.assertRaises(AssertionError): attr.buf = attr.data
+        with self.assertRaises(AssertionError): attr.buf += attr.data
 
     def test_append(self):
-        self.attr.buf += self.data
-        self.assertEqual(self.attr.buf, self.data+self.data)
+        self.attr.buf += self.attr.data
+        self.assertEqual(self.attr.data, self.data+self.data)
 
     def test_delete(self):
         attr = self.create_attr(getid(self), self.data)
         self.assertTrue(os.path.isfile(attr.fp))
-        del attr.buf
+        del attr.data
         self.assertFalse(os.path.isfile(attr.fp))
 
     def test_pickle(self):
         attr1 = self.create_attr(getid(self), self.data)
         with open(path(self.dp, f'{getid(self)}.pk'), 'wb') as f: pickle.dump(attr1, f)
         with open(path(self.dp, f'{getid(self)}.pk'), 'rb') as f: attr2 = pickle.load(f)
-        self.assertEqual(attr1.buf, attr2.buf)
+        self.assertEqual(attr1.data, attr2.data)
+
+    def test_appendonly(self):
+        attr = self.create_attr(getid(self), self.data, appendonly=True)
+        with self.assertRaises(AssertionError): attr.buf = 1
+        attr.buf += self.data
+        self.assertEqual(attr.data, self.data+self.data)
 
 # TODO
 # class TestEntry(unittest.TestCase):
@@ -123,14 +129,14 @@ class TestAttribute(unittest.TestCase):
 #     ### Tests ### 
 
 #     def test_wattr_init(self):
-#         self.assertEqual(self.wattr.buf, '1')
+#         self.assertEqual(self.wattr.data, '1')
 
 #     def test_wattr_write(self):
-#         self.wattr.buf = 2
-#         self.assertEqual(self.wattr.buf, '2')
+#         self.wattr.data = 2
+#         self.assertEqual(self.wattr.data, '2')
 
 #     def test_rattr_init(self):
-#         self.assertEqual(self.rattr.buf, '2')
+#         self.assertEqual(self.rattr.data, '2')
     
 #     def write_rarttr_werr(self):
 #         with self.assertRaises(AssertionError): self.rattr = 1
