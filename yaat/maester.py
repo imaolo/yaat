@@ -58,6 +58,7 @@ class Attribute:
     def data(self): rm(self.fp); del self
 
     def __getstate__(self) -> Dict[str, Any]: return {k:v for k, v in self.__dict__.items() if k != self.buf.pname}
+
 class Entry:
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
     def __init__(self, fp:str, mem:int=ENTRY_MEM):
