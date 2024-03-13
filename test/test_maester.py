@@ -1,7 +1,7 @@
 import unittest, os, random, pickle
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
     mkdirs, dict2str, gettime, serialize, parent, write, construct
-from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry
+from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
 import torch
 
@@ -156,35 +156,31 @@ class TestDataSetEntry(TestMaesterSetup):
     def test_simple(self):
         self.assertEqual(self.de.dataset.data, self.data)
 
-# class TestMaester(TestMaesterSetup):
+class TestMaester(TestMaesterSetup):
 
-#     def setUp(self) -> None: self.maester = Maester(path(self.dp, f"{getid(self)}_{gettime()}"))
-#     def tearDown(self) -> None: rm(self.maester.fp)
+    def setUp(self) -> None: self.maester = Maester(path(self.dp, f"{getid(self)}_{gettime()}"))
+    def tearDown(self) -> None: rm(self.maester.fp)
 
-#     ### Tests ###
+    ### Tests ###
 
-#     def test_create_model(self):
-#         args = {'key': 'val'}
-#         model = Model()
-#         self.maester.create_model(n:='mymodel', args=args, weights=model.state_dict(), mem=0)
-#         modelentry = self.maester.models[n]
-#         model1 = Model()
-#         model1.load_state_dict(modelentry.weights.data)
-#         self.assertTrue(torch.equal(model1.linear.weight, model.linear.weight))
+    def test_create_model(self):
+        args = {'key': 'val'}
+        model = Model()
+        self.maester.create_model(n:='mymodel', args=args, weights=model, mem=0)
+        modelentry = self.maester.models[n]
+        model1 = Model()
+        model1.load_state_dict(modelentry.weights.data)
+        self.assertTrue(torch.equal(model1.linear.weight, model.linear.weight))
 
+    def test_create_dataset(self):
+        data = '12345'
+        self.maester.create_dataset(n:='mydataset', data, mem=0)
+        self.assertEqual(data, self.maester.datasets[n].dataset.data)
 
-#     def test_create_dataset(self):
-#         data = '12345'
-#         self.maester.create_dataset(n:='mydataset', data, mem=0)
-#         self.assertEqual(data, self.maester.datasets[n].dataset.data)
+    def test_sync(self):
+        data = '12345'
+        self.maester.create_dataset(n:='mydataset1', data)
+        maester = Maester(self.maester.fp)
+        self.assertEqual(maester.datasets[n].dataset.data, data)
 
-#     def test_sync(self):
-#         data = '12345'
-#         self.maester.create_dataset(n:='mydataset1', data)
-
-#         maester = Maester(self.maester.fp)
-
-#         assert False, maester.datasets[n].__dict__
-#         self.assertEqual(maester.datasets[n].dataset.data, data)
-
-#     def test_create_dataset_entry(self): pass
+    def test_create_dataset_entry(self): pass
