@@ -12,17 +12,14 @@ class AttributeBuffer:
         self.obj, self.pname = None, '_'+name
         setattr(owner, self.pname, None)
 
-    def __get__(self, obj:Optional['Attribute']=None, objtype=None) -> Any:
-        if not self.obj or obj: self.obj = obj
-        assert self.obj
-
-        if buf:=getattr(self.obj, self.pname): return buf
-        if not obj: return self.obj.reader(self.obj.fp)
-
-        setattr(self, self.pname, data if objsz(data:=self.obj.reader(self.obj.fp)) < self.obj.mem_th else None)
-        return data
+    def __get__(self, obj:'Attribute', objtype:Type['Attribute']) -> Any:
+        assert obj; self.obj = obj
+        setattr(self, self.pname, data if objsz(data:=obj.reader(obj.fp)) < obj.mem_th else None)
+        return self
 
     def __set__(self, obj:'Attribute', val:Any):
+        if isinstance(val, AttributeBuffer): return self # append already happened
+        assert obj; self.obj = obj
         assert not obj.readonly and not obj.appendonly, f"invalid write, try append +=, {obj.readonly=}, {obj.appendonly=}"
         setattr(obj, self.pname, val if objsz(val) < obj.mem_th else None)
         obj.writer(obj.fp, val)
@@ -30,11 +27,14 @@ class AttributeBuffer:
     def __iadd__(self, val:Any):
         assert self.obj.appender and not self.obj.readonly, f"invalid append, {self.obj.appender=}, {self.obj.readonly=}"
         self.obj.appender(self.obj.fp, val)
-        setattr(self.obj, self.pname, self.obj.reader(self.obj.fp))
-        return getattr(self.obj, self.pname)
+        setattr(self.obj, self.pname, None) # invalidate cache
+        return self
 
-    def __delete__(self, obj:'Attribute'): rm(obj.fp); del obj._buf
+    def __delete__(self, obj:'Attribute'): delattr(obj, self.pname)
 
+    def get(self) -> Any: return self.obj.reader(self.obj.fp)
+
+# read & delete data, write & append buf
 class Attribute:
     buf: AttributeBuffer = AttributeBuffer()
     def __init__(self, fp:str, data:Any, mem_th:int=MEMTH_ATTR, readonly:bool=False, appendonly:bool=False, \
@@ -45,6 +45,12 @@ class Attribute:
 
         # write, then configure
         self.buf, self.readonly, self.appendonly = data, readonly, appendonly
+
+    @property
+    def data(self) -> Any: return self._buf if self._buf else self.buf.get()
+
+    @data.deleter
+    def data(self): rm(self.fp); del self.buf
 
     def __getstate__(self): state = self.__dict__.copy(); state['buf'] = None; return state
     def __setstate__(self, state): self.__dict__.update(state); return state
