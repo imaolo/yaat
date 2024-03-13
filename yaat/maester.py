@@ -7,12 +7,11 @@ MEMTH_ENTRY = getenv('MEMTH_ENTRY', 500e6)
 MEMTH_ATTR = MEMTH_ENTRY
 
 class AttributeBuffer:
-    
-    def set_cache(self, val:Any): setattr(self.obj, self.pname, val)
-
     def __set_name__(self, owner:Type['Attribute'], name:str):
         self.obj, self.pname = owner, '_'+name
         self.set_cache(None)
+
+    def set_cache(self, val:Any): setattr(self.obj, self.pname, val)
 
     def __get__(self, obj:'Attribute', objtype:Type['Attribute']) -> Any:
         assert obj; self.obj = obj
@@ -34,8 +33,6 @@ class AttributeBuffer:
 
     def __delete__(self, obj:'Attribute'): delattr(obj, self.pname)
 
-    def get(self) -> Any: return self.obj.reader(self.obj.fp)
-
 # read & delete data, write & append buf
 class Attribute:
     buf: AttributeBuffer = AttributeBuffer()
@@ -49,7 +46,7 @@ class Attribute:
         self.buf, self.readonly, self.appendonly = data, readonly, appendonly
 
     @property
-    def data(self) -> Any: return self._buf if self._buf else self.buf.get() # check cache first
+    def data(self) -> Any: return self._buf if self._buf else self.reader(self.fp)
 
     @data.deleter
     def data(self): rm(self.fp); del self.buf
