@@ -27,7 +27,7 @@ class AttributeBuffer:
 
     def __iadd__(self, val:Any):
         assert self.obj.appender and not self.obj.readonly, f"invalid append, {self.obj.appender=}, {self.obj.readonly=}"
-        self.obj.appender(self.obj.fp, val)
+        self.obj.appender(self.obj.fp, '\n'+val)
         self.set_cache(None)
         return self
 
@@ -54,18 +54,18 @@ class Attribute:
     def __getstate__(self): state = self.__dict__.copy(); state['buf'] = None; return state
     def __setstate__(self, state): self.__dict__.update(state); return state
 
-# TODO
-# class Entry:
-#     root:str = 'entries'
-#     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
-#     def __init__(self, fp:str, mem_th:int=MEMTH_ENTRY):
-#         self.fp = fp; mkdirs(fp, False)
-#         self.status = Attribute(path(fp, 'status'), data=self.Status.created.name)
-#         self.num_error = 0
+class Entry:
+    root:str = 'entries'
+    class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
+    def __init__(self, fp:str, mem_th:int=MEMTH_ENTRY):
+        self.fp = fp; mkdirs(fp, exist_ok=False)
+        self.status = Attribute(path(fp, 'status'), data=self.Status.created.name, appendonly=True)
+        self.num_err = 0
 
-#     def set_error(self, errm:str):
-#         self.status.data = self.Status.error.name
-#         self.error = Attribute(path(self.fp, 'error_'+self.num_error), data=errm)
+    def set_error(self, errm:str):
+        self.status.buf += self.Status.error.name
+        self.error = Attribute(path(self.fp, 'error_'+str(self.num_err)), data=errm)
+        self.num_err += 1
 
 # TODO
 # class Entry:
