@@ -1,5 +1,5 @@
-import unittest, os, random, pickle, time
-from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs, dict2str
+import unittest, os, random, pickle
+from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs, dict2str, gettime
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
 import torch
@@ -7,24 +7,22 @@ import torch
 DEBUG=getenv("DEBUG", 0)
 
 def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
-def gettime(): return time
 
 class TestMaesterSetup(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.dp = f"twork/twork_{cls.__name__}_{int(time.time()*1e3)}"
+        cls.dp = f"twork/twork_{cls.__name__}_{gettime()}"
         if exists(cls.dp): rm(cls.dp)
         mkdirs(cls.dp)
     @classmethod
     def tearDownClass(cls) -> None:
         if not DEBUG: rm(cls.dp)
 
-
 class TestAttribute(TestMaesterSetup):
 
     def setUp(self) -> None:
         self.data = ''.join([str(i) for i in range(random.randint(2, 5))])
-        self.attr = self.create_attr(f"{getid(self)}_{int(time.time()*1e3)}", self.data)
+        self.attr = self.create_attr(f"{getid(self)}_{gettime()}", self.data)
     def tearDown(self) -> None: del self.attr.data
     
     def create_attr(self, name:str, data:Any, *args, **kwargs): return Attribute(path(self.dp, name), data, *args, **kwargs)
@@ -88,7 +86,7 @@ class TestEntry(TestMaesterSetup):
     test_num:int = 0
 
     def setUp(self) -> None:
-        self.entry = Entry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"))
+        self.entry = Entry(path(self.dp, f"{getid(self)}_{gettime()}"))
     def tearDown(self) -> None:
         rm(self.entry.fp)
         del self.entry
@@ -123,7 +121,7 @@ class TestModelEntry(TestMaesterSetup):
 
     def setUp(self) -> None:
         self.args = {'a':'d'}
-        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.args, weights=self.model.state_dict())
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, weights=self.model.state_dict())
     def tearDown(self) -> None: rm(self.me.fp)
 
     ### Tests ###
@@ -132,7 +130,7 @@ class TestModelEntry(TestMaesterSetup):
         self.assertEqual(self.me.args.data, dict2str(self.args))
     
     def test_weights_simple(self):
-        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.args, weights=self.model.state_dict(), mem=objsz(self.model.state_dict()))
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, weights=self.model.state_dict(), mem=objsz(self.model.state_dict()))
         self.assertIsNone(self.me.weights._buf)
         model1 = self.Model()
         model1.load_state_dict(self.me.weights.data)
@@ -142,7 +140,7 @@ class TestDataSetEntry(TestMaesterSetup):
 
     def setUp(self) -> None:
         self.data = 'fdafdasfdsa'
-        self.de = DatasetEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.data)
+        self.de = DatasetEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.data)
     def tearDown(self) -> None: rm(self.de.fp)
 
     ### Tests ###
@@ -152,7 +150,7 @@ class TestDataSetEntry(TestMaesterSetup):
 
 class TestMaester(TestMaesterSetup):
 
-    def setUp(self) -> None: self.maester = Maester(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"))
+    def setUp(self) -> None: self.maester = Maester(path(self.dp, f"{getid(self)}_{gettime()}"))
     def tearDown(self) -> None: rm(self.maester.fp)
 
     ### Tests ###
