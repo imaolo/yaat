@@ -1,6 +1,6 @@
 import unittest, os, random, pickle
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
-    mkdirs, dict2str, gettime, serialize, parent, write, construct
+    mkdirs, dict2str, gettime, serialize, parent, write, construct, filesz
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
 import torch
@@ -155,6 +155,14 @@ class TestDataSetEntry(TestMaesterSetup):
 
     def test_simple(self):
         self.assertEqual(self.de.dataset.data, self.data)
+
+    def test_pickle(self):
+        data = bytes(int(1e6))
+        de = DatasetEntry(path(self.dp, 'mydataset2'), data=data, mem=objsz(data)*2)
+        de.save()
+        self.assertLess(filesz(de.obj.fp), objsz(data)/3)
+        de1 = DatasetEntry.load(de.obj.fp)
+        self.assertEqual(de1.dataset.data, data)
 
 class TestMaester(TestMaesterSetup):
 
