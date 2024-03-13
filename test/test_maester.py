@@ -12,7 +12,7 @@ def gettime(): return time
 class TestMaesterSetup(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
+        cls.dp = f"twork/twork_{cls.__name__}_{int(time.time()*1e3)}"
         if exists(cls.dp): rm(cls.dp)
         mkdirs(cls.dp)
     @classmethod
