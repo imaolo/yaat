@@ -128,6 +128,8 @@ class TestModelEntry(TestMaesterSetup):
         self.me = ModelEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.args, weights=self.model.state_dict())
     def tearDown(self) -> None: rm(self.me.fp)
 
+    ### Tests ###
+
     def test_args_simple(self):
         self.assertEqual(self.me.args.data, dict2str(self.args))
     
@@ -144,6 +146,8 @@ class TestDataSetEntry(TestMaesterSetup):
         self.data = 'fdafdasfdsa'
         self.de = DatasetEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.data)
     def tearDown(self) -> None: rm(self.de.fp)
+
+    ### Tests ###
 
     def test_simple(self):
         self.assertEqual(self.de.dataset.data, self.data)
