@@ -57,6 +57,7 @@ class Attribute:
     @data.deleter
     def data(self): rm(self.fp); del self
 
+    def __getstate__(self) -> Dict[str, Any]: return {k:v for k, v in self.__dict__.items() if k != self.buf.pname}
 class Entry:
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
     def __init__(self, fp:str, mem:int=ENTRY_MEM):
@@ -75,8 +76,6 @@ class Entry:
 
     @staticmethod
     def load(fp:str) -> 'Entry': return construct(read(fp, 'rb'))
-
-    def __getstate__(self) -> Dict[str, Any]: return {k:v for k, v in self.__dict__.items() if k != '_buf'}
 
 class ModelEntry(Entry):
     def __init__(self, fp:str, args:Dict[str, str | int], weights: Optional[Any], mem:int=ENTRY_MEM):
