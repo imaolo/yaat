@@ -1,6 +1,7 @@
 from yaat.util import getenv, rm, write, read, siblings, leaf, append, path, parent, objsz, mkdirs, filesz, dict2str
 from typing import Any, Optional, Type, Callable, Dict
 from enum import Enum, auto
+import torch
 
 ROOT = getenv('ROOT', "data")
 MEMTH_ENTRY = getenv('MEMTH_ENTRY', 500e6)
@@ -58,26 +59,22 @@ class Attribute:
 class Entry:
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
     def __init__(self, fp:str, mem_th:int=MEMTH_ENTRY):
-        self.fp = fp; mkdirs(fp, exist_ok=False)
-        self.status = Attribute(path(fp, 'status'), data=self.Status.created.name, appendonly=True)
+        self.fp, self.mem_th = fp, mem_th
+        mkdirs(fp, exist_ok=False)
+        self.status = Attribute(path(fp, 'status'), data=self.Status.created.name, appendonly=True, mem_th=mem_th)
         self.num_err = 0
 
     def set_error(self, errm:str):
         self.status.buf += self.Status.error.name
-        self.error = Attribute(path(self.fp, 'error_'+str(self.num_err)), data=errm)
+        self.error = Attribute(path(self.fp, 'error_'+str(self.num_err)), data=errm, mem_th=self.mem_th)
         self.num_err += 1
 
 class ModelEntry(Entry):
-    def __init__(self, fp:str, args:Dict[str, str | int], weights: Optional[Any]=None):
-        super().__init__(fp)
-        self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True)
-        self.weights = Attribute(path(fp, 'weights'), '') # TODO torch reader and writer
-
-# model = TheModelClass(*args, **kwargs)  # Make sure to instantiate your model class
-# model_state_dict = torch.load('model_state_dict.pth')
-# model.load_state_dict(model_state_dict)
-
-# torch.save(model.state_dict(), 'model_state_dict.pth')
+    def __init__(self, fp:str, args:Dict[str, str | int], weights: Optional[Any], mem_th:int=MEMTH_ENTRY):
+        super().__init__(fp, mem_th)
+        self.mem_th = self.mem_th
+        self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True, mem_th=mem_th)
+        self.weights = Attribute(path(fp, 'weights'), weights, reader=torch.load, writer=lambda fp, val: torch.save(val, fp), mem_th=mem_th)
 
 class DataEntry(Entry):
     def __init__(self, fp:str, data:Any):
