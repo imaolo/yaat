@@ -13,6 +13,11 @@ def mkdirs(*args, mode=0o755, **kwargs): os.makedirs(*args, mode=mode, **kwargs)
 def objsz(obj:Any) -> int: return len(pickle.dumps(obj))
 def filesz(fp: str) -> int: return os.path.getsize(fp)
 def siblings(fp:str) -> List[str]: return os.listdir(path(*fp.split('/')[:-1]))
+def children(fp:str) -> List[str]: return os.listdir(fp)
+def serialize(fp:str, obj:Any):
+    with open(fp+'.pk', 'wb') as f: pickle.dump(obj, f)
+def construct(fp:str) -> Any:
+    with open(fp+'.pk', 'rb') as f: return pickle.load(f)
 def dict2str(d:Dict) -> str: return json.dumps(d)
 def str2dict(str:str) -> Dict: return json.loads(str)
 def parent(fp:str) -> List[str]: return path(*fp.split('/')[-2])
