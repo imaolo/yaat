@@ -33,8 +33,9 @@ class AttributeBuffer:
 
     def __delete__(self, obj:'Attribute'): delattr(obj, self.pname)
 
-# read & delete data, write & append buf
 class Attribute:
+    # read & delete data, write & append buf
+
     buf: AttributeBuffer = AttributeBuffer()
     def __init__(self, fp:str, data:Any, mem_th:int=MEMTH_ATTR, readonly:bool=False, appendonly:bool=False, \
                  writer:Callable=write, reader:Callable=read, appender:Optional[Callable]=append) -> None:
