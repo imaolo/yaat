@@ -55,7 +55,6 @@ class Attribute:
     def __setstate__(self, state): self.__dict__.update(state); return state
 
 class Entry:
-    root:str = 'entries'
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
     def __init__(self, fp:str, mem_th:int=MEMTH_ENTRY):
         self.fp = fp; mkdirs(fp, exist_ok=False)
@@ -66,6 +65,7 @@ class Entry:
         self.status.buf += self.Status.error.name
         self.error = Attribute(path(self.fp, 'error_'+str(self.num_err)), data=errm)
         self.num_err += 1
+
 
 # class ModelEntry(Entry):
 #     root:str = 'models'
