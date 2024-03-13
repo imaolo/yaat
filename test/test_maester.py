@@ -7,9 +7,9 @@ import torch
 DEBUG=getenv("DEBUG", 0)
 
 def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
+def gettime(): return time
 
-class TestAttribute(unittest.TestCase):
-
+class TestMaesterSetup(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
@@ -18,6 +18,9 @@ class TestAttribute(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         if not DEBUG: rm(cls.dp)
+
+
+class TestAttribute(TestMaesterSetup):
 
     def setUp(self) -> None:
         self.data = ''.join([str(i) for i in range(random.randint(2, 5))])
@@ -81,17 +84,8 @@ class TestAttribute(unittest.TestCase):
         self.assertEqual(attr.data, self.data+'\n'+self.data)
         self.assertEqual(read(attr.fp), self.data+'\n'+self.data)
 
-class TestEntry(unittest.TestCase):
+class TestEntry(TestMaesterSetup):
     test_num:int = 0
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
-        if exists(cls.dp): rm(cls.dp)
-        mkdirs(cls.dp)
-    @classmethod
-    def tearDownClass(cls) -> None:
-        if not DEBUG: rm(cls.dp)
 
     def setUp(self) -> None:
         self.entry = Entry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"))
@@ -119,7 +113,7 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(read(path(self.entry.fp, 'error_0')), msg1)
         self.assertEqual(read(self.entry.status.fp).split('\n')[-1], Entry.Status.error.name)
 
-class TestModelEntry(unittest.TestCase):
+class TestModelEntry(TestMaesterSetup):
 
     class Model(torch.nn.Module):
         def __init__(self):
@@ -128,15 +122,6 @@ class TestModelEntry(unittest.TestCase):
 
         def forward(self, x): return self.linear(x)
     model = Model() 
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
-        if exists(cls.dp): rm(cls.dp)
-        mkdirs(cls.dp)
-    @classmethod
-    def tearDownClass(cls) -> None:
-        if not DEBUG: rm(cls.dp)
 
     def setUp(self) -> None:
         self.args = {'a':'d'}
@@ -153,16 +138,7 @@ class TestModelEntry(unittest.TestCase):
         model1.load_state_dict(self.me.weights.data)
         self.assertTrue(torch.equal(model1.linear.weight, self.model.linear.weight))
 
-class TestDataEntry(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
-        if exists(cls.dp): rm(cls.dp)
-        mkdirs(cls.dp)
-    @classmethod
-    def tearDownClass(cls) -> None:
-        if not DEBUG: rm(cls.dp)
+class TestDataEntry(TestMaesterSetup):
 
     def setUp(self) -> None:
         self.data = 'fdafdasfdsa'
@@ -171,3 +147,7 @@ class TestDataEntry(unittest.TestCase):
 
     def test_simple(self):
         self.assertEqual(self.de.data.data, self.data)
+
+class TestMaester(TestMaesterSetup):
+
+    def test_nothing(self): pass
