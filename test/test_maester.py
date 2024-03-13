@@ -118,9 +118,7 @@ class TestModelEntry(TestMaesterSetup):
     class Model(torch.nn.Module):
         def __init__(self):
             super(type(self), self).__init__()
-            self.linear = torch.nn.Linear(1, 1)  # A single linear layer with one input and one output feature
-
-        def forward(self, x): return self.linear(x)
+            self.linear = torch.nn.Linear(1, 1)
     model = Model() 
 
     def setUp(self) -> None:
