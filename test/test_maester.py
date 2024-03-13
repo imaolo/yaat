@@ -1,5 +1,6 @@
 import unittest, os, random, pickle
-from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs, dict2str, gettime, serialize, construct
+from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
+    mkdirs, dict2str, gettime, serialize, parent, write, construct
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
 import torch
@@ -70,9 +71,9 @@ class TestAttribute(TestMaesterSetup):
         self.assertFalse(os.path.isfile(attr.fp))
 
     def test_pickle(self):
-        attr1 = self.create_attr(getid(self), self.data, mem=1)
-        serialize(p:=path(self.dp, getid(self)), attr1)
-        attr2 = construct(p)
+        attr1 = self.create_attr(getid(self), self.data, mem=0)
+        write(p:=path(self.dp, 'pickle_test'), serialize(attr1), 'wb')
+        attr2 = construct(read(p, 'rb'))
         self.assertEqual(attr1.data, attr2.data)
 
     def test_appendonly(self):
@@ -110,6 +111,13 @@ class TestEntry(TestMaesterSetup):
         self.assertEqual(read(path(self.entry.fp, 'error_1')), msg2)
         self.assertEqual(read(path(self.entry.fp, 'error_0')), msg1)
         self.assertEqual(read(self.entry.status.fp).split('\n')[-1], Entry.Status.error.name)
+
+    def test_pickle(self):
+        e1 = Entry(path(self.dp, f"{getid(self)}_{gettime()}"))
+        e1.set_error('some messge')
+        e1.save()
+        e2 = Entry.load(e1.obj.fp)
+        self.assertEqual(e1.error.data, e2.error.data)
 
 class TestModelEntry(TestMaesterSetup):
 
