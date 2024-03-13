@@ -1,6 +1,6 @@
 import unittest, os, random, pickle, time
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs, dict2str
-from yaat.maester import Attribute, Entry, ModelEntry, DataEntry
+from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry
 from typing import Any
 import torch
 
@@ -138,15 +138,15 @@ class TestModelEntry(TestMaesterSetup):
         model1.load_state_dict(self.me.weights.data)
         self.assertTrue(torch.equal(model1.linear.weight, self.model.linear.weight))
 
-class TestDataEntry(TestMaesterSetup):
+class TestDataSetEntry(TestMaesterSetup):
 
     def setUp(self) -> None:
         self.data = 'fdafdasfdsa'
-        self.de = DataEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.data)
+        self.de = DatasetEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.data)
     def tearDown(self) -> None: rm(self.de.fp)
 
     def test_simple(self):
-        self.assertEqual(self.de.data.data, self.data)
+        self.assertEqual(self.de.dataset.data, self.data)
 
 class TestMaester(TestMaesterSetup):
 

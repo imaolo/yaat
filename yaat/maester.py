@@ -76,18 +76,18 @@ class ModelEntry(Entry):
         self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True, mem=mem)
         self.weights = Attribute(path(fp, 'weights'), weights, reader=torch.load, writer=lambda fp, val: torch.save(val, fp), mem=mem)
 
-class DataEntry(Entry):
+class DatasetEntry(Entry):
     def __init__(self, fp:str, data:Any):
         super().__init__(fp)
-        self.data = Attribute(path(fp, 'data'), data, readonly=True)
+        self.dataset = Attribute(path(fp, 'dataset'), data, readonly=True)
 
 
 # class Maester:
 #     def __init__(self, fp:str, mem:int=10e6):
-#         self.root, self.mem = root, mem
-#         if not os.path.isdir(root): os.mkdir(root)
-#         self.create_folder(Entry.root)
-#         self.create_folder(ModelEntry.root)
-#         self.create_folder(DataEntry.root)
-#     # TODO - rest of maester...
-# Maester = _Maester(root=getenv('ROOT', "data"), mem=getenv("MEMTH", 10e6))
+
+#         # mount directory?
+#         self.fp, self.mem = fp, mem
+#         mkdirs(fp, exist_ok=False)
+
+#         # read in models
+#         self.ModelEntries = []
