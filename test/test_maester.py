@@ -182,5 +182,3 @@ class TestMaester(TestMaesterSetup):
         self.maester.create_dataset(n:='mydataset1', data)
         maester = Maester(self.maester.fp)
         self.assertEqual(maester.datasets[n].dataset.data, data)
-
-    def test_create_dataset_entry(self): pass
