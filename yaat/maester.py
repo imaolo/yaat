@@ -36,7 +36,7 @@ class AttributeBuffer:
     def __iadd__(self, val:Any):
         assert self.obj.type in Loader.appenders and not self.obj.readonly, f"invalid append, {self.obj.type=}, {self.obj.readonly=}"
         Loader.appenders[self.obj.type](self.obj.fp, '\n'+val)
-        self.set_cache(Loader.readers[self.obj.type](self.obj.fp) if filesz(self.obj.fp) < self.obj.mem else None)
+        self.set_cache(None)
         return self
 
 class Attribute:
