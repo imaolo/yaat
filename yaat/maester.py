@@ -1,4 +1,5 @@
-from yaat.util import getenv, rm, write, read, siblings, leaf, append, path, parent, objsz, mkdirs, filesz, dict2str
+from yaat.util import getenv, rm, write, read, siblings, leaf, \
+    append, path, parent, objsz, mkdirs, filesz, dict2str, children
 from typing import Any, Optional, Type, Callable, Dict
 from enum import Enum, auto
 import torch
@@ -53,7 +54,7 @@ class Attribute:
     @data.deleter
     def data(self): rm(self.fp); del self.buf
 
-    def __getstate__(self): state = self.__dict__.copy(); state['buf'] = None; return state
+    def __getstate__(self): state = self.__dict__.copy(); state['_buf'] = None; return state
     def __setstate__(self, state): self.__dict__.update(state); return state
 
 class Entry:
@@ -68,6 +69,8 @@ class Entry:
         self.status.buf += self.Status.error.name
         self.error = Attribute(path(self.fp, 'error_'+str(self.num_err)), data=errm, mem=self.mem)
         self.num_err += 1
+
+    def save(self): pass
 
 class ModelEntry(Entry):
     def __init__(self, fp:str, args:Dict[str, str | int], weights: Optional[Any], mem:int=ENTRY_MEM):
@@ -93,3 +96,9 @@ class Maester:
 
         # TODO read in datasets
         self.datasets: Dict[str, DatasetEntry] = {}
+    
+    def create_model_entry(self, name:str, *args, **kwargs):
+        self.models[name] = ModelEntry(self, path(self.fp, 'models', name), *args, **kwargs)
+
+    def create_dataset_entry(self, name:str, *args, **kwargs):
+        self.datasets[name] = DatasetEntry(self, path(self.fp, 'datasets', name), *args, **kwargs)
