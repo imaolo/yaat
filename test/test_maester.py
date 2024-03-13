@@ -59,6 +59,7 @@ class TestAttribute(unittest.TestCase):
     def test_append(self):
         self.attr.buf += self.attr.data
         self.assertEqual(self.attr.data, self.data+'\n'+self.data)
+        self.assertEqual(read(self.attr.fp), self.data+'\n'+self.data)
 
     def test_delete(self):
         attr = self.create_attr(getid(self), self.data)
