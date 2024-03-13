@@ -1,5 +1,5 @@
 from yaat.util import getenv, rm, write, read, siblings, leaf, path, parent, objsz, mkdirs, \
-    filesz, dict2str, serialize, construct
+    filesz, dict2str, serialize, construct, children, filename, TypeDict
 from typing import Any, Optional, Type, Callable, Dict
 from enum import Enum, auto
 from functools import partial
@@ -8,6 +8,11 @@ import torch
 ROOT = getenv('ROOT', "data")
 ENTRY_MEM = getenv('ENTRY_MEM', 500e6)
 ATTR_MEM = ENTRY_MEM
+
+class Loader:
+    readers   = TypeDict({str: read , bytes: partial(read, mode='rb') , torch.nn.Module: torch.load})
+    writers   = TypeDict({str: write, bytes: partial(write, mode='wb'), torch.nn.Module: lambda fp, mdl: torch.save(mdl.state_dict(), fp)})
+    appenders = TypeDict({str: partial(write, mode='a'), bytes: partial(write, mode='ab')})
 
 class AttributeBuffer:
     def __set_name__(self, owner:Type['Attribute'], name:str):
@@ -18,7 +23,7 @@ class AttributeBuffer:
 
     def __get__(self, obj:'Attribute', objtype:Type['Attribute']) -> Any:
         assert obj; self.obj = obj
-        self.set_cache(obj.reader(obj.fp) if filesz(obj.fp) < obj.mem else None)
+        self.set_cache(Loader.readers[obj.type](obj.fp) if filesz(obj.fp) < obj.mem else None)
         return self
 
     def __set__(self, obj:'Attribute', val:Any):
@@ -26,37 +31,31 @@ class AttributeBuffer:
         assert obj; self.obj = obj
         assert not obj.readonly and not obj.appendonly, f"invalid write, try append +=, {obj.readonly=}, {obj.appendonly=}"
         self.set_cache(val if objsz(val) < obj.mem else None)
-        obj.writer(obj.fp, val)
+        Loader.writers[obj.type](obj.fp, val)
 
     def __iadd__(self, val:Any):
-        assert self.obj.appender and not self.obj.readonly, f"invalid append, {self.obj.appender=}, {self.obj.readonly=}"
-        self.obj.appender(self.obj.fp, '\n'+val)
-        self.set_cache(self.obj.reader(self.obj.fp) if filesz(self.obj.fp) < self.obj.mem else None)
+        assert self.obj.type in Loader.appenders and not self.obj.readonly, f"invalid append, {self.obj.type=}, {self.obj.readonly=}"
+        Loader.appenders[self.obj.type](self.obj.fp, '\n'+val)
+        self.set_cache(Loader.readers[self.obj.type](self.obj.fp) if filesz(self.obj.fp) < self.obj.mem else None)
         return self
-
-    def __delete__(self, obj:'Attribute'): delattr(obj, self.pname)
 
 class Attribute:
     # read & delete data, write & append buf
 
     buf: AttributeBuffer = AttributeBuffer()
-    def __init__(self, fp:str, data:Any, mem:int=ATTR_MEM, readonly:bool=False, appendonly:bool=False, \
+    def __init__(self, fp:str, data:Optional[Any], mem:int=ATTR_MEM, readonly:bool=False, appendonly:bool=False, \
                  writer:Callable=write, reader:Callable=read, appender:Optional[Callable]=partial(write, mode='a')) -> None:
         assert not (l:=leaf(fp)) in (s:=siblings(fp)), f"{l} cannot exist, directory {parent(fp)} contents: {s}"
-        self.fp, self.mem, self.readonly, self.appendonly = fp, mem, False, False
-        self.writer, self.reader, self.appender = writer, reader, appender
+        self.fp, self.mem, self.readonly, self.appendonly, self.type = fp, mem, False, False, type(data)
 
         # write, then configure
         self.buf, self.readonly, self.appendonly = data, readonly, appendonly
 
     @property
-    def data(self) -> Any: return self._buf if self._buf else self.reader(self.fp)
+    def data(self) -> Any: return self._buf if self._buf else Loader.readers[self.type](self.fp)
 
     @data.deleter
-    def data(self): rm(self.fp); del self.buf
-
-    def __getstate__(self): state = self.__dict__.copy(); state['_buf'] = None; return state
-    def __setstate__(self, state): self.__dict__.update(state); return state
+    def data(self): rm(self.fp); del self
 
 class Entry:
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
@@ -74,8 +73,10 @@ class Entry:
 
     def save(self): self.obj.buf = serialize(self)
 
-    @classmethod
-    def load(cls, fp:str) -> 'Entry': return construct(read(fp, 'rb'))
+    @staticmethod
+    def load(fp:str) -> 'Entry': return construct(read(fp, 'rb'))
+
+    def __getstate__(self) -> Dict[str, Any]: return {k:v for k, v in self.__dict__.items() if k != '_buf'}
 
 class ModelEntry(Entry):
     def __init__(self, fp:str, args:Dict[str, str | int], weights: Optional[Any], mem:int=ENTRY_MEM):
@@ -83,27 +84,30 @@ class ModelEntry(Entry):
         self.mem = self.mem
         self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True, mem=mem)
         self.weights = Attribute(path(fp, 'weights'), weights, reader=torch.load, writer=lambda fp, val: torch.save(val, fp), mem=mem)
+        self.save()
 
 class DatasetEntry(Entry):
-    def __init__(self, fp:str, data:Any):
-        super().__init__(fp)
+    def __init__(self, fp:str, data:Any, mem:int=ENTRY_MEM):
+        super().__init__(fp, mem)
         self.dataset = Attribute(path(fp, 'dataset'), data, readonly=True)
+        self.save()
 
-class Maester:
-    def __init__(self, fp:str, mem:int=10e6): # TODO configs
-        self.fp, self.mem = fp, mem
+# class Maester:
+#     def __init__(self, fp:str, mem:int=10e6): # TODO configs
+#         self.fp, self.mem = fp, mem
+#         mkdirs(fp, exist_ok=True) # TODO mount directory
+#         mkdirs(path(fp, 'models'), exist_ok=True)
+#         mkdirs(path(fp, 'datasets'), exist_ok=True)
+#         self.models: Dict[str, ModelEntry] = {}
+#         self.datasets: Dict[str, DatasetEntry] = {}
+#         self.sync()
 
-        # TODO mount directory
-        mkdirs(fp, exist_ok=False)
+#     def create_model(self, name:str, *args, **kwargs):
+#         self.models[name] = ModelEntry(path(self.fp, 'models', name), *args, **kwargs)
 
-        # TODO read in models
-        self.models: Dict[str, ModelEntry] = {}
+#     def create_dataset(self, name:str, *args, **kwargs):
+#         self.datasets[name] = DatasetEntry(path(self.fp, 'datasets', name), *args, **kwargs)
 
-        # TODO read in datasets
-        self.datasets: Dict[str, DatasetEntry] = {}
-    
-    def create_model_entry(self, name:str, *args, **kwargs):
-        self.models[name] = ModelEntry(self, path(self.fp, 'models', name), *args, **kwargs)
-
-    def create_dataset_entry(self, name:str, *args, **kwargs):
-        self.datasets[name] = DatasetEntry(self, path(self.fp, 'datasets', name), *args, **kwargs)
+#     def sync(self):
+#         self.models.update({mfn: Entry.load(path(self.fp, 'models', mfp, 'obj')) for mfp in children(path(self.fp, 'models')) if (mfn:=filename(mfp)) not in self.models})
+#         self.datasets.update({dsfn: Entry.load(path(self.fp, 'datasets', dsfp, 'obj')) for dsfp in children(path(self.fp, 'datasets')) if (dsfn:=filename(dsfp)) not in self.datasets})
