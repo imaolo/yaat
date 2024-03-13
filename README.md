@@ -3,11 +3,11 @@
 python -m pip install -e . 
 ```
 
-## Run
+## Testing
 ```bash
-python yaat.py
+python -m pip install -e '.[testing]'
+python -m pytest test/ 
 ```
-
 
 ## Get Original Data
 yaat.py has all the information it needs to download the
