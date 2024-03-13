@@ -1,6 +1,6 @@
-import unittest, os, random, pickle
+import unittest, os, random
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
-    mkdirs, dict2str, gettime, serialize, parent, write, construct, filesz
+    mkdirs, dict2str, gettime, serialize, write, construct, filesz
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
 import torch
