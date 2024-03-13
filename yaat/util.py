@@ -14,20 +14,16 @@ def objsz(obj:Any) -> int: return len(pickle.dumps(obj))
 def filesz(fp: str) -> int: return os.path.getsize(fp)
 def siblings(fp:str) -> List[str]: return os.listdir(path(*fp.split('/')[:-1]))
 def children(fp:str) -> List[str]: return os.listdir(fp)
-def serialize(fp:str, obj:Any):
-    with open(fp+'.pk', 'wb') as f: pickle.dump(obj, f)
-def construct(fp:str) -> Any:
-    with open(fp+'.pk', 'rb') as f: return pickle.load(f)
+def serialize(obj:Any) -> bytes: return pickle.dumps(obj)
+def construct(obj:bytes) -> Any: return pickle.loads(obj)
 def dict2str(d:Dict) -> str: return json.dumps(d)
 def str2dict(str:str) -> Dict: return json.loads(str)
-def parent(fp:str) -> List[str]: return path(*fp.split('/')[-2])
+def parent(fp:str) -> List[str]: return fp.split('/')[-2]
 def leaf(fp:str) -> str: return fp.split('/')[-1]
-def read(fp:str) -> str:
-    with open(fp, 'r') as f: return f.read()
-def write(fp:str, data:str):
-    with open(fp, 'w') as f: f.write(data)
-def append(fp:str, data:str):
-    with open(fp, 'a') as f: f.write(data)
+def read(fp:str, mode='r') -> str | bytes:
+    with open(fp, mode) as f: return f.read()
+def write(fp:str, data:str | bytes, mode='w'):
+    with open(fp, mode) as f: f.write(data)
 def rm(fp:str):
      if os.path.isdir(fp): runcmd(f"rm -rf {fp}")
      if os.path.isfile(fp): os.remove(fp)
