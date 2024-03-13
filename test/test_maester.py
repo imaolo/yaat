@@ -78,6 +78,7 @@ class TestAttribute(unittest.TestCase):
         with self.assertRaises(AssertionError): attr.buf = 1
         attr.buf += self.data
         self.assertEqual(attr.data, self.data+'\n'+self.data)
+        self.assertEqual(read(attr.fp), self.data+'\n'+self.data)
 
 class TestEntry(unittest.TestCase):
     test_num:int = 0
