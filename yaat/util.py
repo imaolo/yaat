@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
-from typing import Any, List
-import subprocess, pprint, select, os, pickle
+from typing import Any, List, Dict
+import subprocess, pprint, select, os, pickle, json
 
 load_dotenv()
 
@@ -12,6 +12,8 @@ def mkdirs(*args, mode=0o755, **kwargs): os.makedirs(*args, mode=mode, **kwargs)
 def objsz(obj:Any) -> int: return len(pickle.dumps(obj))
 def filesz(fp: str) -> int: return os.path.getsize(fp)
 def siblings(fp:str) -> List[str]: return os.listdir(path(*fp.split('/')[:-1]))
+def dict2str(d:Dict) -> str: return json.dumps(d)
+def str2dict(str:str) -> Dict: return json.loads(str)
 def parent(fp:str) -> List[str]: return path(*fp.split('/')[-2])
 def leaf(fp:str) -> str: return fp.split('/')[-1]
 def read(fp:str) -> str:
