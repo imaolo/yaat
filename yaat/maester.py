@@ -1,4 +1,4 @@
-from yaat.util import getenv, rm, write, read, siblings, leaf, append, path, parent, objsz, mkdirs
+from yaat.util import getenv, rm, write, read, siblings, leaf, append, path, parent, objsz, mkdirs, filesz
 from typing import Any, Optional, Type, Callable
 from enum import Enum, auto
 
@@ -10,11 +10,11 @@ class AttributeBuffer:
 
     def __set_name__(self, owner:Type['Attribute'], name:str):
         self.obj, self.pname = None, '_'+name
-        setattr(owner, self.pname, None)
+        setattr(owner, self.pname, None) # clear cache
 
     def __get__(self, obj:'Attribute', objtype:Type['Attribute']) -> Any:
         assert obj; self.obj = obj
-        setattr(self, self.pname, data if objsz(data:=obj.reader(obj.fp)) < obj.mem_th else None)
+        setattr(self, self.pname, obj.reader(obj.fp) if filesz(obj.fp) < obj.mem_th else None) # load cache
         return self
 
     def __set__(self, obj:'Attribute', val:Any):
@@ -47,7 +47,7 @@ class Attribute:
         self.buf, self.readonly, self.appendonly = data, readonly, appendonly
 
     @property
-    def data(self) -> Any: return self._buf if self._buf else self.buf.get()
+    def data(self) -> Any: return self._buf if self._buf else self.buf.get() # check cache first
 
     @data.deleter
     def data(self): rm(self.fp); del self.buf
