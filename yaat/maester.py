@@ -105,39 +105,3 @@ class DataEntry(Entry):
 #         with open(fp, 'r') as f: return f.read()
 #     # TODO - rest of maester...
 # Maester = _Maester(root=getenv('ROOT', "data"), mem_th=getenv("MEMTH", 10e6))
-
-    # def __setattr__(self, key:str, val:Any):
-    #     if hasattr(self, '_attrs') and key in self._attrs:
-    #         val = str(val)
-    #         p = path(Maester.root, type(self).root)
-    #         if key in self._readonly_attrs: assert not hasattr(self, key), f"{self.__dict__}. \n\n {key}"
-    #         elif key in self._dir_attrs: Maester.create_folder(path(type(self).root, val), exists_ok=self.exists_ok)
-    #         elif key in self._append_attrs: Maester.append_file(path(p, key), val)
-    #         else: Maester.write_file(path(p, key), val)
-    #         if sys.getsizeof(val) < self.mem_th: super().__setattr__(key, val if sys.getsizeof(val) < self.mem_th else None)
-    #     super().__setattr__(key, val)
-
-    # def __getattr__(self, key) -> Any:
-    #     def _super_getattr():
-    #         if key not in self.__dict__: raise AttributeError
-    #         return self.__dict__[key]
-    #     if '_attrs' not in self.__dict__ or key not in self.__dict__['_attrs']: return _super_getattr()
-    #     if key not in self.__dict__:
-    #         if data:=Maester.get_file(path(Maester.root, type(self).root, key)): return data
-    #     return _super_getattr()
-
-    # def regattr(self, key:str, val:Any, readonly:bool=False, append:bool=False, \
-    #             is_dir:bool=False, exists_ok:bool=True):
-    #     self._attrs.add(key)
-    #     if append: self._append_attrs.add(key)
-    #     if is_dir: self._dir_attrs.add(key)
-    #     if readonly: self._readonly_attrs.add(key)
-    #     exists_ok_prev, self.exists_ok = self.exists_ok, exists_ok
-    #     setattr(self, key, val)
-    #     self.exists_ok = exists_ok_prev
-
-
-
-    # def set_error(self, errm:Optional[str]):
-    #     self.status = self.Status.error.name
-    #     Maester.write_file(path(Maester.root, self.root, self.name+"_error"), errm)
