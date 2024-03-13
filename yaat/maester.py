@@ -28,7 +28,7 @@ class AttributeBuffer:
     def __iadd__(self, val:Any):
         assert self.obj.appender and not self.obj.readonly, f"invalid append, {self.obj.appender=}, {self.obj.readonly=}"
         self.obj.appender(self.obj.fp, '\n'+val)
-        self.set_cache(None)
+        self.set_cache(self.obj.reader(self.obj.fp) if filesz(self.obj.fp) < self.obj.mem_th else None)
         return self
 
     def __delete__(self, obj:'Attribute'): delattr(obj, self.pname)
