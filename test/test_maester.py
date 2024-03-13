@@ -40,6 +40,7 @@ class TestAttribute(unittest.TestCase):
     def test_write_twice(self):
         self.attr.buf = '1432543254325432'
         self.assertEqual(read(self.attr.fp), '1432543254325432')
+        self.assertEqual(self.attr.data, '1432543254325432')
 
     def test_mem_th_not_enough(self):
         attr = self.create_attr(getid(self), self.data, mem_th=objsz(self.data))
