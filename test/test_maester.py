@@ -1,6 +1,6 @@
 import unittest, os, sys, random, pickle, time
 from yaat.util import rm, path, exists, getenv, read, objsz
-from yaat.maester import Attribute
+from yaat.maester import Attribute, Entry
 from typing import Any
 
 DEBUG=getenv("DEBUG", 0)
@@ -57,7 +57,7 @@ class TestAttribute(unittest.TestCase):
 
     def test_append(self):
         self.attr.buf += self.attr.data
-        self.assertEqual(self.attr.data, self.data+self.data)
+        self.assertEqual(self.attr.data, self.data+'\n'+self.data)
 
     def test_delete(self):
         attr = self.create_attr(getid(self), self.data)
@@ -75,38 +75,47 @@ class TestAttribute(unittest.TestCase):
         attr = self.create_attr(getid(self), self.data, appendonly=True)
         with self.assertRaises(AssertionError): attr.buf = 1
         attr.buf += self.data
-        self.assertEqual(attr.data, self.data+self.data)
+        self.assertEqual(attr.data, self.data+'\n'+self.data)
 
-# TODO
-# class TestEntry(unittest.TestCase):
-#     test_num:int = 0
 
-#     @classmethod
-#     def setUpClass(cls) -> None:
-#         cls.dp = 'twork'+cls.__name__
-#         if os.path.isdir(cls.dp): rm(cls.dp)
-#         os.mkdir(cls.dp)
-#     @classmethod
-#     def tearDownClass(cls) -> None:
-#         if not DEBUG: rm(cls.dp)
+class TestEntry(unittest.TestCase):
+    test_num:int = 0
 
-#     def setUp(self) -> None:
-#         self.entry = Entry(path(self.dp, f"test_{type(self).__name__}_{self.test_num}"))
-#         self.test_num += 1
-#     def tearDown(self) -> None:
-#         rm(self.entry.dir.fp)
-#         del self.entry
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
+        if os.path.isdir(cls.dp): rm(cls.dp)
+        os.mkdir(cls.dp)
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if not DEBUG: rm(cls.dp)
 
-#     ### Tests ###
+    def setUp(self) -> None:
+        self.entry = Entry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"))
+    def tearDown(self) -> None:
+        rm(self.entry.fp)
+        del self.entry
 
-#     def test_constructor(self):
-#         self.assertTrue(os.path.isdir(self.entry.dir.fp))
-#         self.assertEqual(self.entry.status.data, Entry.Status.created.name)
-#         with open(self.entry.status.fp, 'r') as f : self.assertEqual(f.read(), Entry.Status.created.name)
+    ### Tests ###
 
-#     def test_status_update(self):
-#         self.entry.status.data = Entry.Status.running.name
-#         with open(self.entry.status.fp, 'r') as f : self.assertEqual(f.read(), Entry.Status.created.name+Entry.Status.running.name)
+    def test_constructor(self):
+        self.assertTrue(os.path.isdir(self.entry.fp))
+        self.assertEqual(self.entry.status.data, Entry.Status.created.name)
+        with open(self.entry.status.fp, 'r') as f : self.assertEqual(f.read(), Entry.Status.created.name)
+
+    def test_status_update(self):
+        self.entry.status.buf += Entry.Status.running.name
+        with open(self.entry.status.fp, 'r') as f : self.assertEqual(f.read().split('\n')[-1], Entry.Status.running.name)
+
+    def test_set_error(self):
+        self.entry.set_error(msg1:=f"pytorch error: {'blah blah pytorch failed'}")
+        self.assertEqual(read(path(self.entry.fp, 'error_0')), msg1)
+        self.assertEqual(read(self.entry.status.fp).split('\n')[-1], Entry.Status.error.name)
+        self.entry.set_error(msg2:=f"pytorch error: {'blah blah pytorch failed number 2'}")
+        self.assertEqual(read(path(self.entry.fp, 'error_1')), msg2)
+        self.assertEqual(read(path(self.entry.fp, 'error_0')), msg1)
+        self.assertEqual(read(self.entry.status.fp).split('\n')[-1], Entry.Status.error.name)
+
 # TODO
 # # class TestEntry(unittest.TestCase):
 # #     test_num:int=0
