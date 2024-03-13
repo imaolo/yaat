@@ -29,7 +29,7 @@ class TestAttribute(unittest.TestCase):
 
     def test_empty(self):
         if exists(p:=path(self.dp, getid(self))): rm(p)
-        attr = self.create_attr(getid(self), None)
+        attr = self.create_attr(getid(self), '')
         self.assertTrue(attr.fp.split('/')[-1] in os.listdir(self.dp))
         self.assertEqual(read(attr.fp), '')
 

@@ -23,11 +23,11 @@ class AttributeBuffer:
         assert obj; self.obj = obj
         assert not obj.readonly and not obj.appendonly, f"invalid write, try append +=, {obj.readonly=}, {obj.appendonly=}"
         self.set_cache(val if objsz(val) < obj.mem_th else None)
-        obj.writer(obj.fp, val if val is not None else '')
+        obj.writer(obj.fp, val)
 
     def __iadd__(self, val:Any):
         assert self.obj.appender and not self.obj.readonly, f"invalid append, {self.obj.appender=}, {self.obj.readonly=}"
-        self.obj.appender(self.obj.fp, '\n'+val if val is not None else '')
+        self.obj.appender(self.obj.fp, '\n'+val)
         self.set_cache(self.obj.reader(self.obj.fp) if filesz(self.obj.fp) < self.obj.mem_th else None)
         return self
 
@@ -71,7 +71,7 @@ class ModelEntry(Entry):
     def __init__(self, fp:str, args:Dict[str, str | int], status:Entry.Status=Entry.Status.created, weights: Optional[Any]=None):
         super().__init__(fp)
         self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True)
-        self.weights = Attribute(path(fp, 'weights'), None)
+        self.weights = Attribute(path(fp, 'weights'), '')
 
 class DataEntry(Entry):
     def __init__(self, fp:str, data:Any):
