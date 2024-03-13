@@ -5,7 +5,7 @@ from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry
 from typing import Any
 import torch
 
-DEBUG=getenv("DEBUG", 0)
+DEBUG = getenv("DEBUG", 0)
 
 def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
 
