@@ -7,27 +7,29 @@ MEMTH_ENTRY = getenv('MEMTH_ENTRY', 500e6)
 MEMTH_ATTR = MEMTH_ENTRY
 
 class AttributeBuffer:
+    
+    def set_cache(self, val:Any): setattr(self.obj, self.pname, val)
 
     def __set_name__(self, owner:Type['Attribute'], name:str):
-        self.obj, self.pname = None, '_'+name
-        setattr(owner, self.pname, None) # clear cache
+        self.obj, self.pname = owner, '_'+name
+        self.set_cache(None)
 
     def __get__(self, obj:'Attribute', objtype:Type['Attribute']) -> Any:
         assert obj; self.obj = obj
-        setattr(self, self.pname, obj.reader(obj.fp) if filesz(obj.fp) < obj.mem_th else None) # load cache
+        self.set_cache(obj.reader(obj.fp) if filesz(obj.fp) < obj.mem_th else None)
         return self
 
     def __set__(self, obj:'Attribute', val:Any):
         if isinstance(val, AttributeBuffer): return self # append already happened
         assert obj; self.obj = obj
         assert not obj.readonly and not obj.appendonly, f"invalid write, try append +=, {obj.readonly=}, {obj.appendonly=}"
-        setattr(obj, self.pname, val if objsz(val) < obj.mem_th else None)
+        self.set_cache(val if objsz(val) < obj.mem_th else None)
         obj.writer(obj.fp, val)
 
     def __iadd__(self, val:Any):
         assert self.obj.appender and not self.obj.readonly, f"invalid append, {self.obj.appender=}, {self.obj.readonly=}"
         self.obj.appender(self.obj.fp, val)
-        setattr(self.obj, self.pname, None) # invalidate cache
+        self.set_cache(None)
         return self
 
     def __delete__(self, obj:'Attribute'): delattr(obj, self.pname)
