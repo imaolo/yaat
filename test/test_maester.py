@@ -1,6 +1,6 @@
 import unittest, os, random, pickle, time
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs, dict2str
-from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry
+from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
 import torch
 
@@ -149,5 +149,10 @@ class TestDataSetEntry(TestMaesterSetup):
         self.assertEqual(self.de.dataset.data, self.data)
 
 class TestMaester(TestMaesterSetup):
+
+    def setUp(self) -> None: self.maester = Maester(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"))
+    def tearDown(self) -> None: rm(self.maester.fp)
+
+    ### Tests ###
 
     def test_nothing(self): pass
