@@ -68,10 +68,16 @@ class Entry:
         self.num_err += 1
 
 class ModelEntry(Entry):
-    def __init__(self, fp:str, args:Dict[str, str | int], status:Entry.Status=Entry.Status.created, weights: Optional[Any]=None):
+    def __init__(self, fp:str, args:Dict[str, str | int], weights: Optional[Any]=None):
         super().__init__(fp)
         self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True)
-        self.weights = Attribute(path(fp, 'weights'), '')
+        self.weights = Attribute(path(fp, 'weights'), '') # TODO torch reader and writer
+
+# model = TheModelClass(*args, **kwargs)  # Make sure to instantiate your model class
+# model_state_dict = torch.load('model_state_dict.pth')
+# model.load_state_dict(model_state_dict)
+
+# torch.save(model.state_dict(), 'model_state_dict.pth')
 
 class DataEntry(Entry):
     def __init__(self, fp:str, data:Any):
