@@ -1,5 +1,5 @@
-from yaat.util import getenv, rm, write, read, siblings, leaf, append, path, parent, objsz, mkdirs, filesz
-from typing import Any, Optional, Type, Callable
+from yaat.util import getenv, rm, write, read, siblings, leaf, append, path, parent, objsz, mkdirs, filesz, dict2str
+from typing import Any, Optional, Type, Callable, Dict
 from enum import Enum, auto
 
 ROOT = getenv('ROOT', "data")
@@ -66,20 +66,18 @@ class Entry:
         self.error = Attribute(path(self.fp, 'error_'+str(self.num_err)), data=errm)
         self.num_err += 1
 
+class ModelEntry(Entry):
+    def __init__(self, fp:str, args:Dict[str, str | int], status:Entry.Status=Entry.Status.created, weights: Optional[Any]=None):
+        super().__init__(fp)
+        self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True)
+        self.weights = Attribute(path(fp, 'weights'), '')
 
-# class ModelEntry(Entry):
-#     root:str = 'models'
-#     # def __init__(self, name:str, args:Dict[str, str | int], status:Entry.Status=Entry.Status.created, weights: Optional[Any]=None):
-#     #     super().__init__(name, status)
-#     #     self.regattr('args', args, readonly=True)
-#     #     self.regattr('weights', weights)
+class DataEntry(Entry):
+    def __init__(self, fp:str, data:Any):
+        super().__init__(fp)
+        self.data = Attribute(path(fp, 'data'), data, readonly=True)
 
-# class DataEntry(Entry):
-#     root:str = 'data'
-#     # def __init__(self, name:str, data:Any, status:Entry.Status=Entry.Status.created):
-#     #     super().__init__(name, status)
-#     #     self.regattr('data', data, readonly=True)
-
+# TODO
 # class _Maester:
 #     def __init__(self, root:str='data', mem_th:int=10e6):
 #         self.root, self.mem_th = root, mem_th
