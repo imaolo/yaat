@@ -92,22 +92,22 @@ class DatasetEntry(Entry):
         self.dataset = Attribute(path(fp, 'dataset'), data, readonly=True)
         self.save()
 
-# class Maester:
-#     def __init__(self, fp:str, mem:int=10e6): # TODO configs
-#         self.fp, self.mem = fp, mem
-#         mkdirs(fp, exist_ok=True) # TODO mount directory
-#         mkdirs(path(fp, 'models'), exist_ok=True)
-#         mkdirs(path(fp, 'datasets'), exist_ok=True)
-#         self.models: Dict[str, ModelEntry] = {}
-#         self.datasets: Dict[str, DatasetEntry] = {}
-#         self.sync()
+class Maester:
+    def __init__(self, fp:str, mem:int=10e6): # TODO configs
+        self.fp, self.mem = fp, mem
+        mkdirs(fp, exist_ok=True) # TODO mount directory
+        mkdirs(path(fp, 'models'), exist_ok=True)
+        mkdirs(path(fp, 'datasets'), exist_ok=True)
+        self.models: Dict[str, ModelEntry] = {}
+        self.datasets: Dict[str, DatasetEntry] = {}
+        self.sync()
 
-#     def create_model(self, name:str, *args, **kwargs):
-#         self.models[name] = ModelEntry(path(self.fp, 'models', name), *args, **kwargs)
+    def create_model(self, name:str, *args, **kwargs):
+        self.models[name] = ModelEntry(path(self.fp, 'models', name), *args, **kwargs)
 
-#     def create_dataset(self, name:str, *args, **kwargs):
-#         self.datasets[name] = DatasetEntry(path(self.fp, 'datasets', name), *args, **kwargs)
+    def create_dataset(self, name:str, *args, **kwargs):
+        self.datasets[name] = DatasetEntry(path(self.fp, 'datasets', name), *args, **kwargs)
 
-#     def sync(self):
-#         self.models.update({mfn: Entry.load(path(self.fp, 'models', mfp, 'obj')) for mfp in children(path(self.fp, 'models')) if (mfn:=filename(mfp)) not in self.models})
-#         self.datasets.update({dsfn: Entry.load(path(self.fp, 'datasets', dsfp, 'obj')) for dsfp in children(path(self.fp, 'datasets')) if (dsfn:=filename(dsfp)) not in self.datasets})
+    def sync(self):
+        self.models.update({mfn: Entry.load(path(self.fp, 'models', mfp, 'obj')) for mfp in children(path(self.fp, 'models')) if (mfn:=filename(mfp)) not in self.models})
+        self.datasets.update({dsfn: Entry.load(path(self.fp, 'datasets', dsfp, 'obj')) for dsfp in children(path(self.fp, 'datasets')) if (dsfn:=filename(dsfp)) not in self.datasets})
