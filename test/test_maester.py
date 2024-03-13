@@ -1,5 +1,5 @@
-import unittest, os, sys, random, pickle, time
-from yaat.util import rm, path, exists, getenv, read, objsz
+import unittest, os, random, pickle, time
+from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs
 from yaat.maester import Attribute, Entry
 from typing import Any
 
@@ -12,8 +12,8 @@ class TestAttribute(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
-        if os.path.isdir(cls.dp): rm(cls.dp)
-        os.mkdir(cls.dp)
+        if exists(cls.dp): rm(cls.dp)
+        mkdirs(cls.dp)
     @classmethod
     def tearDownClass(cls) -> None:
         if not DEBUG: rm(cls.dp)
