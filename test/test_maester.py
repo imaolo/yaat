@@ -1,7 +1,7 @@
 import unittest, os, random, pickle
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
     mkdirs, dict2str, gettime, serialize, parent, write, construct
-from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
+from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry
 from typing import Any
 import torch
 
@@ -119,17 +119,17 @@ class TestEntry(TestMaesterSetup):
         e2 = Entry.load(e1.obj.fp)
         self.assertEqual(e1.error.data, e2.error.data)
 
-class TestModelEntry(TestMaesterSetup):
+class Model(torch.nn.Module):
+    def __init__(self):
+        super(type(self), self).__init__()
+        self.linear = torch.nn.Linear(1, 1)
+model = Model() 
 
-    class Model(torch.nn.Module):
-        def __init__(self):
-            super(type(self), self).__init__()
-            self.linear = torch.nn.Linear(1, 1)
-    model = Model() 
+class TestModelEntry(TestMaesterSetup):
 
     def setUp(self) -> None:
         self.args = {'a':'d'}
-        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, weights=self.model.state_dict())
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, weights=model)
     def tearDown(self) -> None: rm(self.me.fp)
 
     ### Tests ###
@@ -138,11 +138,11 @@ class TestModelEntry(TestMaesterSetup):
         self.assertEqual(self.me.args.data, dict2str(self.args))
     
     def test_weights_simple(self):
-        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, weights=self.model.state_dict(), mem=objsz(self.model.state_dict()))
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, weights=model, mem=objsz(model.state_dict()))
         self.assertIsNone(self.me.weights._buf)
-        model1 = self.Model()
+        model1 = Model()
         model1.load_state_dict(self.me.weights.data)
-        self.assertTrue(torch.equal(model1.linear.weight, self.model.linear.weight))
+        self.assertTrue(torch.equal(model1.linear.weight, model.linear.weight))
 
 class TestDataSetEntry(TestMaesterSetup):
 
@@ -156,11 +156,35 @@ class TestDataSetEntry(TestMaesterSetup):
     def test_simple(self):
         self.assertEqual(self.de.dataset.data, self.data)
 
-class TestMaester(TestMaesterSetup):
+# class TestMaester(TestMaesterSetup):
 
-    def setUp(self) -> None: self.maester = Maester(path(self.dp, f"{getid(self)}_{gettime()}"))
-    def tearDown(self) -> None: rm(self.maester.fp)
+#     def setUp(self) -> None: self.maester = Maester(path(self.dp, f"{getid(self)}_{gettime()}"))
+#     def tearDown(self) -> None: rm(self.maester.fp)
 
-    ### Tests ###
+#     ### Tests ###
 
-    def test_nothing(self): pass
+#     def test_create_model(self):
+#         args = {'key': 'val'}
+#         model = Model()
+#         self.maester.create_model(n:='mymodel', args=args, weights=model.state_dict(), mem=0)
+#         modelentry = self.maester.models[n]
+#         model1 = Model()
+#         model1.load_state_dict(modelentry.weights.data)
+#         self.assertTrue(torch.equal(model1.linear.weight, model.linear.weight))
+
+
+#     def test_create_dataset(self):
+#         data = '12345'
+#         self.maester.create_dataset(n:='mydataset', data, mem=0)
+#         self.assertEqual(data, self.maester.datasets[n].dataset.data)
+
+#     def test_sync(self):
+#         data = '12345'
+#         self.maester.create_dataset(n:='mydataset1', data)
+
+#         maester = Maester(self.maester.fp)
+
+#         assert False, maester.datasets[n].__dict__
+#         self.assertEqual(maester.datasets[n].dataset.data, data)
+
+#     def test_create_dataset_entry(self): pass
