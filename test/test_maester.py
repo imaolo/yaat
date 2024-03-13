@@ -1,6 +1,6 @@
 import unittest, os, random, pickle, time
-from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs
-from yaat.maester import Attribute, Entry, ModelEntry
+from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs, dict2str
+from yaat.maester import Attribute, Entry, ModelEntry, DataEntry
 from typing import Any
 
 DEBUG=getenv("DEBUG", 0)
@@ -77,7 +77,6 @@ class TestAttribute(unittest.TestCase):
         attr.buf += self.data
         self.assertEqual(attr.data, self.data+'\n'+self.data)
 
-
 class TestEntry(unittest.TestCase):
     test_num:int = 0
 
@@ -115,3 +114,41 @@ class TestEntry(unittest.TestCase):
         self.assertEqual(read(path(self.entry.fp, 'error_1')), msg2)
         self.assertEqual(read(path(self.entry.fp, 'error_0')), msg1)
         self.assertEqual(read(self.entry.status.fp).split('\n')[-1], Entry.Status.error.name)
+
+class TestModelEntry(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
+        if exists(cls.dp): rm(cls.dp)
+        mkdirs(cls.dp)
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if not DEBUG: rm(cls.dp)
+
+    def setUp(self) -> None:
+        self.args = {'a':'d'}
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.args)
+    def tearDown(self) -> None: rm(self.me.fp)
+
+    def test_simple(self):
+        self.assertEqual(self.me.args.data, dict2str(self.args))
+
+class TestDataEntry(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
+        if exists(cls.dp): rm(cls.dp)
+        mkdirs(cls.dp)
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if not DEBUG: rm(cls.dp)
+
+    def setUp(self) -> None:
+        self.data = 'fdafdasfdsa'
+        self.de = DataEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.data)
+    def tearDown(self) -> None: rm(self.de.fp)
+
+    def test_simple(self):
+        self.assertEqual(self.de.data.data, self.data)
