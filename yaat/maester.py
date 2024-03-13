@@ -6,7 +6,7 @@ from functools import partial
 import torch
 
 ROOT = getenv('ROOT', "data")
-ENTRY_MEM = getenv('ENTRY_MEM', 500e6)
+ENTRY_MEM = getenv('ENTRY_MEM', 100)
 ATTR_MEM = ENTRY_MEM
 
 class Loader:
@@ -109,5 +109,5 @@ class Maester:
         self.datasets[name] = DatasetEntry(path(self.fp, 'datasets', name), *args, **kwargs)
 
     def sync(self):
-        self.models.update({mfn: Entry.load(path(self.fp, 'models', mfp, 'obj')) for mfp in children(path(self.fp, 'models')) if (mfn:=filename(mfp)) not in self.models})
-        self.datasets.update({dsfn: Entry.load(path(self.fp, 'datasets', dsfp, 'obj')) for dsfp in children(path(self.fp, 'datasets')) if (dsfn:=filename(dsfp)) not in self.datasets})
+        self.models = {filename(mfp): Entry.load(path(self.fp, 'models', mfp, 'obj')) for mfp in children(path(self.fp, 'models'))}
+        self.datasets = {filename(dsfp): Entry.load(path(self.fp, 'datasets', dsfp, 'obj')) for dsfp in children(path(self.fp, 'datasets'))}
