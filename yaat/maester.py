@@ -1,7 +1,8 @@
-from yaat.util import getenv, rm, write, read, siblings, leaf, \
-    append, path, parent, objsz, mkdirs, filesz, dict2str, children
+from yaat.util import getenv, rm, write, read, siblings, leaf, path, parent, objsz, mkdirs, \
+    filesz, dict2str, serialize, construct
 from typing import Any, Optional, Type, Callable, Dict
 from enum import Enum, auto
+from functools import partial
 import torch
 
 ROOT = getenv('ROOT', "data")
@@ -40,7 +41,7 @@ class Attribute:
 
     buf: AttributeBuffer = AttributeBuffer()
     def __init__(self, fp:str, data:Any, mem:int=ATTR_MEM, readonly:bool=False, appendonly:bool=False, \
-                 writer:Callable=write, reader:Callable=read, appender:Optional[Callable]=append) -> None:
+                 writer:Callable=write, reader:Callable=read, appender:Optional[Callable]=partial(write, mode='a')) -> None:
         assert not (l:=leaf(fp)) in (s:=siblings(fp)), f"{l} cannot exist, directory {parent(fp)} contents: {s}"
         self.fp, self.mem, self.readonly, self.appendonly = fp, mem, False, False
         self.writer, self.reader, self.appender = writer, reader, appender
@@ -63,6 +64,7 @@ class Entry:
         self.fp, self.mem = fp, mem
         mkdirs(fp, exist_ok=False)
         self.status = Attribute(path(fp, 'status'), data=self.Status.created.name, appendonly=True, mem=mem)
+        self.obj = Attribute(path(fp, 'obj'), serialize(self), writer=partial(write, mode='wb'))
         self.num_err = 0
 
     def set_error(self, errm:str):
@@ -70,7 +72,10 @@ class Entry:
         self.error = Attribute(path(self.fp, 'error_'+str(self.num_err)), data=errm, mem=self.mem)
         self.num_err += 1
 
-    def save(self): pass
+    def save(self): self.obj.buf = serialize(self)
+
+    @classmethod
+    def load(cls, fp:str) -> 'Entry': return construct(read(fp, 'rb'))
 
 class ModelEntry(Entry):
     def __init__(self, fp:str, args:Dict[str, str | int], weights: Optional[Any], mem:int=ENTRY_MEM):
