@@ -2,6 +2,7 @@ import unittest, os, random, pickle, time
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, mkdirs, dict2str
 from yaat.maester import Attribute, Entry, ModelEntry, DataEntry
 from typing import Any
+import torch
 
 DEBUG=getenv("DEBUG", 0)
 
@@ -120,6 +121,14 @@ class TestEntry(unittest.TestCase):
 
 class TestModelEntry(unittest.TestCase):
 
+    class Model(torch.nn.Module):
+        def __init__(self):
+            super(type(self), self).__init__()
+            self.linear = torch.nn.Linear(1, 1)  # A single linear layer with one input and one output feature
+
+        def forward(self, x): return self.linear(x)
+    model = Model() 
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.dp = f"twork_{cls.__name__}_{int(time.time()*1e3)}"
@@ -131,11 +140,18 @@ class TestModelEntry(unittest.TestCase):
 
     def setUp(self) -> None:
         self.args = {'a':'d'}
-        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.args)
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.args, weights=self.model.state_dict())
     def tearDown(self) -> None: rm(self.me.fp)
 
-    def test_simple(self):
+    def test_args_simple(self):
         self.assertEqual(self.me.args.data, dict2str(self.args))
+    
+    def test_weights_simple(self):
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.args, weights=self.model.state_dict(), mem_th=objsz(self.model.state_dict()))
+        self.assertIsNone(self.me.weights._buf)
+        model1 = self.Model()
+        model1.load_state_dict(self.me.weights.data)
+        self.assertTrue(torch.equal(model1.linear.weight, self.model.linear.weight))
 
 class TestDataEntry(unittest.TestCase):
 
