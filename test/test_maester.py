@@ -46,12 +46,12 @@ class TestAttribute(TestMaesterSetup):
         self.assertEqual(read(self.attr.fp), '1432543254325432')
         self.assertEqual(self.attr.data, '1432543254325432')
 
-    def test_mem_th_not_enough(self):
-        attr = self.create_attr(getid(self), self.data, mem_th=objsz(self.data))
-        self.assertIsNone(attr._buf, msg=f"{objsz(attr._buf)}, {attr._buf}, {attr.mem_th}, {objsz(read(attr.fp))}")
+    def test_mem_not_enough(self):
+        attr = self.create_attr(getid(self), self.data, mem=objsz(self.data))
+        self.assertIsNone(attr._buf, msg=f"{objsz(attr._buf)}, {attr._buf}, {attr.mem}, {objsz(read(attr.fp))}")
 
-    def test_mem_th_enough(self):
-        attr = self.create_attr(getid(self), self.data, mem_th=objsz(self.data)+1)
+    def test_mem_enough(self):
+        attr = self.create_attr(getid(self), self.data, mem=objsz(self.data)+1)
         self.assertIsNotNone(attr._buf)
 
     def test_readonly(self):
@@ -132,7 +132,7 @@ class TestModelEntry(TestMaesterSetup):
         self.assertEqual(self.me.args.data, dict2str(self.args))
     
     def test_weights_simple(self):
-        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.args, weights=self.model.state_dict(), mem_th=objsz(self.model.state_dict()))
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{int(time.time()*1e3)}"), self.args, weights=self.model.state_dict(), mem=objsz(self.model.state_dict()))
         self.assertIsNone(self.me.weights._buf)
         model1 = self.Model()
         model1.load_state_dict(self.me.weights.data)
