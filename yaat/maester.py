@@ -81,13 +81,15 @@ class DatasetEntry(Entry):
         super().__init__(fp)
         self.dataset = Attribute(path(fp, 'dataset'), data, readonly=True)
 
+class Maester:
+    def __init__(self, fp:str, mem:int=10e6): # TODO configs
+        self.fp, self.mem = fp, mem
 
-# class Maester:
-#     def __init__(self, fp:str, mem:int=10e6):
+        # TODO mount directory
+        mkdirs(fp, exist_ok=False)
 
-#         # mount directory?
-#         self.fp, self.mem = fp, mem
-#         mkdirs(fp, exist_ok=False)
+        # TODO read in models
+        self.models: Dict[str, ModelEntry] = {}
 
-#         # read in models
-#         self.ModelEntries = []
+        # TODO read in datasets
+        self.datasets: Dict[str, DatasetEntry] = {}
