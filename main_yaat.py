@@ -20,10 +20,6 @@ if args.cmd == "maester":
     maester = Maester(ROOT)
     cols = []
     if args.mode == 'datasets':
-        for k, v in getattr(maester, args.mode).items():
-            cols.append([k, filesz(v.dataset.fp), v.status.data])
-        print(tabulate(cols, headers=['name', 'size', 'status']))
+        print(tabulate([[k, filesz(v.dataset.fp), v.status.data] for k, v in getattr(maester, args.mode).items()], headers=['name', 'size', 'status']))
     else:
-        for k, v in getattr(maester, args.mode).items():
-            cols.append([k, filesz(v.dataset.fp)])
-        print(tabulate(cols, headers=['name', 'size']))
+        print(tabulate([[k, v.status.data] for k, v in getattr(maester, args.mode).items()], headers=['name', 'status']))
