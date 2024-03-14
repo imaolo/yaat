@@ -102,12 +102,8 @@ class Maester:
         self.datasets: Dict[str, DatasetEntry] = {}
         self.sync()
 
-    def create_model(self, name:str, *args, **kwargs):
-        self.models[name] = ModelEntry(path(self.fp, 'models', name), *args, **kwargs)
-
-    def create_dataset(self, name:str, *args, **kwargs):
-        self.datasets[name] = DatasetEntry(path(self.fp, 'datasets', name), *args, **kwargs)
-
+    def create_model(self, name:str, *args, **kwargs): self.models[name] = ModelEntry(path(self.fp, 'models', name), *args, **kwargs)
+    def create_dataset(self, name:str, *args, **kwargs): self.datasets[name] = DatasetEntry(path(self.fp, 'datasets', name), *args, **kwargs)
     def sync(self):
         self.models = {filename(mfp): Entry.load(path(self.fp, 'models', mfp, 'obj')) for mfp in children(path(self.fp, 'models'))}
         self.datasets = {filename(dsfp): Entry.load(path(self.fp, 'datasets', dsfp, 'obj')) for dsfp in children(path(self.fp, 'datasets'))}
