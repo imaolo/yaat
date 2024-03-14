@@ -79,11 +79,11 @@ class Entry:
     def load(fp:str) -> 'Entry': return construct(read(fp, 'rb'))
 
 class ModelEntry(Entry):
-    def __init__(self, fp:str, args:Dict[str, str | int], weights: Optional[Any], mem:int=ENTRY_MEM):
+    def __init__(self, fp:str, args:Dict[str, str | int], model: torch.nn.Module, mem:int=ENTRY_MEM):
         super().__init__(fp, mem)
         self.mem = self.mem
         self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True, mem=mem)
-        self.weights = Attribute(path(fp, 'weights'), weights, mem=mem)
+        self.weights = Attribute(path(fp, 'weights'), model, mem=mem)
         self.save()
 
 class DatasetEntry(Entry):

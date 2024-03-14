@@ -129,7 +129,7 @@ class TestModelEntry(TestMaesterSetup):
 
     def setUp(self) -> None:
         self.args = {'a':'d'}
-        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, weights=model)
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, model=model)
     def tearDown(self) -> None: rm(self.me.fp)
 
     ### Tests ###
@@ -138,7 +138,7 @@ class TestModelEntry(TestMaesterSetup):
         self.assertEqual(self.me.args.data, dict2str(self.args))
     
     def test_weights_simple(self):
-        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, weights=model, mem=objsz(model.state_dict()))
+        self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, model=model, mem=objsz(model.state_dict()))
         self.assertIsNone(self.me.weights._buf)
         model1 = Model()
         model1.load_state_dict(self.me.weights.data)
@@ -182,7 +182,7 @@ class TestMaester(TestMaesterSetup):
     def test_create_model(self):
         args = {'key': 'val'}
         model = Model()
-        self.maester.create_model(n:=f"{getid(self)}_{gettime()}", args=args, weights=model, mem=0)
+        self.maester.create_model(n:=f"{getid(self)}_{gettime()}", args=args, model=model, mem=0)
         modelentry = self.maester.models[n]
         model1 = Model()
         model1.load_state_dict(modelentry.weights.data)
