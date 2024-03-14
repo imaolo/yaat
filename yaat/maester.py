@@ -43,8 +43,7 @@ class Attribute:
     # read & delete data, write & append buf
 
     buf: AttributeBuffer = AttributeBuffer()
-    def __init__(self, fp:str, data:Optional[Any], mem:int=ATTR_MEM, readonly:bool=False, appendonly:bool=False, \
-                 writer:Callable=write, reader:Callable=read, appender:Optional[Callable]=partial(write, mode='a')) -> None:
+    def __init__(self, fp:str, data:Optional[Any], mem:int=ATTR_MEM, readonly:bool=False, appendonly:bool=False) -> None:
         assert not (l:=leaf(fp)) in (s:=siblings(fp)), f"{l} cannot exist, directory {parent(fp)} contents: {s}"
         self.fp, self.mem, self.readonly, self.appendonly, self.type = fp, mem, False, False, type(data)
 
@@ -65,7 +64,8 @@ class Entry:
         self.fp, self.mem = fp, mem
         mkdirs(fp, exist_ok=False)
         self.status = Attribute(path(fp, 'status'), data=self.Status.created.name, appendonly=True, mem=mem)
-        self.obj = Attribute(path(fp, 'obj'), serialize(self), writer=partial(write, mode='wb'))
+        self.obj = Attribute(path(fp, 'obj'), serialize(self))
+        self.error = None
         self.num_err = 0
 
     def set_error(self, errm:str):
@@ -83,7 +83,7 @@ class ModelEntry(Entry):
         super().__init__(fp, mem)
         self.mem = self.mem
         self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True, mem=mem)
-        self.weights = Attribute(path(fp, 'weights'), weights, reader=torch.load, writer=lambda fp, val: torch.save(val, fp), mem=mem)
+        self.weights = Attribute(path(fp, 'weights'), weights, mem=mem)
         self.save()
 
 class DatasetEntry(Entry):
