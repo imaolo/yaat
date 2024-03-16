@@ -80,13 +80,12 @@ pred_parser.add_argument('--model', type=str, required=True, help='model to use'
 # scout command arguments
 # TODO
 
-### driver ###
-
 args = main_parser.parse_args()
 
-if args.cmd == 'maester':
+### driver ###
 
-    maester = Maester(ROOT)
+maester = Maester(ROOT)
+if args.cmd == 'maester':
 
     if not args.models or args.datasets:
         myprint("datasets")
