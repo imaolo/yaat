@@ -55,8 +55,14 @@ Should not be hard. Define the characteristics of what data we want and use the 
 python main.py scout # data, strategy definition, model, etc
 ```
 
+#### Trade
+```sh
+python main.py trade # model, strategy definition, auth, visualize, etc 
+```
+
 #### Bazaar
-May not have a main command. This will be how other commands buy compute (docker images and machine ssh keys)
+May not have a main command. This will be how other commands buy compute (docker images and machine ssh keys).
+Most of these commands will have the option to start server jobs instead of running locally.
 
 ## get and restructure the original data
 If you want to download and restructure the old data... it is slow.
