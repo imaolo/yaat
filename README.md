@@ -32,9 +32,14 @@ You can also create models and datasets manually. The informer is implemented (j
 
 ## TODO
 
+#### DevOps
+Because of the rclone dependency, we will need to build and push docker images (most cloud boxes do not allow you do download stuff as super user). please no make file please no make file please no make file
+
+lets hope the docker python module has good apis for the build and push process, that way it can be done in python and there is no make file.
+
 #### Maester
 install and configure rclone. Right now
-everything is local.
+everything is local. installation will probably require docker support from the bazaar.
 
 #### Train
 mostly implemented aside from main.py and correctly storing the scaler's state. The informer code has already been modified.
