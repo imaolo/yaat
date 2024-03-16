@@ -1,5 +1,6 @@
-from yaat.maester import Maester
-from yaat.util import getenv, myprint, filesz
+#!/usr/bin/env python3
+from yaat.maester import Maester, Entry
+from yaat.util import getenv, myprint, filesz, rm
 from Informer2020.exp_informer import Exp_Informer
 from typing import Any
 import argparse
@@ -24,8 +25,7 @@ scout_parser = main_subparser.add_parser(n:='scout', help=f"{n} command help")
 # maester command arguments
 maester_parser.add_argument('--datasets', action='store_const', const='datasets', help="list datasets")
 maester_parser.add_argument('--models', action='store_const', const='models', help="list models.")
-maester_parser.add_argument('--delete', action='store_const', const='datasets', help="delete a model or dataset")
-maester_parser.add_argument('--model', action='store_const', const='models', help="which model to delete")
+maester_parser.add_argument('--delete', type=str, default=None, help="delete datasets and models with this name")
 
 # train command arguments
 train_parser.add_argument('--name', type=str, required=True, help='name of the model')
@@ -95,7 +95,16 @@ if args.cmd == 'maester':
 
     if args.models is not None:
         myprint("models")
-        print(tabulate([[k, v.status.data] for k, v in maester.models.items()], headers=['name', 'status']))
+        print(tabulate([[k, v.status.data.split('\n')[-1]] for k, v in maester.models.items()], headers=['name', 'status']))
+
+    if args.delete is not None:
+        model = maester.models.pop(args.delete, None)
+        if model: rm(model.fp)
+        else: print(f"model {args.delete} not found")
+
+        dataset = maester.datasets.pop(args.delete, None)
+        if dataset: rm(dataset.fp)
+        else: print(f"dataset {args.delete} not found")
 
 elif args.cmd == 'train':
 
@@ -108,6 +117,8 @@ elif args.cmd == 'train':
     print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(args))
     for i, e, l, mdl, speed, left_time in exp.train():
         print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i, e, l))
+    
+    maester.models[args.name].status.buf += Entry.Status.finished.name
 
 elif args.cmd == 'pred': pass # TODO
 elif args.cmd == 'scout': pass # TODO
