@@ -52,7 +52,7 @@ python main.py pred # models name, dataset
 #### Scout
 Should not be hard. Define the characteristics of what data we want and use the maester to store it.
 ```sh
-python main.py trade # data, strategy definition, model, etc
+python main.py scout # data, strategy definition, model, etc
 ```
 
 #### Bazaar
