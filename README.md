@@ -57,7 +57,7 @@ python main.py trade # model, strategy definition, auth, visualize, etc
 ```
 
 #### DevOps/Maester/Bazaar - dependent on all before
-need to get rclone, docker, and cloud compute goin once all the other stuff is done.
+rclone, docker, cloud
 
 ## get and restructure the original data
 If you want to download and restructure the old data... it is slow.
