@@ -1,5 +1,6 @@
 from yaat.maester import Maester
 from yaat.util import getenv, myprint, filesz
+from Informer2020.exp_informer import Exp_Informer
 from typing import Any
 import argparse
 from tabulate import tabulate
@@ -62,6 +63,7 @@ train_parser.add_argument('--learning_rate', type=float, default=0.0001, help='o
 train_parser.add_argument('--des', type=str, default='test',help='exp description')
 train_parser.add_argument('--loss', type=str, default='mse',help='loss function')
 train_parser.add_argument('--lradj', type=str, default='type1',help='adjust learning rate')
+train_parser.add_argument('--use_gpu', type=bool, default=True,help='adjust learning rate')
 train_parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)
 
 # pred command arguments
@@ -86,7 +88,7 @@ if args.cmd == 'maester':
         myprint("models")
         print(tabulate([[k, v.status.data] for k, v in maester.models.items()], headers=['name', 'status']))
 
-elif args.cmd == 'train': pass # TODO
+elif args.cmd == 'train': exp = Exp_Informer(args) # TODO
 elif args.cmd == 'pred': pass # TODO
 elif args.cmd == 'scout': pass # TODO
 else: raise RuntimeError(f"invalid command {args.cmd}")
