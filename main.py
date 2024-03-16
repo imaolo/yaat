@@ -27,7 +27,12 @@ maester_parser.add_argument('--models', action='store_const', const='models', he
 
 # train command arguments
 train_parser.add_argument('--name', type=str, required=True, help='name of the model')
-train_parser.add_argument('--data', type=str, required=True, help='csv path')
+train_parser.add_argument('--mean_fp', type=str, default='./mean_stuff')
+train_parser.add_argument('--std_fp', type=str, default='./std_stuff')
+train_parser.add_argument('--data', type=str, default='ETTh1', help='data')
+train_parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
+train_parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')
+train_parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')   
 train_parser.add_argument('--features', type=str, default='M', help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
 train_parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
 train_parser.add_argument('--freq', type=str, default='h', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
@@ -65,6 +70,7 @@ train_parser.add_argument('--loss', type=str, default='mse',help='loss function'
 train_parser.add_argument('--lradj', type=str, default='type1',help='adjust learning rate')
 train_parser.add_argument('--use_gpu', type=bool, default=True,help='adjust learning rate')
 train_parser.add_argument('--use_amp', action='store_true', help='use automatic mixed precision training', default=False)
+train_parser.add_argument('--inverse', action='store_true', help='inverse output data', default=False)
 
 # pred command arguments
 pred_parser.add_argument('--data_in', type=str, required=True, help='csv path')
@@ -77,7 +83,9 @@ pred_parser.add_argument('--model', type=str, required=True, help='model to use'
 ### driver ###
 
 args = main_parser.parse_args()
+
 if args.cmd == 'maester':
+
     maester = Maester(ROOT)
 
     if not args.models or args.datasets:
@@ -88,7 +96,13 @@ if args.cmd == 'maester':
         myprint("models")
         print(tabulate([[k, v.status.data] for k, v in maester.models.items()], headers=['name', 'status']))
 
-elif args.cmd == 'train': exp = Exp_Informer(args) # TODO
+elif args.cmd == 'train':
+
+    exp = Exp_Informer(args) # TODO
+    print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(args))
+    for i, e, l, mdl, speed, left_time in exp.train():
+        print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i, e, l))
+
 elif args.cmd == 'pred': pass # TODO
 elif args.cmd == 'scout': pass # TODO
 else: raise RuntimeError(f"invalid command {args.cmd}")
