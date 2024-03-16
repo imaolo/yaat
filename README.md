@@ -30,44 +30,34 @@ See test_maester.py to find which directories are the maester's. See maester.py 
 
 You can also create models and datasets manually. The informer is implemented (just not in main.py, yet), and see test_maester.py for how to created sample datasets.
 
-## TODO
+## TODO, in order - Noon 3/16
 
-#### DevOps
-Because of the rclone dependency, we will need to build and push docker images (most cloud boxes do not allow you do download stuff as super user). please no make file please no make file please no make file
-
-lets hope the docker python module has good apis for the build and push process, that way it can be done in python and there is no make file.
-
-#### Maester
-install and configure rclone. Right now
-everything is local. installation will probably require docker support from the bazaar.
-
-#### Train
+#### Train - Me - no dependencies
 mostly implemented aside from main.py and correctly storing the scaler's state. The informer code has already been modified.
 ```sh
 python main.py train # model definition, model nam , other metadata, local or remote, dataset, etc
 ```
 
-#### Pred
+#### Pred - Me - train dependency
 need to implement main.py and restore the scalers state. preliminary de scaling tests show the outputs are in the correct range (ball parked). More importantly, the scaled loss is very low. The main task here is to get the scalers state from the model and write the descaled predictions to a file.
 There may be some stuff where you need to wait for the context to be filled, and that could require extra logic.
 ```sh
 python main.py pred # models name, dataset
 ```
 
-#### Scout
+#### Scout - no dependencies
 Should not be hard. Define the characteristics of what data we want and use the maester to store it.
 ```sh
 python main.py scout # data, strategy definition, model, etc
 ```
 
-#### Trade
+#### Trade - dependent on all before
 ```sh
 python main.py trade # model, strategy definition, auth, visualize, etc 
 ```
 
-#### Bazaar
-May not have a main command. This will be how other commands buy compute (docker images and machine ssh keys).
-Most of these commands will have the option to start server jobs instead of running locally.
+#### DevOps/Maester/Bazaar - dependent on all before
+need to get rclone, docker, and cloud compute goin once all the other stuff is done.
 
 ## get and restructure the original data
 If you want to download and restructure the old data... it is slow.
