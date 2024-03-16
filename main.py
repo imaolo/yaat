@@ -24,15 +24,17 @@ scout_parser = main_subparser.add_parser(n:='scout', help=f"{n} command help")
 # maester command arguments
 maester_parser.add_argument('--datasets', action='store_const', const='datasets', help="list datasets")
 maester_parser.add_argument('--models', action='store_const', const='models', help="list models.")
+maester_parser.add_argument('--delete', action='store_const', const='datasets', help="delete a model or dataset")
+maester_parser.add_argument('--model', action='store_const', const='models', help="which model to delete")
 
 # train command arguments
 train_parser.add_argument('--name', type=str, required=True, help='name of the model')
 train_parser.add_argument('--mean_fp', type=str, default='./mean_stuff')
 train_parser.add_argument('--std_fp', type=str, default='./std_stuff')
-train_parser.add_argument('--data', type=str, default='ETTh1', help='data')
+train_parser.add_argument('--data', type=str, default='ETTh2', help='data')
 train_parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
-train_parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')
-train_parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')   
+train_parser.add_argument('--root_path', type=str, default='./ETT/', help='root path of the data file')
+train_parser.add_argument('--data_path', type=str, default='ETTh2.csv', help='data file')   
 train_parser.add_argument('--features', type=str, default='M', help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
 train_parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
 train_parser.add_argument('--freq', type=str, default='h', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
@@ -97,7 +99,12 @@ if args.cmd == 'maester':
 
 elif args.cmd == 'train':
 
+    assert args.name not in maester.models, f"model {args.name} already exists"
+
     exp = Exp_Informer(args) # TODO
+
+    maester.create_model(args.name, args=vars(args), model=exp.model)
+
     print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(args))
     for i, e, l, mdl, speed, left_time in exp.train():
         print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i, e, l))
