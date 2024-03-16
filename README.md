@@ -1,3 +1,4 @@
+# Yaat - Yet Another Automated Trader
 ## install
 ```sh
 python -m pip install -e . 
