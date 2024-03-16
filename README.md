@@ -19,25 +19,44 @@ python main.py maester --models # list models
 python main.py maester --datasets --models # list both
 ```
 
-Train TODO
+Unfortunately main.py doesnt support creating (training) models or
+scouting for datasets yet, so the lists should be empty.
+
+In the meantime, if you want to lists models and/or datasets:
+
+Run the tests with DEBUG=1 and the test directory will not be cleaned when the tests complete. It should be apparent what the test directory is in pwd.
+
+See test_maester.py to find which directories are the maester's. See maester.py to point the maester to the correct directory. The commands should then work.
+
+You can also create models and datasets manually. The informer is implemented (just not in main.py, yet), and see test_maester.py for how to created sample datasets.
+
+## TODO
+
+#### Maester
+install and configure rclone. Right now
+everything is local.
+
+#### Train
+mostly implemented aside from main.py and correctly storing the scaler's state. The informer code has already been modified.
 ```sh
 python main.py train # model definition, model nam , other metadata, local or remote, dataset, etc
 ```
 
-Pred TODO
+#### Pred
+need to implement main.py and restore the scalers state. preliminary de scaling tests show the outputs are in the correct range (ball parked). More importantly, the scaled loss is very low. The main task here is to get the scalers state from the model and write the descaled predictions to a file.
+There may be some stuff where you need to wait for the context to be filled, and that could require extra logic.
 ```sh
 python main.py pred # models name, dataset
 ```
 
-Scout TODO
-```sh
-python main.py scout # dataset name, dataset definition, metadata, etc
-```
-
-Scout TODO
+#### Scout
+Should not be hard. Define the characteristics of what data we want and use the maester to store it.
 ```sh
 python main.py trade # data, strategy definition, model, etc
 ```
+
+#### Bazaar
+May not have a main command. This will be how other commands buy compute (docker images and machine ssh keys)
 
 ## get and restructure the original data
 If you want to download and restructure the old data... it is slow.
