@@ -1,9 +1,8 @@
-import unittest, os, random
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
     mkdirs, dict2str, gettime, serialize, write, construct, filesz, str2dict
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
-import torch, random, numpy as np
+import torch, random, unittest, os, random, numpy as np
 
 
 DEBUG = getenv("DEBUG", 0)
