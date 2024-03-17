@@ -2,16 +2,16 @@ from dotenv import load_dotenv
 from typing import Any, List, Dict, Type
 import subprocess, pprint, select, os, pickle, json, time
 
-load_dotenv()
+
 def getenv(key:str, default=None) -> Any: return os.getenv(key, default) if default is not None else os.environ[key]
 
+load_dotenv()
 DEBUG = getenv("DEBUG", 0)
 ROOT = getenv('ROOT', "data")
 
 def path(*fp:str) -> str: return '/'.join(fp)
 def gettypes(d: Dict[Any, Any], types:List[Type]) -> Dict[Any, Any]: return {k:v for k, v in d.items() if isinstance(v, types)}
 def exists(fp:str): return os.path.isdir(fp) or os.path.isfile(fp)
-
 def myprint(header:str, obj:Any=None):
     print(f"{'='*15} {header} {'='*15}")
     if obj: pprint.pprint(obj)
