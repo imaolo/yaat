@@ -1,8 +1,8 @@
 from yaat.util import getenv, rm, write, read, siblings, leaf, path, parent, objsz, mkdirs, \
-    filesz, dict2str, serialize, construct, children, filename, TypeDict
-from typing import Any, Optional, Type, Callable, Dict
-from enum import Enum, auto
+                        filesz, dict2str, serialize, construct, children, filename, TypeDict
+from typing import Any, Optional, Type, Dict, List
 from functools import partial
+from enum import Enum, auto
 import torch
 
 ROOT = getenv('ROOT', "data")
@@ -89,7 +89,7 @@ class ModelEntry(Entry):
 class DatasetEntry(Entry):
     def __init__(self, fp:str, data:Any, mem:int=ENTRY_MEM):
         super().__init__(fp, mem)
-        self.dataset = Attribute(path(fp, 'dataset'), data, readonly=True)
+        self.dataset = Attribute(path(fp, 'dataset'), data, appendonly=True)
         self.save()
 
 class Maester:
