@@ -17,9 +17,11 @@ def usage():
     train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
     pred_parser = main_subparser.add_parser(n:='pred', help=f"{n} command help")
     scout_parser = main_subparser.add_parser(n:='scout', help=f"{n} command help")
+
     # maester command arguments
     maester_parser.add_argument('--datasets', action='store_const', const='datasets', help="list datasets")
     maester_parser.add_argument('--models', action='store_const', const='models', help="list models.")
+    maester_parser.add_argument('--preds', action='store_const', const='preds', help="list predictions.")
     maester_parser.add_argument('--delete', type=str, default=None, help="delete datasets and models with this name")
 
     # train command arguments
@@ -77,14 +79,6 @@ def usage():
 
 args = usage()
 
-## hack
-
-# class Model(torch.nn.Module):
-#     def __init__(self):
-#         super(type(self), self).__init__()
-#         self.linear = torch.nn.Linear(1, 1)
-# dum_model = Model() 
-
 ### driver ###
 
 maester = Maester(ROOT)
@@ -101,10 +95,14 @@ if args.cmd == 'maester':
                          str2dict(v.args.data)['vali_loss'] if stat == Entry.Status.finished.name else None]
                             for k, v in maester.models.items()],
                        headers=['name', 'status', 'num_params', 'target', 'features', 'dataset', 'vali_loss', ]))
+    def print_preds():
+        myprint("predictions")
+        print(tabulate([[k, v.model, v.dataset] for k, v in maester.preds.items()], headers=['name', 'model', 'dataset']))
 
-    if not args.models and not args.datasets: print_datasets(); print_models()
+    if not args.models and not args.datasets: print_datasets(); print_models(); print_preds()
     if args.models is not None: print_models()
     if args.datasets is not None: print_datasets()
+    if args.preds is not None: print_preds()
 
     if args.delete is not None:
         model = maester.models.pop(args.delete, None)
@@ -131,7 +129,6 @@ elif args.cmd == 'train':
 
     exp = Exp_Informer(args)
 
-    # write num params
     num_params = sum(p.numel() for p in exp.model.parameters())/1e6
     me.args.readonly = False
     me.args.buf = dict2str(str2dict(me.args.data) | {'num_params': f"{num_params}M"})
@@ -142,34 +139,32 @@ elif args.cmd == 'train':
         me.status.buf += Entry.Status.finished.running.name
         if DEBUG: print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i, e, loss))
 
-    num_params = sum(p.numel() for p in exp.model.parameters())/1e6
-
     me.args.readonly = False
-    me.args.buf = dict2str(str2dict(me.args.data) | {'vali_loss': float(exp.vali_loss), 'num_params': f"{num_params}M"})
+    me.args.buf = dict2str(str2dict(me.args.data) | {'vali_loss': float(exp.vali_loss)})
     me.args.readonly = True
     me.status.buf += Entry.Status.finished.name
 
 elif args.cmd == 'pred':
 
-    assert args.pred not in maester.datasets, "prediction dataset {args.pred} already exists"
+    assert args.pred not in maester.preds, f"prediction dataset {args.pred} already exists"
     assert args.model in maester.models, f"model {args.model} does not exists"
     assert args.dataset in maester.datasets, f"dataset {args.dataset} does not exist"
-   
+    maester.create_pred(args.pred, np.array(1), args.model, args.dataset)
+
     me = maester.models[args.model]
     de = maester.datasets[args.dataset]
-    maester.create_dataset(args.pred, data=de.dataset.data.split('\n')[0])
+    pe = maester.preds[args.pred]
 
     args.checkpoints = me.weights.fp
     args.root_path = path(*de.dataset.fp.split('/')[:-1])
     args.data_path = filename(de.dataset.fp)
     args.data = args.dataset
+    args.pred_fp = pe.pred.fp
     for k, v in str2dict(me.args.data).items(): setattr(args, k, v)
     args.detail_freq = args.freq
 
-    exp = Exp_Informer(args)
-
     print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(args))
-    exp.predict(True)
+    Exp_Informer(args).predict(True)
 
 elif args.cmd == 'scout':
     if 'ETTh1' in maester.datasets: sys.exit()
