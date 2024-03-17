@@ -114,7 +114,7 @@ elif args.cmd == 'train':
     exp = Exp_Informer(args) # TODO
 
     num_params = sum(p.numel() for p in exp.model.parameters())/1e6
-    maester.create_model(args.name, args=dict2str(vars(args) | {'num_params': f"{num_params}M"}), model=exp.model)
+    maester.create_model(args.name, args=(vars(args) | {'num_params': f"{num_params}M"}), model=exp.model)
     model_entry = maester.models[args.name]
 
     print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(args))
@@ -123,7 +123,7 @@ elif args.cmd == 'train':
         if DEBUG: print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i, e, loss))
     
     model_entry.args.readonly = False
-    model_entry.args.buf = dict2str(str2dict(str2dict(model_entry.args.data)) | {'vali_loss': float(exp.vali_loss)})
+    model_entry.args.buf = dict2str(str2dict(model_entry.args.data) | {'vali_loss': float(exp.vali_loss)})
     model_entry.args.readonly = True
     model_entry.status.buf += Entry.Status.finished.name
 
