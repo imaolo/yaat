@@ -14,9 +14,9 @@ python -m pytest test/
 
 The maester provides information on available datasets and models.
 ```sh
-python main maester # list datasets
-python main maester --models # list models
-python main maester --datasets --models # list both
+python main maester # list datasets and models
+python main maester --models # just models
+python main maester --datasets # just datasets
 ```
 
 It should return nothing as we've created no datasets or models.
