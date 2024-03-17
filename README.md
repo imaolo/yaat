@@ -36,7 +36,7 @@ You can also create models and datasets manually. The informer is implemented (j
 2. train - train on this dataset entry
 3. pred - pred on model entry and dataset entry
 4. scout - get tickers.zip
-5. make sure steps 2-4 work locally
+5. make sure steps 2-4 work for tickers
 6. setup rclone (dbx and integrate, build, & push docker)
 7. make sure steps 1-5 work locally, with docker
 8. run training manually on lambda
@@ -44,6 +44,11 @@ You can also create models and datasets manually. The informer is implemented (j
 11. run prediction manually on lambda
 12. visualize & pray the results are good
 13. Bazaar!
+
+### infrastructure
+
+- csv needs to be better handled by the dataset entry
+- dataset entry needs args attribute (for mean and std)
 
 #### Scout - no dependencies
 create data entries
