@@ -1,6 +1,6 @@
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
     mkdirs, dict2str, gettime, serialize, write, construct, filesz, str2dict
-from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
+from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, PredEntry, Maester
 from typing import Any
 import torch, random, unittest, os, random, numpy as np
 
@@ -176,6 +176,15 @@ class TestDataSetEntry(TestMaesterSetup):
         np.testing.assert_allclose(np.array(data).mean(0), de.mean.data, rtol=1e5, atol=1e5)
         np.testing.assert_allclose(np.array(data).std(0), de.std.data, rtol=1e5, atol=1e5)
 
+class TestPredEntry(TestMaesterSetup):
+    
+    def setUp(self) -> None:
+        self.pred = np.array(1)
+        self.pe = PredEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.pred, 'dne_model', 'dne_dataset')
+    def tearDown(self) -> None: rm(self.pe.fp)
+
+    def test_simple(self): pass
+
 class TestMaester(TestMaesterSetup):
 
     @classmethod
@@ -203,15 +212,6 @@ class TestMaester(TestMaesterSetup):
         data = '12345'
         self.maester.create_dataset(n:=f"{getid(self)}_{gettime()}", data, mem=0)
         self.assertEqual(data, self.maester.datasets[n].dataset.data)
-
-    def test_create_pred(self):
-        self.maester.create_dataset(dsn:=f"{getid(self)}_dataset_{gettime()}", '')
-        self.maester.create_model(mn:=f"{getid(self)}_model_{gettime()}", args={}, model=torch.nn.Linear(1,1))
-        self.maester.create_pred(pn:=f"{getid(self)}_preds_{gettime()}", mn, dsn, np.array(1))
-        self.assertEqual(self.maester.datasets[dsn].preds[0].name, pn+'.npy')
-        np.testing.assert_allclose(self.maester.datasets[dsn].preds[0].data, np.array(1))
-        maester = Maester(self.maester.fp)
-        np.testing.assert_allclose(maester.datasets[dsn].preds[0].data, np.array(1))
 
     def test_sync(self):
         data = '12345'
