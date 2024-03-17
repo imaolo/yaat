@@ -1,6 +1,6 @@
 import unittest, os, random
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
-    mkdirs, dict2str, gettime, serialize, write, construct, filesz
+    mkdirs, dict2str, gettime, serialize, write, construct, filesz, str2dict
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
 import torch
@@ -136,6 +136,7 @@ class TestModelEntry(TestMaesterSetup):
 
     def test_args_simple(self):
         self.assertEqual(self.me.args.data, dict2str(self.args))
+        self.assertEqual(dict2str(str2dict(self.me.args.data)), dict2str(self.args))
     
     def test_weights_simple(self):
         self.me = ModelEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.args, model=model, mem=objsz(model.state_dict()))
