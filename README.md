@@ -40,8 +40,8 @@ It will create some extraneous .npy files they can be deleted. Working on it.
 
 -- need to read and write lines, it will be very inefficient to split('\n')
 
-1. scout - create ETTh1 dataset entry
-2. train - train on this dataset entry
+1. ~~scout - create ETTh1 dataset entry~~
+2. ~~train - train on this dataset entry~~
 3. pred - pred on model entry and dataset entry
 4. scout - get tickers.zip
 5. make sure steps 2-4 work for tickers
