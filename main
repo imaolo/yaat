@@ -169,12 +169,6 @@ elif args.cmd == 'pred':
     args.detail_freq = args.freq
 
     exp = Exp_Informer(args)
-    
-
-    # print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(args))
-    # for i, e, loss, mdl, speed, left_time in exp.train():
-    #     me.status.buf += Entry.Status.finished.running.name
-    #     if DEBUG: print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i, e, loss))
 
     print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(args))
     exp.predict(True)
