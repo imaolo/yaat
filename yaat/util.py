@@ -30,13 +30,15 @@ def parent(fp:str) -> List[str]: return fp.split('/')[-2]
 def leaf(fp:str) -> str: return fp.split('/')[-1]
 def read(fp:str, mode='r') -> str | bytes:
     with open(fp, mode) as f: return f.read()
+def readlines(fp:str, mode='r') -> List[str | bytes]:
+    with open(fp, mode) as f: return f.readlines()
 def write(fp:str, data:str | bytes, mode='w'):
     with open(fp, mode) as f: f.write(data)
 def rm(fp:str):
      if os.path.isdir(fp): runcmd(f"rm -rf {fp}")
      if os.path.isfile(fp): os.remove(fp)
 def runcmd(cmd:str):
-    def ass(proc): assert proc.returncode is None or proc.returncode == 0, f"Command failed - {cmd} \n\n returncode: {proc.returncode} \n\n stdout: \n {proc.stdout.read()} \n\n stderr: \n{proc.stderr.read()} \n\n"
+    def ass(proc): assert proc.returncode is None or proc.returncode == 0 or proc.returncode == 128, f"Command failed - {cmd} \n\n returncode: {proc.returncode} \n\n stdout: \n {proc.stdout.read()} \n\n stderr: \n{proc.stderr.read()} \n\n"
     if DEBUG: print(f"running command: {cmd}")
     proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     while True: # stream print
