@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
 from yaat.maester import Maester, Entry
-from yaat.util import getenv, myprint, filesz, rm
+from yaat.util import getenv, myprint, filesz, rm, dict2str, str2dict, DEBUG, ROOT
 from Informer2020.exp_informer import Exp_Informer
 from typing import Any
 import argparse
 from tabulate import tabulate
-
-### envs ###
-
-ROOT = getenv('ROOT', "data")
 
 ### usage ### 
 
@@ -95,7 +91,12 @@ if args.cmd == 'maester':
 
     if args.models is not None:
         myprint("models")
-        print(tabulate([[k, v.status.data.split('\n')[-1]] for k, v in maester.models.items()], headers=['name', 'status']))
+        print(tabulate([[k,
+                         stat:=v.status.data.split('\n')[-1],
+                         (a:=str2dict(v.args.data))['vali_loss'] if stat == Entry.Status.finished.name else None,
+                         a['num_params'], a['target'], a['features'], a['data']]
+                            for k, v in maester.models.items()],
+                       headers=['name', 'status', 'vali_loss', 'num_params', 'target', 'features', 'data']))
 
     if args.delete is not None:
         model = maester.models.pop(args.delete, None)
@@ -112,13 +113,19 @@ elif args.cmd == 'train':
 
     exp = Exp_Informer(args) # TODO
 
-    maester.create_model(args.name, args=vars(args), model=exp.model)
+    num_params = sum(p.numel() for p in exp.model.parameters())/1e6
+    maester.create_model(args.name, args=dict2str(vars(args) | {'num_params': f"{num_params}M"}), model=exp.model)
+    model_entry = maester.models[args.name]
 
     print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(args))
-    for i, e, l, mdl, speed, left_time in exp.train():
-        print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i, e, l))
+    for i, e, loss, mdl, speed, left_time in exp.train():
+        model_entry.status.buf += Entry.Status.finished.running.name
+        if DEBUG: print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i, e, loss))
     
-    maester.models[args.name].status.buf += Entry.Status.finished.name
+    model_entry.args.readonly = False
+    model_entry.args.buf = dict2str(str2dict(str2dict(model_entry.args.data)) | {'vali_loss': float(exp.vali_loss)})
+    model_entry.args.readonly = True
+    model_entry.status.buf += Entry.Status.finished.name
 
 elif args.cmd == 'pred': pass # TODO
 elif args.cmd == 'scout': pass # TODO
