@@ -32,6 +32,19 @@ You can also create models and datasets manually. The informer is implemented (j
 
 ## TODO, in order - Noon 3/16
 
+1. scout - create ETTh1 dataset entry
+2. train - train on this dataset entry
+3. pred - pred on model entry and dataset entry
+4. scout - get tickers.zip
+5. make sure steps 2-4 work locally
+6. setup rclone (dbx and integrate, build, & push docker)
+7. make sure steps 1-5 work locally, with docker
+8. run training manually on lambda
+10. monitor from the client
+11. run prediction manually on lambda
+12. visualize & pray the results are good
+13. Bazaar!
+
 #### Scout - no dependencies
 create data entries
 ```sh
