@@ -14,9 +14,9 @@ python -m pytest test/
 
 The maester provides information on available datasets and models
 ```sh
-python main.py maester # list datasets
-python main.py maester --models # list models
-python main.py maester --datasets --models # list both
+python main maester # list datasets
+python main maester --models # list models
+python main maester --datasets --models # list both
 ```
 
 Unfortunately main.py doesnt support creating (training) models or
