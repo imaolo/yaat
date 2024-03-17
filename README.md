@@ -32,6 +32,8 @@ You can also create models and datasets manually. The informer is implemented (j
 
 ## TODO, in order - Noon 3/16
 
+-- need to read and write lines, it will be very inefficient to split('\n')
+
 1. scout - create ETTh1 dataset entry
 2. train - train on this dataset entry
 3. pred - pred on model entry and dataset entry
