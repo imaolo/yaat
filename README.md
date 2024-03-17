@@ -53,11 +53,6 @@ It will create some extraneous .npy files they can be deleted. Working on it.
 12. visualize & pray the results are good
 13. Bazaar!
 
-### infrastructure
-
-- csv needs to be better handled by the dataset entry
-- dataset entry needs args attribute (for mean and std)
-
 #### Scout - no dependencies
 create data entries
 ```sh
