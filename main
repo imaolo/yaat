@@ -94,11 +94,10 @@ dum_model = Model()
 maester = Maester(ROOT)
 if args.cmd == 'maester':
 
-    if not args.models or args.datasets:
+    def print_datasets(): 
         myprint("datasets")
         print(tabulate([[k, filesz(v.dataset.fp), v.status.data] for k, v in maester.datasets.items()], headers=['name', 'size', 'status']))
-
-    if args.models is not None:
+    def print_models():
         myprint("models")
         print(tabulate([[k,
                          stat:=v.status.data.split('\n')[-1],
@@ -106,6 +105,10 @@ if args.cmd == 'maester':
                          a['num_params'], a['target'], a['features'], a['dataset']]
                             for k, v in maester.models.items()],
                        headers=['name', 'status', 'vali_loss', 'num_params', 'target', 'features', 'dataset']))
+
+    if not args.models and not args.datasets: print_datasets(); print_models()
+    if args.models is not None: print_models()
+    if args.datasets is not None: print_datasets()
 
     if args.delete is not None:
         model = maester.models.pop(args.delete, None)
