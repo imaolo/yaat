@@ -3,11 +3,15 @@ from typing import Any, List, Dict, Type
 import subprocess, pprint, select, os, pickle, json, time
 
 load_dotenv()
+def getenv(key:str, default=None) -> Any: return os.getenv(key, default) if default is not None else os.environ[key]
+
+DEBUG = getenv("DEBUG", 0)
+ROOT = getenv('ROOT', "data")
 
 def path(*fp:str) -> str: return '/'.join(fp)
 def gettypes(d: Dict[Any, Any], types:List[Type]) -> Dict[Any, Any]: return {k:v for k, v in d.items() if isinstance(v, types)}
 def exists(fp:str): return os.path.isdir(fp) or os.path.isfile(fp)
-def getenv(key:str, default=None) -> Any: return os.getenv(key, default) if default is not None else os.environ[key]
+
 def myprint(header:str, obj:Any=None):
     print(f"{'='*15} {header} {'='*15}")
     if obj: pprint.pprint(obj)
@@ -33,7 +37,7 @@ def rm(fp:str):
      if os.path.isfile(fp): os.remove(fp)
 def runcmd(cmd:str):
     def ass(proc): assert proc.returncode is None or proc.returncode == 0, f"Command failed - {cmd} \n\n returncode: {proc.returncode} \n\n stdout: \n {proc.stdout.read()} \n\n stderr: \n{proc.stderr.read()} \n\n"
-    print(f"running command: {cmd}")
+    if DEBUG: print(f"running command: {cmd}")
     proc = subprocess.Popen(cmd.split(' '), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     while True: # stream print
         ass(proc)
@@ -41,7 +45,7 @@ def runcmd(cmd:str):
             if out:=ready[-1].readline(): print(out.strip()) # eh, only last one. if we miss some, whatever
         if proc.poll() is not None: break
     ass(proc)
-    print(f"command succeeded: {cmd}")
+    if DEBUG: print(f"command succeeded: {cmd}")
 def killproc(proc:Any, proc_name:str):
         print(f"shutting down process: {proc_name}")
         proc.terminate()
