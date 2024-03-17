@@ -183,7 +183,8 @@ class TestPredEntry(TestMaesterSetup):
         self.pe = PredEntry(path(self.dp, f"{getid(self)}_{gettime()}"), self.pred, 'dne_model', 'dne_dataset')
     def tearDown(self) -> None: rm(self.pe.fp)
 
-    def test_simple(self): pass
+    def test_simple(self):
+        np.testing.assert_allclose(self.pe.pred.data, self.pred)
 
 class TestMaester(TestMaesterSetup):
 
