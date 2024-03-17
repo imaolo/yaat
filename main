@@ -68,8 +68,8 @@ def usage():
     train_parser.add_argument('--inverse', action='store_true', help='inverse output data', default=False)
 
     # pred command arguments
-    pred_parser.add_argument('--data_in', type=str, required=True, help='csv path')
-    pred_parser.add_argument('--data_out', type=str, required=True, help='csv path')
+    pred_parser.add_argument('--dataset', type=str, required=True, help='csv path')
+    # pred_parser.add_argument('--pred', type=str, required=True, help='csv path')
     pred_parser.add_argument('--model', type=str, required=True, help='model to use')
 
     # scout command arguments TODO
@@ -151,7 +151,34 @@ elif args.cmd == 'train':
     me.args.readonly = True
     me.status.buf += Entry.Status.finished.name
 
-elif args.cmd == 'pred': pass # TODO
+elif args.cmd == 'pred':
+
+    assert args.model in maester.models, f"model {args.model} does not exists"
+    assert args.dataset in maester.datasets, f"dataset {args.dataset} does not exist"
+
+    me = maester.models[args.model]
+    de = maester.datasets[args.dataset]
+
+    args.checkpoints = me.weights.fp
+    args.root_path = path(*de.dataset.fp.split('/')[:-1])
+    args.data_path = filename(de.dataset.fp)
+    args.data = args.dataset
+    for k, v in str2dict(me.args.data).items(): setattr(args, k, v)
+
+    # assert False, str2dict(me.args.data) 
+    args.detail_freq = args.freq
+
+    exp = Exp_Informer(args)
+    
+
+    # print('>>>>>>>start training : {}>>>>>>>>>>>>>>>>>>>>>>>>>>'.format(args))
+    # for i, e, loss, mdl, speed, left_time in exp.train():
+    #     me.status.buf += Entry.Status.finished.running.name
+    #     if DEBUG: print("\titers: {0}, epoch: {1} | loss: {2:.7f}".format(i, e, loss))
+
+    print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(args))
+    exp.predict(True)
+
 elif args.cmd == 'scout':
     if 'ETTh1' in maester.datasets: sys.exit()
     runcmd("git clone https://github.com/zhouhaoyi/ETDataset.git")
