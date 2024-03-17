@@ -69,8 +69,8 @@ def usage():
     train_parser.add_argument('--inverse', action='store_true', help='inverse output data', default=False)
 
     # pred command arguments
+    pred_parser.add_argument('--name', type=str, required=True, help='predictions dataset name')
     pred_parser.add_argument('--dataset', type=str, required=True, help='csv path')
-    pred_parser.add_argument('--pred', type=str, required=True, help='predictions dataset name')
     pred_parser.add_argument('--model', type=str, required=True, help='model to use')
 
     # scout command arguments TODO
@@ -99,7 +99,8 @@ if args.cmd == 'maester':
         myprint("predictions")
         print(tabulate([[k, v.model, v.dataset] for k, v in maester.preds.items()], headers=['name', 'model', 'dataset']))
 
-    if not args.models and not args.datasets: print_datasets(); print_models(); print_preds()
+    if not args.models and not args.datasets and not args.preds:
+        print_datasets(); print_models(); print_preds()
     if args.models is not None: print_models()
     if args.datasets is not None: print_datasets()
     if args.preds is not None: print_preds()
@@ -146,14 +147,14 @@ elif args.cmd == 'train':
 
 elif args.cmd == 'pred':
 
-    assert args.pred not in maester.preds, f"prediction dataset {args.pred} already exists"
+    assert args.name not in maester.preds, f"prediction dataset {args.name} already exists"
     assert args.model in maester.models, f"model {args.model} does not exists"
     assert args.dataset in maester.datasets, f"dataset {args.dataset} does not exist"
-    maester.create_pred(args.pred, np.array(1), args.model, args.dataset)
+    maester.create_pred(args.name, np.array(1), args.model, args.dataset)
 
     me = maester.models[args.model]
     de = maester.datasets[args.dataset]
-    pe = maester.preds[args.pred]
+    pe = maester.preds[args.name]
 
     args.checkpoints = me.weights.fp
     args.root_path = path(*de.dataset.fp.split('/')[:-1])
