@@ -14,9 +14,10 @@ python -m pytest test/
 
 The maester provides information on available datasets and models.
 ```sh
-python main maester # list datasets and models
-python main maester --models # just models
-python main maester --datasets # just datasets
+python main maester
+python main maester --models
+python main maester --datasets
+python main maester --preds
 ```
 
 It should return nothing as we've created no datasets or models.
@@ -34,7 +35,13 @@ python main train --name mymodelname --dataset ETTh1
 python main maester --models
 ```
 
-It will create some extraneous .npy files they can be deleted. Working on it.
+We can now make predictions using the model and the dataset
+
+```sh
+python main maester --models --datasets
+python main pred --name mypred --dataset ETTh1 --model mymodelname
+python main maester --preds
+```
 
 ## TODO, in order - Noon 3/16
 
