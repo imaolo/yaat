@@ -32,23 +32,23 @@ You can also create models and datasets manually. The informer is implemented (j
 
 ## TODO, in order - Noon 3/16
 
-#### Train - Me - no dependencies
-mostly implemented aside from main.py and correctly storing the scaler's state. The informer code has already been modified.
+#### Scout - no dependencies
+create data entries
+```sh
+python main.py scout # what data to get
+```
+
+#### Train - Me - scout dependency
+- need existing data entries to configure the scalar state etc..s
 ```sh
 python main.py train # model definition, model nam , other metadata, local or remote, dataset, etc
 ```
 
-#### Pred - Me - train dependency
+#### Pred - Me - train and scount dependency
 need to implement main.py and restore the scalers state. preliminary de scaling tests show the outputs are in the correct range (ball parked). More importantly, the scaled loss is very low. The main task here is to get the scalers state from the model and write the descaled predictions to a file.
 There may be some stuff where you need to wait for the context to be filled, and that could require extra logic.
 ```sh
 python main.py pred # models name, dataset
-```
-
-#### Scout - no dependencies
-Should not be hard. Define the characteristics of what data we want and use the maester to store it.
-```sh
-python main.py scout # data, strategy definition, model, etc
 ```
 
 #### Trade - dependent on all before
