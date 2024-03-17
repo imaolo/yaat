@@ -215,6 +215,13 @@ class TestMaester(TestMaesterSetup):
         self.maester.create_dataset(n:=f"{getid(self)}_{gettime()}", data, mem=0)
         self.assertEqual(data, self.maester.datasets[n].dataset.data)
 
+    def test_create_pred(self):
+        pred = np.array(1)
+        self.maester.create_pred(n:=f"{getid(self)}_{gettime()}", pred, 'model_name', 'dataset_name')
+        np.testing.assert_allclose(self.maester.preds[n].pred.data, pred)
+        maester = Maester(self.maester.fp)
+        np.testing.assert_allclose(maester.preds[n].pred.data, pred)
+
     def test_sync(self):
         data = '12345'
         self.maester.create_dataset(n:=f"{getid(self)}_{gettime()}", data)
