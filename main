@@ -69,7 +69,7 @@ def usage():
 
     # pred command arguments
     pred_parser.add_argument('--dataset', type=str, required=True, help='csv path')
-    # pred_parser.add_argument('--pred', type=str, required=True, help='csv path')
+    pred_parser.add_argument('--pred', type=str, required=True, help='predictions dataset name')
     pred_parser.add_argument('--model', type=str, required=True, help='model to use')
 
     # scout command arguments TODO
@@ -163,10 +163,8 @@ elif args.cmd == 'pred':
     args.root_path = path(*de.dataset.fp.split('/')[:-1])
     args.data_path = filename(de.dataset.fp)
     args.data = args.dataset
-    for k, v in str2dict(me.args.data).items(): setattr(args, k, v)
-
-    # assert False, str2dict(me.args.data) 
     args.detail_freq = args.freq
+    for k, v in str2dict(me.args.data).items(): setattr(args, k, v)
 
     exp = Exp_Informer(args)
 
