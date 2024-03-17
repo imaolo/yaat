@@ -5,7 +5,7 @@ from yaat.maester import Maester, Entry
 from Informer2020.exp_informer import Exp_Informer
 from typing import Any
 from tabulate import tabulate
-import argparse, sys, torch
+import argparse, sys, torch, numpy as np
 
 def usage():
     # main parser
@@ -17,7 +17,6 @@ def usage():
     train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
     pred_parser = main_subparser.add_parser(n:='pred', help=f"{n} command help")
     scout_parser = main_subparser.add_parser(n:='scout', help=f"{n} command help")
-
     # maester command arguments
     maester_parser.add_argument('--datasets', action='store_const', const='datasets', help="list datasets")
     maester_parser.add_argument('--models', action='store_const', const='models', help="list models.")
@@ -120,7 +119,6 @@ elif args.cmd == 'train':
 
     assert args.name not in maester.models, f"model {args.name} already exists"
     assert args.dataset in maester.datasets, f"dataset {args.dataset} does not exist"
-
     maester.create_model(args.name, args=(vars(args) | {'dataset': args.dataset}), model=torch.nn.Linear(1, 1)) # model placeholder
 
     me = maester.models[args.name]
@@ -153,18 +151,20 @@ elif args.cmd == 'train':
 
 elif args.cmd == 'pred':
 
+    assert args.pred not in maester.datasets, "prediction dataset {args.pred} already exists"
     assert args.model in maester.models, f"model {args.model} does not exists"
     assert args.dataset in maester.datasets, f"dataset {args.dataset} does not exist"
-
+   
     me = maester.models[args.model]
     de = maester.datasets[args.dataset]
+    maester.create_dataset(args.pred, data=de.dataset.data.split('\n')[0])
 
     args.checkpoints = me.weights.fp
     args.root_path = path(*de.dataset.fp.split('/')[:-1])
     args.data_path = filename(de.dataset.fp)
     args.data = args.dataset
-    args.detail_freq = args.freq
     for k, v in str2dict(me.args.data).items(): setattr(args, k, v)
+    args.detail_freq = args.freq
 
     exp = Exp_Informer(args)
 
