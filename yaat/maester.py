@@ -1,5 +1,5 @@
 from yaat.util import getenv, rm, write, read, siblings, leaf, path, parent, objsz, mkdirs, \
-                        filesz, dict2str, serialize, construct, children, filename, TypeDict
+                        filesz, dict2str, serialize, construct, children, filename, TypeDict, exists
 from typing import Any, Optional, Type, Dict, List
 from functools import partial
 from enum import Enum, auto
@@ -57,6 +57,9 @@ class Attribute:
 
     def __getstate__(self) -> Dict[str, Any]: return {k:v for k, v in self.__dict__.items() if k != self.buf.pname}
 
+    @property
+    def name(self) -> str: return filename(self.fp)
+
 class Entry:
     class Status(Enum): created = auto(); running = auto(); finished = auto(); error = auto()
     def __init__(self, fp:str, mem:int=ENTRY_MEM):
@@ -91,6 +94,7 @@ class DatasetEntry(Entry):
         self.dataset = Attribute(path(fp, 'dataset'), data, appendonly=True)
         self.mean = None
         self.std = None
+        self.preds: List[Attribute] = []
         self.save()
     
     def preprocess(self, drop:List[str]|str=None):
@@ -111,6 +115,19 @@ class Maester:
 
     def create_model(self, name:str, *args, **kwargs): self.models[name] = ModelEntry(path(self.fp, 'models', name), *args, **kwargs)
     def create_dataset(self, name:str, *args, **kwargs): self.datasets[name] = DatasetEntry(path(self.fp, 'datasets', name), *args, **kwargs)
+    def create_pred(self, name:str, model:str, dataset:str, pred:np.ndarray):
+        assert model in self.models, f"model {self.model} does not exist"
+        assert dataset in self.datasets, f"model {self.datasets} does not exist"
+
+        me = self.models[model]
+        de = self.datasets[dataset]
+        pfp = path(de.fp, name+'.npy')
+
+        assert not exists(pfp), f'prediction {name} for this model and dataset already exists'
+
+        de.preds.append(Attribute(pfp, pred))
+        de.save()
+
     def sync(self):
         self.models = {filename(mfp): Entry.load(path(self.fp, 'models', mfp, 'obj')) for mfp in children(path(self.fp, 'models'))}
-        self.datasets = {filename(dsfp): Entry.load(path(self.fp, 'datasets', dsfp, 'obj')) for dsfp in children(path(self.fp, 'datasets'))}
+        self.datasets = {filename(dsfp): Entry.load(path(self.fp, 'datasets', dsfp, 'obj')) for dsfp in children(path(self.fp, 'datasets'))} 
