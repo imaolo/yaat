@@ -12,23 +12,29 @@ python -m pytest test/
 
 ## usage
 
-The maester provides information on available datasets and models
+The maester provides information on available datasets and models.
 ```sh
 python main maester # list datasets
 python main maester --models # list models
 python main maester --datasets --models # list both
 ```
 
-Unfortunately main.py doesnt support creating (training) models or
-scouting for datasets yet, so the lists should be empty.
+It should return nothing as we've created no datasets or models.
 
-In the meantime, if you want to lists models and/or datasets:
+```sh
+python main scout # get the ETTh1 dataset
+python main maester
+```
 
-Run the tests with DEBUG=1 and the test directory will not be cleaned when the tests complete. It should be apparent what the test directory is in pwd.
+We've retrieved and listed the datasets. Now we can train a model.
+It should take a few minutes
 
-See test_maester.py to find which directories are the maester's. See maester.py to point the maester to the correct directory. The commands should then work.
+```sh
+python main train --name mymodelname --dataset ETTh1
+python main maester --models
+```
 
-You can also create models and datasets manually. The informer is implemented (just not in main.py, yet), and see test_maester.py for how to created sample datasets.
+It will create some extraneous .npy files they can be deleted. Working on it.
 
 ## TODO, in order - Noon 3/16
 
