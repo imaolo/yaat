@@ -210,6 +210,8 @@ class TestMaester(TestMaesterSetup):
         self.maester.create_pred(pn:=f"{getid(self)}_preds_{gettime()}", mn, dsn, np.array(1))
         self.assertEqual(self.maester.datasets[dsn].preds[0].name, pn+'.npy')
         np.testing.assert_allclose(self.maester.datasets[dsn].preds[0].data, np.array(1))
+        maester = Maester(self.maester.fp)
+        np.testing.assert_allclose(maester.datasets[dsn].preds[0].data, np.array(1))
 
     def test_sync(self):
         data = '12345'
