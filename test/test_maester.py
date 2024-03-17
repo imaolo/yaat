@@ -3,7 +3,8 @@ from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
     mkdirs, dict2str, gettime, serialize, write, construct, filesz, str2dict
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, Maester
 from typing import Any
-import torch
+import torch, random, numpy as np
+
 
 DEBUG = getenv("DEBUG", 0)
 
@@ -165,6 +166,16 @@ class TestDataSetEntry(TestMaesterSetup):
         de1 = DatasetEntry.load(de.obj.fp)
         self.assertIsNone(de1.dataset._buf)
         self.assertEqual(de1.dataset.data, data)
+
+    def test_mean_std(self):
+        cols = ['c1', 'c2', 'c3']
+        data = [[random.random() for __ in range(len(cols))] for _ in range(10)]
+        de = DatasetEntry(path(self.dp, f"{getid(self)}_{gettime()}"), data=','.join(cols))
+        for d in data: de.dataset.buf += ','.join(map(str, d))
+
+        de.preprocess()
+        np.testing.assert_allclose(np.array(data).mean(0), de.mean.data, rtol=1e5, atol=1e5)
+        np.testing.assert_allclose(np.array(data).std(0), de.std.data, rtol=1e5, atol=1e5)
 
 class TestMaester(TestMaesterSetup):
 
