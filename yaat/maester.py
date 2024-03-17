@@ -3,14 +3,14 @@ from yaat.util import getenv, rm, write, read, siblings, leaf, path, parent, obj
 from typing import Any, Optional, Type, Dict, List
 from functools import partial
 from enum import Enum, auto
-import torch
-
+import numpy as np
+import torch, pandas
 ENTRY_MEM = getenv('ENTRY_MEM', 100)
 ATTR_MEM = ENTRY_MEM
 
 class Loader:
-    readers   = TypeDict({str: read , bytes: partial(read, mode='rb') , torch.nn.Module: torch.load})
-    writers   = TypeDict({str: write, bytes: partial(write, mode='wb'), torch.nn.Module: lambda fp, mdl: torch.save(mdl.state_dict(), fp)})
+    readers   = TypeDict({str: read , bytes: partial(read, mode='rb') , np.ndarray: np.load, torch.nn.Module: torch.load})
+    writers   = TypeDict({str: write, bytes: partial(write, mode='wb'), np.ndarray: np.save, torch.nn.Module: lambda fp, mdl: torch.save(mdl.state_dict(), fp)})
     appenders = TypeDict({str: partial(write, mode='a'), bytes: partial(write, mode='ab')})
 
 class AttributeBuffer:
@@ -89,7 +89,15 @@ class DatasetEntry(Entry):
     def __init__(self, fp:str, data:Any, mem:int=ENTRY_MEM):
         super().__init__(fp, mem)
         self.dataset = Attribute(path(fp, 'dataset'), data, appendonly=True)
+        self.mean = None
+        self.std = None
         self.save()
+    
+    def preprocess(self, drop:List[str]|str=None):
+        df = pandas.read_csv(self.dataset.fp)
+        if drop is not None: df = df.drop(drop, axis=1)
+        self.mean = Attribute(path(self.fp, 'mean.npy'), df.values.mean(0), readonly=True)
+        self.std = Attribute(path(self.fp, 'std.npy'),  df.values.std(0), readonly=True)
 
 class Maester:
     def __init__(self, fp:str, mem:int=10e6): # TODO configs
