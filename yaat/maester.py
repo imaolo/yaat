@@ -94,7 +94,6 @@ class DatasetEntry(Entry):
         self.dataset = Attribute(path(fp, 'dataset'), data, appendonly=True)
         self.mean = None
         self.std = None
-        self.preds: List[Attribute] = []
         self.save()
     
     def preprocess(self, drop:List[str]|str=None):
@@ -103,30 +102,28 @@ class DatasetEntry(Entry):
         self.mean = Attribute(path(self.fp, 'mean.npy'), df.values.mean(0), readonly=True)
         self.std = Attribute(path(self.fp, 'std.npy'),  df.values.std(0), readonly=True)
 
+class PredEntry(Entry):
+    def __init__(self, fp:str, pred:np.ndarray, model:str, dataset:str, mem:int=ENTRY_MEM):
+        super().__init__(fp, mem)
+        self.pred = Attribute(path(fp, 'pred.npy'), pred, appendonly=True)
+        self.model, self.dataset = model, dataset
+        self.save()
+
 class Maester:
     def __init__(self, fp:str, mem:int=10e6): # TODO configs
         self.fp, self.mem = fp, mem
         mkdirs(fp, exist_ok=True) # TODO mount directory
         mkdirs(path(fp, 'models'), exist_ok=True)
         mkdirs(path(fp, 'datasets'), exist_ok=True)
+        mkdirs(path(fp, 'preds'), exist_ok=True)
         self.models: Dict[str, ModelEntry] = {}
         self.datasets: Dict[str, DatasetEntry] = {}
+        self.preds: Dict[str, PredEntry] = {}
         self.sync()
 
     def create_model(self, name:str, *args, **kwargs): self.models[name] = ModelEntry(path(self.fp, 'models', name), *args, **kwargs)
     def create_dataset(self, name:str, *args, **kwargs): self.datasets[name] = DatasetEntry(path(self.fp, 'datasets', name), *args, **kwargs)
-    def create_pred(self, name:str, model:str, dataset:str, pred:np.ndarray):
-        assert model in self.models, f"model {self.model} does not exist"
-        assert dataset in self.datasets, f"model {self.datasets} does not exist"
-
-        me = self.models[model]
-        de = self.datasets[dataset]
-        pfp = path(de.fp, name+'.npy')
-
-        assert not exists(pfp), f'prediction {name} for this model and dataset already exists'
-
-        de.preds.append(Attribute(pfp, pred))
-        de.save()
+    def create_pred(self, name:str, *args, **kwargs): self.preds[name] = DatasetEntry(path(self.fp, 'preds', name), *args, **kwargs)
 
     def sync(self):
         self.models = {filename(mfp): Entry.load(path(self.fp, 'models', mfp, 'obj')) for mfp in children(path(self.fp, 'models'))}
