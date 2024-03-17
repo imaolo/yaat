@@ -5,7 +5,6 @@ from functools import partial
 from enum import Enum, auto
 import torch
 
-ROOT = getenv('ROOT', "data")
 ENTRY_MEM = getenv('ENTRY_MEM', 100)
 ATTR_MEM = ENTRY_MEM
 
