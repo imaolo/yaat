@@ -176,5 +176,6 @@ elif args.cmd == 'scout':
     assert 'date' in cols, f'daseset must have a data column - {cols}'
     maester.create_dataset('ETTh1', df)
     maester.datasets['ETTh1'].status.buf += [Entry.Status.finished.name]
+    rm('./ETDataset')
 
 else: raise RuntimeError(f"invalid command {args.cmd}")
