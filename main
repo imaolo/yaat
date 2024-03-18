@@ -86,7 +86,7 @@ if args.cmd == 'maester':
 
     def print_datasets(): 
         myprint("datasets")
-        print(tabulate([[k, filesz(v.dataset.fp), v.status.data] for k, v in maester.datasets.items()], headers=['name', 'size', 'status']))
+        print(tabulate([[k, filesz(v.dataset.fp), v.status.data[-1]] for k, v in maester.datasets.items()], headers=['name', 'size', 'status']))
     def print_models():
         myprint("models")
         print(tabulate([[k,
