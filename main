@@ -86,12 +86,12 @@ if args.cmd == 'maester':
 
     def print_datasets(): 
         myprint("datasets")
-        print(tabulate([[k, filesz(v.dataset.fp), v.status.data[-1], v.cols] for k, v in maester.datasets.items()],
-                       headers=['name', 'size', 'status', 'cols']))
+        print(tabulate([[k, filesz(v.dataset.fp), v.status.data[-1], v.cols[0:3]] for k, v in maester.datasets.items()],
+                       headers=['name', 'size', 'status', '<=3 cols']))
     def print_models():
         myprint("models")
         print(tabulate([[k,
-                         stat:=v.status.data.split('\n')[-1],
+                         stat:=v.status.data[-1],
                          (a:=str2dict(v.args.data))['num_params'], a['target'], a['features'], a['dataset'],
                          str2dict(v.args.data)['vali_loss'] if stat == Entry.Status.finished.name else None]
                             for k, v in maester.models.items()],
