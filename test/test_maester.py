@@ -193,7 +193,6 @@ class TestPredEntry(TestMaesterSetup):
 
     def test_simple(self): np.testing.assert_allclose(self.pe.pred.data, self.pred)
 
-@unittest.skip("fornow")
 class TestMaester(TestMaesterSetup):
 
     @classmethod
@@ -218,9 +217,12 @@ class TestMaester(TestMaesterSetup):
         self.assertTrue(torch.equal(model1.linear.weight, model.linear.weight))
 
     def test_create_dataset(self):
-        data = '12345'
-        self.maester.create_dataset(n:=f"{getid(self)}_{gettime()}", data, mem=0)
-        self.assertEqual(data, self.maester.datasets[n].dataset.data)
+        cols = {'c1': pd.Series([], dtype='str'), 'c2': pd.Series([], dtype='int'), 'c3': pd.Series([], dtype='float')}
+        data = ['c1 val', 1, 1.3]
+        self.maester.create_dataset(n:=f"{getid(self)}_{gettime()}", cols, mem=0)
+        de = self.maester.datasets[n]
+        de.dataset.buf += data
+        self.assertEqual(de.dataset.data.iloc[0].tolist(), data)
 
     def test_create_pred(self):
         pred = np.array(1)
@@ -230,7 +232,9 @@ class TestMaester(TestMaesterSetup):
         np.testing.assert_allclose(maester.preds[n].pred.data, pred)
 
     def test_sync(self):
-        data = '12345'
-        self.maester.create_dataset(n:=f"{getid(self)}_{gettime()}", data)
+        cols = {'c1': pd.Series([], dtype='str'), 'c2': pd.Series([], dtype='int'), 'c3': pd.Series([], dtype='float')}
+        data = ['c1 val', 1, 1.3]
+        self.maester.create_dataset(n:=f"{getid(self)}_{gettime()}", cols, mem=0)
+        self.maester.datasets[n].dataset.buf += data
         maester = Maester(self.maester.fp)
-        self.assertEqual(maester.datasets[n].dataset.data, data)
+        self.assertEqual(maester.datasets[n].dataset.data.iloc[0].tolist(), data)
