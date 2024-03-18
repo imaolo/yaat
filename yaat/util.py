@@ -27,9 +27,9 @@ def leaf(fp:str) -> str: return fp.split('/')[-1]
 def read(fp:str, mode='r') -> str | bytes:
     with open(fp, mode) as f: return f.read()
 def readlines(fp:str, mode='r') -> List[str | bytes]:
-    with open(fp, mode) as f: return f.readlines()
+    with open(fp, mode) as f: return list(map(lambda l: l.rstrip('\n'), f.readlines()))
 def writelines(fp:str, data: List[str | bytes], mode='w'):
-    with open(fp, mode) as f: f.writelines(data)
+    with open(fp, mode) as f: f.writelines(map(lambda d: d+'\n', data))
 def write(fp:str, data:str | bytes, mode='w'):
     with open(fp, mode) as f: f.write(data)
 def rm(fp:str):
