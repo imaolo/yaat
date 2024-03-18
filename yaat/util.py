@@ -29,7 +29,7 @@ def read(fp:str, mode='r') -> str | bytes:
 def readlines(fp:str, mode='r') -> List[str | bytes]:
     with open(fp, mode) as f: return f.readlines()
 def writelines(fp:str, data: List[str | bytes], mode='w'):
-    with open(fp, mode) as f: f.writelines(data)
+    with open(fp, mode) as f: f.writelines(data if isinstance(data, list) else  [data])
 def write(fp:str, data:str | bytes, mode='w'):
     with open(fp, mode) as f: f.write(data)
 def rm(fp:str):
