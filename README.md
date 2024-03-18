@@ -12,30 +12,35 @@ python -m pytest test/
 
 ## usage
 
-The maester provides information on available datasets and models.
+The maester provides information on available datasets, models, and predictions
+We can can print all, some, or one of them.
 ```sh
 python main maester
 python main maester --models
 python main maester --datasets
 python main maester --preds
+python main maester --preds --datasets
 ```
 
-It should return nothing as we've created no datasets or models.
+They should return nothing as we've created nothing.
+
+The scout creates the ETTh1 dataset
 
 ```sh
-python main scout # get the ETTh1 dataset
-python main maester
+python main scout
+python main maester --datasets
 ```
 
-We've retrieved and listed the datasets. Now we can train a model.
-It should take a few minutes
+Use the ETTh1 dataset to train a model
+This will create extraneous .npy files in pwd.
+They can be ignored and deleted.
 
 ```sh
 python main train --name mymodelname --dataset ETTh1
 python main maester --models
 ```
 
-We can now make predictions using the model and the dataset
+Use the model to make predictions.
 
 ```sh
 python main maester --models --datasets
@@ -43,13 +48,16 @@ python main pred --name mypred --dataset ETTh1 --model mymodelname
 python main maester --preds
 ```
 
+TODO visualize
+
 ## TODO, in order - Noon 3/16
 
 -- need to read and write lines, it will be very inefficient to split('\n')
 
 1. ~~scout - create ETTh1 dataset entry~~
 2. ~~train - train on this dataset entry~~
-3. pred - pred on model entry and dataset entry, get de scale working, quick visual
+3. ~~pred - pred on model, save predictions~~
+3. pred - quick visual, determine if scaler state is needed
 4. scout - get tickers.zip
 5. make sure steps 2-4 work for tickers
 6. setup rclone (dbx and integrate, build, & push docker)
