@@ -9,16 +9,16 @@ ENTRY_MEM = getenv('ENTRY_MEM', 100)
 ATTR_MEM = ENTRY_MEM
 
 class Loader: 
-    readers   = TypeDict({bytes: partial(read, mode='rb'), \
-                          str: read, \
-                          pd.DataFrame: pd.read_csv, \
-                          np.ndarray: np.load, torch.nn.Module: torch.load})
+    readers = TypeDict({bytes: partial(read, mode='rb'), \
+                        str: read, \
+                        pd.DataFrame: pd.read_csv, \
+                        np.ndarray: np.load, torch.nn.Module: torch.load})
 
-    writers   = TypeDict({bytes: partial(write, mode='wb'), \
-                          str: write, \
-                          pd.DataFrame: lambda fp, df: df.to_csv(fp, index=False), \
-                          np.ndarray: np.save, \
-                          torch.nn.Module: lambda fp, mdl: torch.save(mdl.state_dict(), fp)})
+    writers = TypeDict({bytes: partial(write, mode='wb'), \
+                        str: write, \
+                        pd.DataFrame: lambda fp, df: df.to_csv(fp, index=False), \
+                        np.ndarray: np.save, \
+                        torch.nn.Module: lambda fp, mdl: torch.save(mdl.state_dict(), fp)})
 
     appenders = TypeDict({bytes: partial(write, mode='ab'), \
                           str: partial(write, mode='a'), \
