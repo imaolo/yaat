@@ -12,7 +12,8 @@ class Loader:
     readers = TypeDict({bytes: partial(read, mode='rb'), \
                         str: read, \
                         pd.DataFrame: pd.read_csv, \
-                        np.ndarray: np.load, torch.nn.Module: torch.load})
+                        np.ndarray: np.load, \
+                        torch.nn.Module: torch.load})
 
     writers = TypeDict({bytes: partial(write, mode='wb'), \
                         str: write, \
