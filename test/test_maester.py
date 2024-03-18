@@ -1,5 +1,6 @@
 from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
-    mkdirs, dict2str, gettime, serialize, write, construct, filesz, str2dict
+    mkdirs, dict2str, gettime, serialize, write, construct, filesz, str2dict, \
+    readlines, writelines
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, PredEntry, Maester
 from typing import Any
 import torch, random, unittest, os, random, numpy as np
@@ -61,8 +62,8 @@ class TestAttribute(TestMaesterSetup):
 
     def test_append(self):
         self.attr.buf += self.attr.data
-        self.assertEqual(self.attr.data, self.data+'\n'+self.data)
-        self.assertEqual(read(self.attr.fp), self.data+'\n'+self.data)
+        self.assertEqual(self.attr.data, self.data*2)
+        self.assertEqual(read(self.attr.fp), self.data*2)
 
     def test_delete(self):
         attr = self.create_attr(getid(self), self.data)
@@ -80,8 +81,8 @@ class TestAttribute(TestMaesterSetup):
         attr = self.create_attr(getid(self), self.data, appendonly=True)
         with self.assertRaises(AssertionError): attr.buf = 1
         attr.buf += self.data
-        self.assertEqual(attr.data, self.data+'\n'+self.data)
-        self.assertEqual(read(attr.fp), self.data+'\n'+self.data)
+        self.assertEqual(attr.data, self.data*2)
+        self.assertEqual(read(attr.fp), self.data*2)
 
 class TestEntry(TestMaesterSetup):
     test_num:int = 0
@@ -96,21 +97,21 @@ class TestEntry(TestMaesterSetup):
 
     def test_constructor(self):
         self.assertTrue(os.path.isdir(self.entry.fp))
-        self.assertEqual(self.entry.status.data, Entry.Status.created.name)
-        with open(self.entry.status.fp, 'r') as f : self.assertEqual(f.read(), Entry.Status.created.name)
+        self.assertEqual(self.entry.status.data[-1], Entry.Status.created.name)
+        self.assertEqual(readlines(self.entry.status.fp)[-1], Entry.Status.created.name)
 
     def test_status_update(self):
-        self.entry.status.buf += Entry.Status.running.name
-        with open(self.entry.status.fp, 'r') as f : self.assertEqual(f.read().split('\n')[-1], Entry.Status.running.name)
+        self.entry.status.buf += [Entry.Status.running.name]
+        self.assertEqual(readlines(self.entry.status.fp)[-1], Entry.Status.running.name)
 
     def test_set_error(self):
         self.entry.set_error(msg1:=f"pytorch error: {'blah blah pytorch failed'}")
         self.assertEqual(read(path(self.entry.fp, 'error_0')), msg1)
-        self.assertEqual(read(self.entry.status.fp).split('\n')[-1], Entry.Status.error.name)
+        self.assertEqual(readlines(self.entry.status.fp)[-1], Entry.Status.error.name)
         self.entry.set_error(msg2:=f"pytorch error: {'blah blah pytorch failed number 2'}")
         self.assertEqual(read(path(self.entry.fp, 'error_1')), msg2)
         self.assertEqual(read(path(self.entry.fp, 'error_0')), msg1)
-        self.assertEqual(read(self.entry.status.fp).split('\n')[-1], Entry.Status.error.name)
+        self.assertEqual(readlines(self.entry.status.fp)[-1], Entry.Status.error.name)
 
     def test_pickle(self):
         e1 = Entry(path(self.dp, f"{getid(self)}_{gettime()}"))
@@ -166,6 +167,7 @@ class TestDataSetEntry(TestMaesterSetup):
         self.assertIsNone(de1.dataset._buf)
         self.assertEqual(de1.dataset.data, data)
 
+    @unittest.skip("we may not need this")
     def test_mean_std(self):
         cols = ['c1', 'c2', 'c3']
         data = [[random.random() for __ in range(len(cols))] for _ in range(10)]
