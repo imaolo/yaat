@@ -1,28 +1,31 @@
 from yaat.util import getenv, rm, write, read, siblings, leaf, path, parent, objsz, mkdirs, \
-                        filesz, dict2str, serialize, construct, children, filename, TypeDict, exists
+                        filesz, dict2str, serialize, construct, children, filename, TypeDict, exists, \
+                        readlines, writelines
 from typing import Any, Optional, Type, Dict, List
 from functools import partial
 from enum import Enum, auto
-import numpy as np
-import torch, pandas as pd
+import torch, numpy as np, pandas as pd
 ENTRY_MEM = getenv('ENTRY_MEM', 100)
 ATTR_MEM = ENTRY_MEM
 
 class Loader: 
     readers = TypeDict({bytes: partial(read, mode='rb'), \
                         str: read, \
+                        list: readlines, \
                         pd.DataFrame: pd.read_csv, \
                         np.ndarray: np.load, \
                         torch.nn.Module: torch.load})
 
     writers = TypeDict({bytes: partial(write, mode='wb'), \
                         str: write, \
+                        list: writelines, \
                         pd.DataFrame: lambda fp, df: df.to_csv(fp, index=False), \
                         np.ndarray: np.save, \
                         torch.nn.Module: lambda fp, mdl: torch.save(mdl.state_dict(), fp)})
 
     appenders = TypeDict({bytes: partial(write, mode='ab'), \
                           str: partial(write, mode='a'), \
+                          list: partial(writelines, mode='a'), \
                           pd.DataFrame: lambda fp, df: df.to_csv(fp, header=False, mode='a', index=False)})
 
 class AttributeBuffer:
@@ -46,7 +49,7 @@ class AttributeBuffer:
 
     def __iadd__(self, val:Any):
         assert self.obj.type in Loader.appenders and not self.obj.readonly, f"invalid append, {self.obj.type=}, {self.obj.readonly=}"
-        Loader.appenders[self.obj.type](self.obj.fp, '\n'+val)
+        Loader.appenders[self.obj.type](self.obj.fp, val)
         self.set_cache(None)
         return self
 
@@ -77,13 +80,13 @@ class Entry:
     def __init__(self, fp:str, mem:int=ENTRY_MEM):
         self.fp, self.mem = fp, mem
         mkdirs(fp, exist_ok=False)
-        self.status = Attribute(path(fp, 'status'), data=self.Status.created.name, appendonly=True, mem=mem)
+        self.status = Attribute(path(fp, 'status'), data=[self.Status.created.name], appendonly=True, mem=mem)
         self.obj = Attribute(path(fp, 'obj'), serialize(self))
         self.error = None
         self.num_err = 0
 
     def set_error(self, errm:str):
-        self.status.buf += self.Status.error.name
+        self.status.buf += [self.Status.error.name]
         self.error = Attribute(path(self.fp, 'error_'+str(self.num_err)), data=errm, mem=self.mem)
         self.num_err += 1
 
