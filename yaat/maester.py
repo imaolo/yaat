@@ -4,14 +4,25 @@ from typing import Any, Optional, Type, Dict, List
 from functools import partial
 from enum import Enum, auto
 import numpy as np
-import torch, pandas
+import torch, pandas as pd
 ENTRY_MEM = getenv('ENTRY_MEM', 100)
 ATTR_MEM = ENTRY_MEM
 
-class Loader:
-    readers   = TypeDict({str: read , bytes: partial(read, mode='rb') , np.ndarray: np.load, torch.nn.Module: torch.load})
-    writers   = TypeDict({str: write, bytes: partial(write, mode='wb'), np.ndarray: np.save, torch.nn.Module: lambda fp, mdl: torch.save(mdl.state_dict(), fp)})
-    appenders = TypeDict({str: partial(write, mode='a'), bytes: partial(write, mode='ab')})
+class Loader: 
+    readers   = TypeDict({bytes: partial(read, mode='rb'), \
+                          str: read, \
+                          pd.DataFrame: pd.read_csv, \
+                          np.ndarray: np.load, torch.nn.Module: torch.load})
+
+    writers   = TypeDict({bytes: partial(write, mode='wb'), \
+                          str: write, \
+                          pd.DataFrame: lambda fp, df: df.to_csv(fp, index=False), \
+                          np.ndarray: np.save, \
+                          torch.nn.Module: lambda fp, mdl: torch.save(mdl.state_dict(), fp)})
+
+    appenders = TypeDict({bytes: partial(write, mode='ab'), \
+                          str: partial(write, mode='a'), \
+                          pd.DataFrame: lambda fp, df: df.to_csv(fp, header=False, mode='a', index=False)})
 
 class AttributeBuffer:
     def __set_name__(self, owner:Type['Attribute'], name:str):
@@ -97,7 +108,7 @@ class DatasetEntry(Entry):
         self.save()
     
     def preprocess(self, drop:List[str]|str=None):
-        df = pandas.read_csv(self.dataset.fp)
+        df = pd.read_csv(self.dataset.fp)
         if drop is not None: df = df.drop(drop, axis=1)
         self.mean = Attribute(path(self.fp, 'mean.npy'), df.values.mean(0), readonly=True)
         self.std = Attribute(path(self.fp, 'std.npy'),  df.values.std(0), readonly=True)
