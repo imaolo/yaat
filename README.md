@@ -12,8 +12,6 @@ python -m pytest test/
 
 ## usage
 
-refactoring rn check back later.
-
 The maester provides information on available datasets, models, and predictions
 We can can print all, some, or one of them.
 ```sh
