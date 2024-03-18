@@ -49,6 +49,7 @@ class AttributeBuffer:
 
     def __iadd__(self, val:Any):
         assert self.obj.type in Loader.appenders and not self.obj.readonly, f"invalid append, {self.obj.type=}, {self.obj.readonly=}"
+        if self.obj.type is pd.DataFrame and not isinstance(val, pd.DataFrame): val = pd.DataFrame({col:[val] for col, val in zip(self.obj.data.columns.tolist(), val)})
         Loader.appenders[self.obj.type](self.obj.fp, val)
         self.set_cache(None)
         return self
@@ -65,7 +66,7 @@ class Attribute:
         self.buf, self.readonly, self.appendonly = data, readonly, appendonly
 
     @property
-    def data(self) -> Any: return self._buf if self._buf else Loader.readers[self.type](self.fp)
+    def data(self) -> Any: return self._buf if self._buf is not None else Loader.readers[self.type](self.fp)
 
     @data.deleter
     def data(self): rm(self.fp); del self
@@ -96,7 +97,7 @@ class Entry:
     def load(fp:str) -> 'Entry': return construct(read(fp, 'rb'))
 
 class ModelEntry(Entry):
-    def __init__(self, fp:str, args:Dict[str, str | int], model: torch.nn.Module, mem:int=ENTRY_MEM):
+    def __init__(self, fp:str, args:Dict[str, str | int], model: torch.nn.Module, mem:int=0):
         super().__init__(fp, mem)
         self.mem = self.mem
         self.args = Attribute(path(fp, 'args'), dict2str(args), readonly=True, mem=mem)
@@ -104,18 +105,11 @@ class ModelEntry(Entry):
         self.save()
 
 class DatasetEntry(Entry):
-    def __init__(self, fp:str, data:Any, mem:int=ENTRY_MEM):
+    def __init__(self, fp:str, cols=Dict[str, type], types=List[type], mem:int=ENTRY_MEM):
         super().__init__(fp, mem)
-        self.dataset = Attribute(path(fp, 'dataset'), data, appendonly=True)
-        self.mean = None
-        self.std = None
+        self.cols = cols
+        self.dataset = Attribute(path(fp, 'dataset'), pd.DataFrame(cols), appendonly=True)
         self.save()
-    
-    def preprocess(self, drop:List[str]|str=None):
-        df = pd.read_csv(self.dataset.fp)
-        if drop is not None: df = df.drop(drop, axis=1)
-        self.mean = Attribute(path(self.fp, 'mean.npy'), df.values.mean(0), readonly=True)
-        self.std = Attribute(path(self.fp, 'std.npy'),  df.values.std(0), readonly=True)
 
 class PredEntry(Entry):
     def __init__(self, fp:str, pred:np.ndarray, model:str, dataset:str, mem:int=ENTRY_MEM):
