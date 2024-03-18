@@ -12,9 +12,6 @@ ROOT = getenv('ROOT', "data")
 def path(*fp:str) -> str: return '/'.join(fp)
 def gettypes(d: Dict[Any, Any], types:List[Type]) -> Dict[Any, Any]: return {k:v for k, v in d.items() if isinstance(v, types)}
 def exists(fp:str): return os.path.isdir(fp) or os.path.isfile(fp)
-def myprint(header:str, obj:Any=None):
-    print(f"{'='*15} {header} {'='*15}")
-    if obj: pprint.pprint(obj)
 def gettime() -> int: return int(time.perf_counter_ns())
 def mkdirs(*args, mode=0o755, **kwargs): os.makedirs(*args, mode=mode, **kwargs)
 def objsz(obj:Any) -> int: return len(pickle.dumps(obj))
@@ -39,6 +36,9 @@ def write(fp:str, data:str | bytes, mode='w'):
 def rm(fp:str):
      if os.path.isdir(fp): runcmd(f"rm -rf {fp}")
      if os.path.isfile(fp): os.remove(fp)
+def myprint(header:str, obj:Any=None):
+    print(f"{'='*15} {header} {'='*15}")
+    if obj: pprint.pprint(obj)
 def runcmd(cmd:str):
     def ass(proc): assert proc.returncode is None or proc.returncode == 0 or proc.returncode == 128, f"Command failed - {cmd} \n\n returncode: {proc.returncode} \n\n stdout: \n {proc.stdout.read()} \n\n stderr: \n{proc.stderr.read()} \n\n"
     if DEBUG: print(f"running command: {cmd}")
