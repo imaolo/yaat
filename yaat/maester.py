@@ -105,10 +105,10 @@ class ModelEntry(Entry):
         self.save()
 
 class DatasetEntry(Entry):
-    def __init__(self, fp:str, cols=Dict[str, type], mem:int=ENTRY_MEM):
+    def __init__(self, fp:str, data=Dict[str, List[Any] | pd.Series], mem:int=ENTRY_MEM):
         super().__init__(fp, mem)
-        self.cols = cols
-        self.dataset = Attribute(path(fp, 'dataset'), pd.DataFrame(cols), appendonly=True)
+        self.cols = list(data.keys())
+        self.dataset = Attribute(path(fp, 'dataset'), pd.DataFrame(data), appendonly=True)
         self.save()
 
 class PredEntry(Entry):
