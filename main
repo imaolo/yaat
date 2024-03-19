@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from yaat.util import myprint, filesz, rm, dict2str, str2dict, DEBUG, ROOT, runcmd, read, filename, path
+from yaat.util import myprint, filesz, rm, dict2str, str2dict, DEBUG, ROOT, runcmd, filename, path
 from yaat.maester import Maester, Entry, Loader
 
 from Informer2020.exp_informer import Exp_Informer
@@ -76,8 +76,7 @@ def usage():
 
     # scout command arguments TODO
 
-    # trade command arguments
-    trade_parser.add_argument('--pred', type=str, required=True, help='name of predictions to visualize')
+    # trade command arguments TODO
     
     return main_parser.parse_args()
 
@@ -173,16 +172,7 @@ elif args.cmd == 'pred':
     print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(args))
     Exp_Informer(args).predict(True)
 
-elif args.cmd == 'scout':
-
-    if 'ETTh1' in maester.datasets: sys.exit()
-    runcmd("git clone https://github.com/zhouhaoyi/ETDataset.git")
-    df = Loader.readers[pd.DataFrame]('./ETDataset/ETT-small/ETTh1.csv')
-    cols = df.columns.tolist()
-    assert 'date' in cols, f'daseset must have a data column - {cols}'
-    maester.create_dataset('ETTh1', df)
-    maester.datasets['ETTh1'].status.buf += [Entry.Status.finished.name]
-    rm('./ETDataset')
+elif args.cmd == 'scout': pass # TODO
 
 elif args.cmd == 'trade':
 
