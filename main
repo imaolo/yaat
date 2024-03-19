@@ -5,7 +5,7 @@ from yaat.maester import Maester, Entry, Loader
 from Informer2020.exp_informer import Exp_Informer
 from typing import Any
 from tabulate import tabulate
-import argparse, sys, torch, numpy as np, pandas as pd
+import argparse, sys, torch, numpy as np, pandas as pd, matplotlib.pyplot as plt
 
 def usage():
     # main parser
@@ -17,6 +17,7 @@ def usage():
     train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
     pred_parser = main_subparser.add_parser(n:='pred', help=f"{n} command help")
     scout_parser = main_subparser.add_parser(n:='scout', help=f"{n} command help")
+    trade_parser = main_subparser.add_parser(n:='trade', help=f"{n} command help")
 
     # maester command arguments
     maester_parser.add_argument('--datasets', action='store_const', const='datasets', help="list datasets")
@@ -37,7 +38,7 @@ def usage():
     train_parser.add_argument('--pred_len', type=int, default=5, help='prediction sequence length')
     train_parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
     train_parser.add_argument('--dec_in', type=int, default=7, help='decoder input size')
-    train_parser.add_argument('--c_out', type=int, default=7, help='output size')
+    train_parser.add_argument('--c_out', type=int, default=1, help='output size')
     train_parser.add_argument('--d_model', type=int, default=10, help='dimension of model')
     train_parser.add_argument('--n_heads', type=int, default=1, help='num of heads')
     train_parser.add_argument('--e_layers', type=int, default=1, help='num of encoder layers')
@@ -74,6 +75,9 @@ def usage():
     pred_parser.add_argument('--model', type=str, required=True, help='model to use')
 
     # scout command arguments TODO
+
+    # trade command arguments
+    trade_parser.add_argument('--pred', type=str, required=True, help='name of predictions to visualize')
     
     return main_parser.parse_args()
 
@@ -169,6 +173,7 @@ elif args.cmd == 'pred':
     Exp_Informer(args).predict(True)
 
 elif args.cmd == 'scout':
+
     if 'ETTh1' in maester.datasets: sys.exit()
     runcmd("git clone https://github.com/zhouhaoyi/ETDataset.git")
     df = Loader.readers[pd.DataFrame]('./ETDataset/ETT-small/ETTh1.csv')
@@ -177,5 +182,17 @@ elif args.cmd == 'scout':
     maester.create_dataset('ETTh1', df)
     maester.datasets['ETTh1'].status.buf += [Entry.Status.finished.name]
     rm('./ETDataset')
+
+elif args.cmd == 'trade':
+
+    assert args.pred in maester.preds
+
+    y = maester.preds[args.pred].pred.data.flatten()
+    x = np.arange(len(y))
+
+    plt.xlabel('X Axis Label')
+    plt.ylabel('Y Axis Label')
+    plt.title('Simple Linear Plot with Range for X-Axis')
+    plt.show()
 
 else: raise RuntimeError(f"invalid command {args.cmd}")
