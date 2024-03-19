@@ -1,10 +1,10 @@
 from yaat.util import getenv, rm, write, read, siblings, leaf, path, parent, objsz, mkdirs, \
                         filesz, dict2str, serialize, construct, children, filename, TypeDict, exists, \
-                        readlines, writelines
+                        readlines, writelines, runcmd
 from typing import Any, Optional, Type, Dict, List
 from functools import partial
 from enum import Enum, auto
-import torch, numpy as np, pandas as pd
+import torch, gdown, numpy as np, pandas as pd
 ENTRY_MEM = getenv('ENTRY_MEM', 100)
 ATTR_MEM = ENTRY_MEM
 
@@ -121,7 +121,10 @@ class PredEntry(Entry):
 class Maester:
     def __init__(self, fp:str, mem:int=10e6): # TODO configs
         self.fp, self.mem = fp, mem
-        mkdirs(fp, exist_ok=True) # TODO mount directory
+        if not exists(fp):
+            fn = gdown.download('https://drive.google.com/uc?id=1BNyA3aqYnKNDkJcOovGKoKBAHOBgws0_', quiet=False)
+            runcmd(f'unzip {fn}'); rm(fn)
+        mkdirs(fp, exist_ok=True)
         mkdirs(path(fp, 'models'), exist_ok=True)
         mkdirs(path(fp, 'datasets'), exist_ok=True)
         mkdirs(path(fp, 'preds'), exist_ok=True)
