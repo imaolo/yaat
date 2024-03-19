@@ -14,6 +14,7 @@ python -m pytest test/
 
 The maester provides information on available datasets, models, and predictions
 We can can print all, some, or one of them.
+It also downloads seed data if there is not existing data
 ```sh
 python main maester
 python main maester --models
@@ -22,14 +23,8 @@ python main maester --preds
 python main maester --preds --datasets
 ```
 
-They should return nothing as we've created nothing.
+The seed datasets should be listed in the datasets
 
-The scout creates the ETTh1 dataset
-
-```sh
-python main scout
-python main maester --datasets
-```
 
 Use the ETTh1 dataset to train a model
 This will create extraneous .npy files in pwd.
