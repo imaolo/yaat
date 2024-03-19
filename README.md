@@ -48,7 +48,12 @@ python main pred --name mypred --dataset ETTh1 --model mymodelname
 python main maester --preds
 ```
 
-TODO visualize
+Visualize the predictions
+```sh
+python main trade --pred mypred
+```
+
+* the model is scaled down by default. inaccuracy is expected.
 
 ## TODO, in order - Noon 3/16
 
