@@ -59,7 +59,7 @@ python main trade --pred mypred
 3. ~~pred - pred on model, save predictions~~
 4. ~~scout - save ETTH1 as pandasframe~~
 5. ~~pred - quick visual, determine if scaler state is needed~~
-6. scout - get tickers.zip
+6. ~~scout - get tickers.zip~~
 7. make sure steps 2-4 work for tickers
 8. setup rclone (dbx and integrate, build, & push docker)
 9. make sure steps 1-5 work locally, with docker
