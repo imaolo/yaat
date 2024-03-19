@@ -168,6 +168,7 @@ elif args.cmd == 'pred':
     args.pred_fp = pe.pred.fp
     for k, v in str2dict(me.args.data).items(): setattr(args, k, v)
     args.detail_freq = args.freq
+    args.inverse = True
 
     print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(args))
     Exp_Informer(args).predict(True)
@@ -190,6 +191,7 @@ elif args.cmd == 'trade':
     y = maester.preds[args.pred].pred.data.flatten()
     x = np.arange(len(y))
 
+    plt.plot(x, y)
     plt.xlabel('X Axis Label')
     plt.ylabel('Y Axis Label')
     plt.title('Simple Linear Plot with Range for X-Axis')
