@@ -20,7 +20,7 @@ db_dir = path(data_dir, 'db')
 og_data_fp = path(data_dir, og_data_name)
 cleaned_data_fp = path(data_dir, cleaned_data_name)
 final_data_fp = path(data_dir, final_data_name)
-ticker_fields =  ['last']
+ticker_fields =  ['last', 'baseVolume']
 shared_fields = ['symbol', 'date']
 fields = ticker_fields + shared_fields
 
