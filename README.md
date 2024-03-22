@@ -50,7 +50,7 @@ python main trade --pred mypred
 
 The plot is the 15 ticker predictions in the dataset, where the predictions are multivariate to multivariate. I have the model is scaled down, both in parameters in context length, so there is only 5 datapoints for each prediction.
 
-## TODO, in order - Noon 3/16
+## TODO
 
 1. ~~scout - create ETTh1 dataset entry~~
 2. ~~train - train on this dataset entry~~
