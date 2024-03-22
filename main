@@ -36,9 +36,9 @@ def usage():
     train_parser.add_argument('--seq_len', type=int, default=5, help='input sequence length of Informer encoder')
     train_parser.add_argument('--label_len', type=int, default=5, help='start token length of Informer decoder')
     train_parser.add_argument('--pred_len', type=int, default=5, help='prediction sequence length')
-    train_parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
-    train_parser.add_argument('--dec_in', type=int, default=7, help='decoder input size')
-    train_parser.add_argument('--c_out', type=int, default=1, help='output size')
+    train_parser.add_argument('--enc_in', type=int, default=15, help='encoder input size')
+    train_parser.add_argument('--dec_in', type=int, default=15, help='decoder input size')
+    train_parser.add_argument('--c_out', type=int, default=15, help='output size')
     train_parser.add_argument('--d_model', type=int, default=10, help='dimension of model')
     train_parser.add_argument('--n_heads', type=int, default=1, help='num of heads')
     train_parser.add_argument('--e_layers', type=int, default=1, help='num of encoder layers')
@@ -130,7 +130,7 @@ elif args.cmd == 'train':
     args.checkpoints = me.weights.fp
     args.root_path = path(*de.dataset.fp.split('/')[:-1])
     args.data_path = filename(de.dataset.fp)
-    args.data = args.dataset 
+    args.data = 'custom'
 
     exp = Exp_Informer(args)
 
@@ -163,7 +163,7 @@ elif args.cmd == 'pred':
     args.checkpoints = me.weights.fp
     args.root_path = path(*de.dataset.fp.split('/')[:-1])
     args.data_path = filename(de.dataset.fp)
-    args.data = args.dataset
+    args.data = 'custom'
     args.pred_fp = pe.pred.fp
     for k, v in str2dict(me.args.data).items(): setattr(args, k, v)
     args.detail_freq = args.freq
