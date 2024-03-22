@@ -62,9 +62,9 @@ The plot is the 15 ticker predictions in the dataset, where the predictions are 
 6. ~~scout - get tickers.zip~~
 7. ~~make sure steps 2-4 work for tickers~~
 8. run training manually on lambda, verify loss, visualize it
-9. make the trader good, parameterized visualization, backtesting
+9. make the trader good, parameterized visualization, backtesting, sandbox proof of concept
 10. In general exhaust everything that can be verified with the existing dataset and infrastructure
-11. figure out when get this far
+11. servers & real shit!
 
 ## get and restructure the original data
 If you want to download and restructure the old data... it is slow.
