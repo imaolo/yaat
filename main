@@ -76,7 +76,8 @@ def usage():
 
     # scout command arguments TODO
 
-    # trade command arguments TODO
+    # trade command arguments
+    trade_parser.add_argument('--pred', type=str, required=True, help='prediction to visualize')
     
     return main_parser.parse_args()
 
@@ -103,12 +104,6 @@ if args.cmd == 'maester':
         myprint("predictions")
         print(tabulate([[k, v.model, v.dataset] for k, v in maester.preds.items()], headers=['name', 'model', 'dataset']))
 
-    if not args.models and not args.datasets and not args.preds:
-        print_datasets(); print_models(); print_preds()
-    if args.models is not None: print_models()
-    if args.datasets is not None: print_datasets()
-    if args.preds is not None: print_preds()
-
     if args.delete is not None:
         model = maester.models.pop(args.delete, None)
         if model: rm(model.fp)
@@ -117,6 +112,12 @@ if args.cmd == 'maester':
         dataset = maester.datasets.pop(args.delete, None)
         if dataset: rm(dataset.fp)
         else: print(f"dataset {args.delete} not found")
+
+    if not args.models and not args.datasets and not args.preds:
+        print_datasets(); print_models(); print_preds()
+    if args.models is not None: print_models()
+    if args.datasets is not None: print_datasets()
+    if args.preds is not None: print_preds()
 
 elif args.cmd == 'train':
 
@@ -178,13 +179,19 @@ elif args.cmd == 'trade':
 
     assert args.pred in maester.preds
 
-    y = maester.preds[args.pred].pred.data.flatten()
+    y = maester.preds[args.pred].pred.data.squeeze(0)
     x = np.arange(len(y))
 
-    plt.plot(x, y)
-    plt.xlabel('X Axis Label')
-    plt.ylabel('Y Axis Label')
-    plt.title('Simple Linear Plot with Range for X-Axis')
+    # Create subplots - 15 rows, 1 column
+    fig, axs = plt.subplots(y.shape[1], 1, figsize=(10, 20))
+
+    for i in range(y.shape[1]):  # Loop through each of the 15 lines
+        axs[i].plot(y[:, i], label=f'Line {i+1}')
+        axs[i].legend()
+        axs[i].set_xlabel('X-axis')
+        axs[i].set_ylabel('Y-axis')
+
+    plt.tight_layout()  # Adjust layout to not overlap subplots
     plt.show()
 
 else: raise RuntimeError(f"invalid command {args.cmd}")
