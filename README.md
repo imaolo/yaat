@@ -23,15 +23,15 @@ python main maester --preds
 python main maester --preds --datasets
 ```
 
-The seed datasets should be listed in the datasets
+The seed datasets should be listed under datasets.
 
 
-Use the ETTh1 dataset to train a model
-This will create extraneous .npy files in pwd.
-They can be ignored and deleted.
+Use the cryp2020 dataset to train a model.
+
+You will want to go in the data directory and cut down the size of the csv, otherwise training will take forever. It is not hard to navigate and is the same information presented by the maester. This will create extraneous .npy files in pwd. They can be ignored and deleted.
 
 ```sh
-python main train --name mymodelname --dataset ETTh1
+python main train --name mymodelname --dataset cryp2020
 python main maester --models
 ```
 
@@ -39,7 +39,7 @@ Use the model to make predictions.
 
 ```sh
 python main maester --models --datasets
-python main pred --name mypred --dataset ETTh1 --model mymodelname
+python main pred --name mypred --dataset cryp2020 --model mymodelname
 python main maester --preds
 ```
 
@@ -48,7 +48,7 @@ Visualize the predictions
 python main trade --pred mypred
 ```
 
-* the model is scaled down by default. inaccuracy is expected.
+The plot is the 15 ticker predictions in the dataset, where the predictions are multivariate to multivariate. I have the model is scaled down, both in parameters in context length, so there is only 5 datapoints for each prediction.
 
 ## TODO, in order - Noon 3/16
 
@@ -60,14 +60,11 @@ python main trade --pred mypred
 4. ~~scout - save ETTH1 as pandasframe~~
 5. ~~pred - quick visual, determine if scaler state is needed~~
 6. ~~scout - get tickers.zip~~
-7. make sure steps 2-4 work for tickers
-8. setup rclone (dbx and integrate, build, & push docker)
-9. make sure steps 1-5 work locally, with docker
-10. run training manually on lambda
-11. monitor from the client
-12. run prediction manually on lambda
-13. visualize & pray the results are good
-14. Bazaar!
+7. ~~make sure steps 2-4 work for tickers~~
+8. run training manually on lambda, verify loss, visualize it
+9. make the trader good, parameterized visualization, backtesting
+10. In general exhaust everything that can be verified with the existing dataset and infrastructure
+11. figure out when get this far
 
 ## get and restructure the original data
 If you want to download and restructure the old data... it is slow.
