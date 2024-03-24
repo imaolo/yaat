@@ -86,6 +86,7 @@ args = usage()
 ### driver ###
 
 maester = Maester(ROOT)
+
 if args.cmd == 'maester':
 
     def print_datasets(): 
