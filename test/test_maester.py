@@ -3,7 +3,7 @@ from yaat.util import rm, path, exists, getenv, read, objsz, exists, \
     readlines, writelines
 from yaat.maester import Attribute, Entry, ModelEntry, DatasetEntry, PredEntry, Maester
 from typing import Any
-import torch, random, unittest, os, random, numpy as np, pandas as pd
+import unittest, torch, random, os, random, numpy as np, pandas as pd
 
 
 DEBUG = getenv("DEBUG", 0)
