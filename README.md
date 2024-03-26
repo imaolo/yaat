@@ -52,9 +52,11 @@ The plot is the 15 ticker predictions in the dataset, where the predictions are 
 
 ## docker
 
+```sh
 docker build -t yaat-image  .
 docker run -d --name yaat-node yaat-image ls
 docker logs yaat-node
+```
 
 ## TODO
 
