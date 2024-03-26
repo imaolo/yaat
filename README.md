@@ -12,15 +12,17 @@ python -m pytest test/
 
 ## usage
 
+wrong bc I renamed main to main.py
+
 The maester provides information on available datasets, models, and predictions
 We can can print all, some, or one of them.
 It also downloads seed data if there is not existing data
 ```sh
-python main maester
-python main maester --models
-python main maester --datasets
-python main maester --preds
-python main maester --preds --datasets
+python main.py maester
+python main.py maester --models
+python main.py maester --datasets
+python main.py maester --preds
+python main.py maester --preds --datasets
 ```
 
 The seed datasets should be listed under datasets.
@@ -31,21 +33,21 @@ Use the cryp2020 dataset to train a model.
 You will want to go in the data directory and cut down the size of the csv, otherwise training will take forever. It is not hard to navigate and is the same information presented by the maester. This will create extraneous .npy files in pwd. They can be ignored and deleted.
 
 ```sh
-python main train --name mymodelname --dataset cryp2020
-python main maester --models
+python main.py train --name mymodelname --dataset cryp2020
+python main.py maester --models
 ```
 
 Use the model to make predictions.
 
 ```sh
-python main maester --models --datasets
-python main pred --name mypred --dataset cryp2020 --model mymodelname
-python main maester --preds
+python main.py maester --models --datasets
+python main.py pred --name mypred --dataset cryp2020 --model mymodelname
+python main.py maester --preds
 ```
 
 Visualize the predictions
 ```sh
-python main trade --pred mypred
+python main.py trade --pred mypred
 ```
 
 The plot is the 15 ticker predictions in the dataset, where the predictions are multivariate to multivariate. I have the model is scaled down, both in parameters in context length, so there is only 5 datapoints for each prediction.
@@ -54,7 +56,7 @@ The plot is the 15 ticker predictions in the dataset, where the predictions are 
 
 ```sh
 docker build -t yaat-image  .
-docker run -d --name yaat-node yaat-image ls
+docker run -d --name yaat-node yaat-image python3 main.py train --name lambdock1 --dataset cryp2020
 docker logs yaat-node
 ```
 
