@@ -50,6 +50,12 @@ python main trade --pred mypred
 
 The plot is the 15 ticker predictions in the dataset, where the predictions are multivariate to multivariate. I have the model is scaled down, both in parameters in context length, so there is only 5 datapoints for each prediction.
 
+## docker
+
+docker build -t yaat-image  .
+docker run -d --name yaat-node yaat-image ls
+docker logs yaat-node
+
 ## TODO
 
 1. ~~scout - create ETTh1 dataset entry~~
