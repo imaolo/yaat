@@ -136,6 +136,7 @@ elif args.cmd == 'train':
     exp = Exp_Informer(args)
 
     num_params = sum(p.numel() for p in exp.model.parameters())/1e6
+    print(f"model params {num_params}M")
     me.args.readonly = False
     me.args.buf = dict2str(str2dict(me.args.data) | {'num_params': f"{num_params}M"})
     me.args.readonly = True
