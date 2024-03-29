@@ -9,14 +9,9 @@ class Miner:
         self.maester = maester
 
     def mine(self):
-        # name = 'moneydata'
-        # self.maester.datasets.pop(name)
-
         tickers = ['^GSPC', '^IXIC', '^DJI', 'BTC-USD', 'ETH-USD', 'DX-Y.NYB',
                    'EURUSD=X', 'USDCNY=X', 'GC=F', 'CL=F', '^SPNY']
-
-        # cols = {'': pd.Series([], dtype='str'), 'c2': pd.Series([], dtype='int'), 'c3': pd.Series([], dtype='float')}
-
+        for t in tickers: yf.Ticker(t)
 
 # def test_create_dataset(self):
 #         cols = {'c1': pd.Series([], dtype='str'), 'c2': pd.Series([], dtype='int'), 'c3': pd.Series([], dtype='float')}
