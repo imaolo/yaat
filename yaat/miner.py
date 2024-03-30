@@ -5,6 +5,12 @@ import requests
 if TYPE_CHECKING:
     from yaat.maester import Maester
 
+
+# want to grab as many months as possible in hour granularity
+# starting with most recent
+# when it fails it fails
+# price, volume, esp, gas fees, public sentiments
+
 class Miner:
     alpha_url: str = 'https://www.alphavantage.co/query?'
     alpha_key: str = 'G9JFJ30E4HK6X0HR'
@@ -20,5 +26,5 @@ class Miner:
     def mine(self):
         self.add_url_qfield('function', 'TIME_SERIES_INTRADAY')
         self.add_url_qfield('symbol', 'IBM')
-        self.add_url_qfield('interval', '60min')
+        self.add_url_qfield('interval', '1d')
         myprint('alpha advantage demo data', self.get())
