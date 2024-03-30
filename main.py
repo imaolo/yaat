@@ -15,7 +15,7 @@ def usage():
     maester_parser = main_subparser.add_parser(n:='maester', help=f"{n} command help")
     train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
     pred_parser = main_subparser.add_parser(n:='pred', help=f"{n} command help")
-    scout_parser = main_subparser.add_parser(n:='scout', help=f"{n} command help")
+    miner_parser = main_subparser.add_parser(n:='miner', help=f"{n} command help")
     trade_parser = main_subparser.add_parser(n:='trade', help=f"{n} command help")
 
     # maester command arguments
@@ -73,7 +73,7 @@ def usage():
     pred_parser.add_argument('--dataset', type=str, required=True, help='csv path')
     pred_parser.add_argument('--model', type=str, required=True, help='model to use')
 
-    # scout command arguments TODO
+    # miner command arguments TODO
 
     # trade command arguments
     trade_parser.add_argument('--pred', type=str, required=True, help='prediction to visualize')
@@ -174,7 +174,7 @@ elif args.cmd == 'pred':
     print('>>>>>>>predicting : {}<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'.format(args))
     Exp_Informer(args).predict(True)
 
-elif args.cmd == 'scout': pass # TODO
+elif args.cmd == 'miner': pass # TODO
 
 elif args.cmd == 'trade':
 
