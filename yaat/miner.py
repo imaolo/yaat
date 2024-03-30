@@ -12,10 +12,12 @@ class Miner:
         self.maester = maester
         self.url = self.alpha_url
 
-    def add_url_qfield(self, key:str, val:str): self.url = self.url + key + '=' + val + '&'
+    def add_url_qfield(self, key:str, val:str):  self.url = ''.join([self.url, key + '=' + val + '&'])
 
-    def get(self) -> Dict: return requests.get(self.url+'apikey=demo').json()
+    def get(self) -> Dict: return requests.get(self.url+'apikey=G9JFJ30E4HK6X0HR').json()
 
     def mine(self):
-        self.add_url_qfield('function', 'MARKET_STATUS')
+        self.add_url_qfield('function', 'TIME_SERIES_INTRADAY')
+        self.add_url_qfield('symbol', 'IBM')
+        self.add_url_qfield('interval', '60min')
         myprint('alpha advantage demo data', self.get())
