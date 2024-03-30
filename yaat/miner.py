@@ -5,12 +5,6 @@ import requests
 if TYPE_CHECKING:
     from yaat.maester import Maester
 
-
-# want to grab as many months as possible in hour granularity
-# starting with most recent
-# when it fails it fails
-# price, volume, esp, gas fees, public sentiments
-
 class Miner:
     alpha_url: str = 'https://www.alphavantage.co/query?'
     alpha_key: str = 'G9JFJ30E4HK6X0HR'
@@ -24,6 +18,11 @@ class Miner:
     def get(self) -> Dict: return requests.get(self.url+f'apikey={self.alpha_key}').json()
 
     def mine(self):
+        # want to grab as many months as possible in hour granularity
+        # starting with most recent
+        # when it fails it fails
+        # price, volume, esp, gas fees, public sentiments
+
         self.add_url_qfield('function', 'TIME_SERIES_INTRADAY')
         self.add_url_qfield('symbol', 'IBM')
         self.add_url_qfield('interval', '1d')
