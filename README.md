@@ -60,6 +60,11 @@ docker logs yaat-node
 
 ## TODO
 
+need better data - plus sector symbols
+price, volume, esp, gas fees
+^GSPC, ^IXIC, ^DJI, BTC-USD, ETH-USD, DX-Y.NYB,
+EURUSD=X, USDCNY=X, GC=F, CL=F, ^SPNY
+
 1. ~~scout - create ETTh1 dataset entry~~
 2. ~~train - train on this dataset entry~~
 3. ~~pred - pred on model, save predictions~~
