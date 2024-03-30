@@ -12,6 +12,8 @@ python -m pytest test/
 
 ## usage
 
+main.py is under construction, check later or fix it. tests yaat/ and test/ are working.
+
 The maester provides information on available datasets, models, and predictions
 We can can print all, some, or one of them.
 It also downloads seed data if there is not existing data
