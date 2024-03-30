@@ -1,6 +1,8 @@
 from __future__ import annotations
+from yaat.util import myprint
 from typing import TYPE_CHECKING
 import yfinance as yf, pandas as pd
+import requests
 if TYPE_CHECKING:
     from yaat.maester import Maester
 
@@ -9,14 +11,32 @@ class Miner:
         self.maester = maester
 
     def mine(self):
-        tickers = ['^GSPC', '^IXIC', '^DJI', 'BTC-USD', 'ETH-USD', 'DX-Y.NYB',
-                   'EURUSD=X', 'USDCNY=X', 'GC=F', 'CL=F', '^SPNY']
-        for t in tickers: yf.Ticker(t)
 
-# def test_create_dataset(self):
-#         cols = {'c1': pd.Series([], dtype='str'), 'c2': pd.Series([], dtype='int'), 'c3': pd.Series([], dtype='float')}
-#         data = ['c1 val', 1, 1.3]
-#         self.maester.create_dataset(n:=f"{getid(self)}_{gettime()}", cols, mem=0)
-#         de = self.maester.datasets[n]
-#         de.dataset.buf += data
-#         self.assertEqual(de.dataset.data.iloc[0].tolist(), data)
+        import requests
+
+        # replace the "demo" apikey below with your own key from https://www.alphavantage.co/support/#api-key
+        url = 'https://www.alphavantage.co/query?function=MARKET_STATUS&apikey=demo'
+        r = requests.get(url)
+        data = r.json()
+
+        myprint('blah', data)
+
+        ## need to fetch historical data in 60 day increments??
+
+        data_avail_hour = '2022-04-01'
+
+        # Define the ticker
+        ticker = 'BTC-USD'
+
+        # Fetch the data
+        data = yf.download(tickers=ticker, start='2022-04-01', interval='1h')
+
+        # Check the first few rows to confirm
+        print(len(data))
+
+        # symbols = ['^GSPC', '^IXIC', '^DJI', 'BTC-USD', 'ETH-USD', 'DX-Y.NYB',
+        #            'EURUSD=X', 'USDCNY=X', 'GC=F', 'CL=F', '^SPNY']
+        # tickers = yf.Tickers(' '.join(symbols))
+        # print('\n')
+
+        # myprint('here', tickers.tickers['^GSPC'].info)
