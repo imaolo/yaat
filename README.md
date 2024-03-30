@@ -12,8 +12,6 @@ python -m pytest test/
 
 ## usage
 
-wrong bc I renamed main to main.py
-
 The maester provides information on available datasets, models, and predictions
 We can can print all, some, or one of them.
 It also downloads seed data if there is not existing data
