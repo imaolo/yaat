@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 from typing import Any, List, Dict, Type
-import subprocess, pprint, select, os, pickle, json, time
+import subprocess, pprint, select, os, pickle, json, time, requests
 
 def getenv(key:str, default=None) -> Any: return os.getenv(key, default) if default is not None else os.environ[key]
 
@@ -19,6 +19,7 @@ def filesz(fp: str) -> int: return os.path.getsize(fp)
 def siblings(fp:str) -> List[str]: return os.listdir(path(*fp.split('/')[:-1]))
 def children(fp:str) -> List[str]: return os.listdir(fp)
 def serialize(obj:Any) -> bytes: return pickle.dumps(obj)
+def fetchjson(url:str) -> Dict: return requests.get(url).json()
 def construct(obj:bytes) -> Any: return pickle.loads(obj)
 def dict2str(d:Dict) -> str: return json.dumps(d)
 def str2dict(str:str) -> Dict: return json.loads(str)
