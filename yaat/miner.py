@@ -7,6 +7,7 @@ if TYPE_CHECKING:
 
 class Miner:
     alpha_url: str = 'https://www.alphavantage.co/query?'
+    alpha_key: str = 'G9JFJ30E4HK6X0HR'
 
     def __init__(self, maester: Maester):
         self.maester = maester
@@ -14,7 +15,7 @@ class Miner:
 
     def add_url_qfield(self, key:str, val:str):  self.url = ''.join([self.url, key + '=' + val + '&'])
 
-    def get(self) -> Dict: return requests.get(self.url+'apikey=G9JFJ30E4HK6X0HR').json()
+    def get(self) -> Dict: return requests.get(self.url+f'apikey={self.alpha_key}').json()
 
     def mine(self):
         self.add_url_qfield('function', 'TIME_SERIES_INTRADAY')
