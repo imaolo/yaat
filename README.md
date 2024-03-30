@@ -12,7 +12,7 @@ python -m pytest test/
 
 ## usage
 
-main.py is under construction, check later or fix it. tests yaat/ and test/ are working.
+main.py is under construction, check later or fix it. yaat/ and test/ are working.
 
 The maester provides information on available datasets, models, and predictions
 We can can print all, some, or one of them.
