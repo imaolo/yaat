@@ -62,22 +62,20 @@ docker logs yaat-node
 
 ## TODO
 
-need better data - plus sector symbols
-price, volume, esp, gas fees
-^GSPC, ^IXIC, ^DJI, BTC-USD, ETH-USD, DX-Y.NYB,
-EURUSD=X, USDCNY=X, GC=F, CL=F, ^SPNY
-
-1. ~~scout - create ETTh1 dataset entry~~
-2. ~~train - train on this dataset entry~~
-3. ~~pred - pred on model, save predictions~~
-4. ~~scout - save ETTH1 as pandasframe~~
-5. ~~pred - quick visual, determine if scaler state is needed~~
-6. ~~scout - get tickers.zip~~
-7. ~~make sure steps 2-4 work for tickers~~
-8. run training manually on lambda, verify loss, visualize it
-9. make the trader good, parameterized visualization, backtesting, sandbox proof of concept
-10. In general exhaust everything that can be verified with the existing dataset and infrastructure
-11. servers & real shit!
+ 1. ~~scout - create ETTh1 dataset entry~~
+ 2. ~~train - train on this dataset entry~~
+ 3. ~~pred - pred on model, save predictions~~
+ 4. ~~scout - save ETTH1 as pandasframe~~
+ 5. ~~pred - quick visual, determine if scaler state is needed~~
+ 6. ~~scout - get tickers.zip~~
+ 7. ~~make sure steps 2-4 work for tickers~~
+ 8. ~~run training manually on lambda, verify loss, visualize it~~
+        - test loss down to ~0.6 at best, we want to do better, need better data, audible
+ 9. miner - grab as much historical data as possible for ^GSPC, ^IXIC, ^DJI, BTC-USD, ETH-USD, DX-Y.NYB,
+    EURUSD=X, USDCNY=X, GC=F, CL=F, and ^SPNY. Get price, volume, esp, gas fees, and public sentiment.
+10. clean data into maester
+12. repeat 2-5, verify loss
+13. trader - visualize, back test, sandbox, deploy
 
 ## get and restructure the original data
 If you want to download and restructure the old data... it is slow.
