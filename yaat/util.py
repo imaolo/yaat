@@ -1,4 +1,6 @@
 from dotenv import load_dotenv
+from datetime import datetime
+from zoneinfo import ZoneInfo
 from typing import Any, List, Dict, Type
 import subprocess, pprint, select, os, pickle, json, time, requests
 
@@ -6,7 +8,8 @@ def getenv(key:str, default=None) -> Any: return os.getenv(key, default) if defa
 
 load_dotenv()
 DEBUG = getenv("DEBUG", 0)
-ROOT = getenv('ROOT', "data")
+ROOT = getenv('ROOT', ".yaat")
+DBNAME = getenv('DBNAME', 'yaatdb')
 
 def path(*fp:str) -> str: return '/'.join(fp)
 def gettypes(d: Dict[Any, Any], types:List[Type]) -> Dict[Any, Any]: return {k:v for k, v in d.items() if isinstance(v, types)}
@@ -25,6 +28,7 @@ def dict2str(d:Dict) -> str: return json.dumps(d)
 def str2dict(str:str) -> Dict: return json.loads(str)
 def parent(fp:str) -> List[str]: return fp.split('/')[-2]
 def leaf(fp:str) -> str: return fp.split('/')[-1]
+def currdt() -> str: return datetime.now(ZoneInfo("America/New_York")).strftime("%Y-%m-%d-%H-%M-%S %Z%z")
 def read(fp:str, mode='r') -> str | bytes:
     with open(fp, mode) as f: return f.read()
 def readlines(fp:str, mode='r') -> List[str | bytes]:
@@ -51,13 +55,13 @@ def runcmd(cmd:str):
     ass(proc)
     if DEBUG: print(f"command succeeded: {cmd}")
 def killproc(proc:Any, proc_name:str):
-        print(f"shutting down process: {proc_name}")
+        if DEBUG: print(f"shutting down process: {proc_name}")
         proc.terminate()
         try: proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
             print(f"process {proc_name} didn't terminate gracefully, killing it...")
             proc.kill()
-        print(f"process {proc_name} shutdown")
+        if DEBUG: print(f"process {proc_name} shutdown")
 
 class TypeDict(dict):
     def __getitem__(self, key:Type[Any]) -> Any:
