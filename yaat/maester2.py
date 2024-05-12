@@ -1,23 +1,28 @@
 from __future__ import annotations
 from yaat.util import mkdirs, killproc
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional, Dict
 from pymongo import MongoClient
 import subprocess, atexit, functools, pymongo.errors as mongoerrs
-from bson import ObjectId
 
 if TYPE_CHECKING:
     import io
+    from pymongo.database import Collection
 
 class Maester:
     db_name: str = 'yaatdb'
 
     def __init__(self, connstr:Optional[str]='mongodb://54.205.245.140:27017/'):
+        # create (and possibly start) db
         self.connstr = connstr
         self.dbc = self.startlocdb() if self.connstr is None else self.conndb(self.connstr)
         self.db = self.dbc[self.db_name]
 
-        # predictions (status, dataset, model, prediction data)
-        # data collections (dynamically named, dynamic schema)
+        # helper
+        def create_get_coll(name:str, schema:Dict) -> Collection:
+            if name in self.db.list_collection_names(): return self.db[name]
+            coll = self.db.create_collection(name, validator={'$jsonSchema': schema})
+            coll.create_index({'name':1}, unique=True)
+            return coll
 
         # create the weights collection
         self.weights_schema = {
@@ -50,11 +55,7 @@ class Maester:
                 }
             }
         }
-        if 'weights' not in self.db.list_collection_names():
-            self.weights_coll = self.db.create_collection('weights', validator={'$jsonSchema': self.weights_schema})
-            self.weights_coll.create_index({'name':1}, unique=True)
-        else:
-            self.weights_coll = self.db['weights']
+        self.weights_coll = create_get_coll('weights', self.weights_schema)
 
         # create the datasets metadata collection
         self.datasets_schema = {
@@ -75,11 +76,9 @@ class Maester:
                 }
             }
         }
-        if 'datasets' not in self.db.list_collection_names():
-            self.datasets_coll = self.db.create_collection('datasets', validator={'$jsonSchema': self.datasets_schema})
-            self.datasets_coll.create_index({'name':1}, unique=True)
-        else:
-            self.datasets_coll = self.db['datasets']
+        self.datasets_coll = create_get_coll('datasets', self.datasets_schema)
+
+        # TODO - predictions collection
 
     def create_weights(self, name:str, dataset:str, weights: io.BytesIO):
         ds_docs = list(self.datasets_coll.find({'name': dataset}))
@@ -93,9 +92,9 @@ class Maester:
             'status': 'created'
         })
 
-    def create_dataset(self, name:str): # TODO - dataset schema
+    def create_dataset(self, name:str, schema:Optional[Dict]=None): # TODO - dataset schema
         assert name not in self.db.list_collection_names()
-        self.db.create_collection(name)
+        self.db.create_collection(name, validator={'$jsonSchema': schema} if schema is not None else None)
         self.datasets_coll.insert_one({
             'name': name,
             'status': 'created',
@@ -107,9 +106,9 @@ class Maester:
         (c := MongoClient(url, serverSelectionTimeoutMS=5000))['admin'].command('ping')
         return c
     
-    @classmethod    
+    @classmethod
     def startlocdb(cls, dir:str='./yaatdb_local') -> MongoClient:
-        mkdirs(dir)
+        mkdirs(dir, exist_ok=True)
         try: return cls.conndb()
         except (mongoerrs.ServerSelectionTimeoutError, mongoerrs.ConnectionFailure):
             try: mongod = subprocess.Popen(['mongod', '--dbpath', dir], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL) # NOTE: --logpath
