@@ -17,13 +17,6 @@ class _Maester:
         self.dbc = self.startlocdb() if self.connstr is None else self.conndb(self.connstr)
         self.db = self.dbc[self.db_name]
 
-        # helper
-        def create_get_coll(name:str, schema:Dict) -> Collection:
-            if name in self.db.list_collection_names(): return self.db[name]
-            coll = self.db.create_collection(name, validator={'$jsonSchema': schema})
-            coll.create_index({'name':1}, unique=True)
-            return coll
-
         # create the tickers collection
         self.tickers_schema = {
             'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
@@ -38,7 +31,9 @@ class _Maester:
                 'volume':   {'bsonType': ['int', 'null']}
             }
         }
-        self.tickers_coll = create_get_coll('tickers', self.tickers_schema)
+        if 'tickers' in self.db.list_collection_names(): return self.db['tickers']
+        self.tickers_coll = self.db.create_collection('tickers', validator={'$jsonSchema': self.tickers_schema })
+        self.tickers_coll.create_index({'symbol':1, 'datetime':1})
     
     @classmethod
     def conndb(cls, url:Optional[str]=None) -> MongoClient:
