@@ -1,12 +1,8 @@
 from __future__ import annotations
 from yaat.util import mkdirs, killproc
-from typing import TYPE_CHECKING, Optional, Dict
+from typing import Optional
 from pymongo import MongoClient
 import subprocess, atexit, functools, pymongo.errors as mongoerrs
-
-if TYPE_CHECKING:
-    import io
-    from pymongo.database import Collection
 
 class _Maester:
     db_name: str = 'yaatdb'
@@ -31,9 +27,11 @@ class _Maester:
                 'volume':   {'bsonType': ['int', 'null']}
             }
         }
-        if 'tickers' in self.db.list_collection_names(): return self.db['tickers']
-        self.tickers_coll = self.db.create_collection('tickers', validator={'$jsonSchema': self.tickers_schema })
+        if 'tickers' in self.db.list_collection_names(): self.tickers_coll = self.db['tickers']
+        else: self.tickers_coll = self.db.create_collection('tickers', validator={'$jsonSchema': self.tickers_schema })
         self.tickers_coll.create_index({'symbol':1, 'datetime':1})
+        self.tickers_coll.create_index({'symbol':1})
+        self.tickers_coll.create_index({'datetime':1})
     
     @classmethod
     def conndb(cls, url:Optional[str]=None) -> MongoClient:
