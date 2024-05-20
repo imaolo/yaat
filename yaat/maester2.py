@@ -2,10 +2,12 @@ from __future__ import annotations
 from yaat.util import mkdirs, killproc
 from typing import Optional
 from pymongo import MongoClient
+from zoneinfo import ZoneInfo
 import subprocess, atexit, functools, pymongo.errors as mongoerrs
 
 class _Maester:
     db_name: str = 'yaatdb'
+    tz: ZoneInfo = ZoneInfo('UTC') 
 
     def __init__(self, connstr:Optional[str]='mongodb://54.205.245.140:27017/'):
         # create (and possibly start) db
@@ -29,7 +31,7 @@ class _Maester:
         }
         if 'tickers' in self.db.list_collection_names(): self.tickers_coll = self.db['tickers']
         else: self.tickers_coll = self.db.create_collection('tickers', validator={'$jsonSchema': self.tickers_schema })
-        self.tickers_coll.create_index({'symbol':1, 'datetime':1})
+        self.tickers_coll.create_index({'symbol':1, 'datetime':1}, unique=True)
         self.tickers_coll.create_index({'symbol':1})
         self.tickers_coll.create_index({'datetime':1})
     
