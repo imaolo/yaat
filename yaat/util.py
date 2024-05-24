@@ -54,14 +54,14 @@ def runcmd(cmd:str):
         if proc.poll() is not None: break
     ass(proc)
     if DEBUG: print(f"command succeeded: {cmd}")
-def killproc(proc:Any, proc_name:str):
-        if DEBUG: print(f"shutting down process: {proc_name}")
+def killproc(proc:subprocess.Popen):
+        if DEBUG: print(f"shutting down process: {proc.args}")
         proc.terminate()
         try: proc.wait(timeout=10)
         except subprocess.TimeoutExpired:
-            print(f"process {proc_name} didn't terminate gracefully, killing it...")
+            print(f"process {proc.args} didn't terminate gracefully, killing it...")
             proc.kill()
-        if DEBUG: print(f"process {proc_name} shutdown")
+        if DEBUG: print(f"process {proc.args} shutdown")
 
 class TypeDict(dict):
     def __getitem__(self, key:Type[Any]) -> Any:
