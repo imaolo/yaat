@@ -1,6 +1,6 @@
 from __future__ import annotations
 from yaat.util import killproc
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 from pymongo import MongoClient
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -10,6 +10,19 @@ import atexit, functools, pymongo.errors as mongoerrs
 class Maester:
     db_name: str = 'yaatdb'
     tz: ZoneInfo = ZoneInfo('UTC')
+    tickers_schema: Dict = {
+        'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
+        'required': ['symbol', 'datetime', 'open', 'close', 'high', 'low', 'volume'],
+        'properties': {
+            'symbol':   {'bsonType': 'string'},
+            'datetime': {'bsonType': 'date'},
+            'open':     {'bsonType': 'double'},
+            'close':    {'bsonType': 'double'},
+            'high':     {'bsonType': 'double'},
+            'low':      {'bsonType': 'double'},
+            'volume':   {'bsonType': ['int', 'null']}
+        }
+    }
 
     def __new__(cls, connstr:Optional[str]='mongodb://54.205.245.140:27017/', dbdir:Optional[Path | str]=None):
         if connstr is not None: assert dbdir is None, 'cannot specify a connection string and to start a local database'
@@ -36,20 +49,7 @@ class Maester:
         # get the database from the client
         self.db = self.dbc[self.db_name]
 
-        # create the tickers collection (schema and collection too)
-        self.tickers_schema = {
-            'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
-            'required': ['symbol', 'datetime', 'open', 'close', 'high', 'low', 'volume'],
-            'properties': {
-                'symbol':   {'bsonType': 'string'},
-                'datetime': {'bsonType': 'date'},
-                'open':     {'bsonType': 'double'},
-                'close':    {'bsonType': 'double'},
-                'high':     {'bsonType': 'double'},
-                'low':      {'bsonType': 'double'},
-                'volume':   {'bsonType': ['int', 'null']}
-            }
-        }
+        # create the tickers collection (schema and indexes too)
         if 'tickers' in self.db.list_collection_names(): self.tickers_coll = self.db['tickers']
         else: self.tickers_coll = self.db.create_collection('tickers', validator={'$jsonSchema': self.tickers_schema})
         self.tickers_coll.create_index({'symbol':1, 'datetime':1}, unique=True)
