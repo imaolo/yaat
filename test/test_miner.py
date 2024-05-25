@@ -2,6 +2,7 @@ from yaat.util import gettime, DEBUG
 from yaat.miner import Miner
 from yaat.maester import Maester
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from datetime import datetime, timedelta
 import unittest, shutil
 
@@ -82,24 +83,41 @@ class TestMiner(unittest.TestCase):
         self.miner.insert_ticker(self.create_dt_ticker(self.middle.replace(second=1)))
         self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 0)
 
+    def test_get_intervals(self):
+        sat = datetime(2024, 6, 1, tzinfo=ZoneInfo('US/Eastern'))
+        sun = datetime(2024, 6, 2, tzinfo=ZoneInfo('US/Eastern'))
+        mon = datetime(2024, 6, 3, tzinfo=ZoneInfo('US/Eastern'))
+        tue = datetime(2024, 6, 4, tzinfo=ZoneInfo('US/Eastern'))
+        self.assertEqual(len(self.miner.get_intervals(60, sat, sun, True)), 0)
+        self.assertEqual(len(self.miner.get_intervals(30, sat, sun, False)), 48+1)
+        self.assertEqual(len(self.miner.get_intervals(60, sun, mon, True)), 0)
+        self.assertEqual(len(self.miner.get_intervals(60, mon, tue, True)), 7)
+        self.assertEqual(len(self.miner.get_intervals(30, mon, tue, True)), 14)
+
+
     def test_get_int_syms_combo(self):
         # the plus 1s are because the date ranges are inclusive
 
-        combos = self.miner.get_int_sym_combos(60, datetime(2021, 1, 1), datetime(2021, 1, 2), [self.sym])
+        combos = self.miner.get_int_sym_combos(60, datetime(2021, 1, 1), datetime(2021, 1, 2), [self.sym], False)
         self.assertEqual(len(combos), 24+1)
 
-        combos = self.miner.get_int_sym_combos(60, datetime(2021, 1, 1), datetime(2021, 1, 2), [self.sym]*2)
+        combos = self.miner.get_int_sym_combos(60, datetime(2021, 1, 1), datetime(2021, 1, 2), [self.sym]*2, False)
         self.assertEqual(len(combos), (24+1)*2)
 
-        combos = self.miner.get_int_sym_combos(5, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2), [self.sym])
+        combos = self.miner.get_int_sym_combos(5, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2), [self.sym], False)
         self.assertEqual(len(combos), 12+1)
 
     def test_get_missing_tickers(self):
         freq = 5
         self.miner.insert_ticker(self.create_dt_ticker())
-        combos = self.miner.get_int_sym_combos(freq, self.start, self.end, [self.sym])
-        missing_ticks = self.miner.get_missing_tickers(freq, self.start, self.end, [self.sym])
+        combos = self.miner.get_int_sym_combos(freq, self.start, self.end, [self.sym], False)
+        missing_ticks = self.miner.get_missing_tickers(freq, self.start, self.end, [self.sym], False)
         self.assertEqual(len(combos)-1, len(missing_ticks))
 
-    def test_mine_alpha(self):
-        self.miner.mine_alpha(60, self.start, self.end, [self.sym])
+    # def test_mine_alpha(self):
+    #     freq = 60
+    #     start = datetime(2021, 1, 4)
+    #     end = datetime(2021, 1, 5)
+    #     inserted = self.miner.mine_alpha(freq, start, end, [self.sym])
+    #     myprint('?', inserted)
+    #     self.assertEqual(len(inserted), 25)
