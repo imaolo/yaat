@@ -14,6 +14,10 @@ class TestMiner(unittest.TestCase):
     start:datetime = end - timedelta(weeks=12)
     middle:datetime = datetime.combine((start + ((end - start) / 2)).date(), datetime.min.time())
     sym:str = 'SPY'
+    sat = datetime(2024, 6, 1, tzinfo=ZoneInfo('US/Eastern'))
+    sun = datetime(2024, 6, 2, tzinfo=ZoneInfo('US/Eastern'))
+    mon = datetime(2024, 6, 3, tzinfo=ZoneInfo('US/Eastern'))
+    tue = datetime(2024, 6, 4, tzinfo=ZoneInfo('US/Eastern'))
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -84,15 +88,11 @@ class TestMiner(unittest.TestCase):
         self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 0)
 
     def test_get_intervals(self):
-        sat = datetime(2024, 6, 1, tzinfo=ZoneInfo('US/Eastern'))
-        sun = datetime(2024, 6, 2, tzinfo=ZoneInfo('US/Eastern'))
-        mon = datetime(2024, 6, 3, tzinfo=ZoneInfo('US/Eastern'))
-        tue = datetime(2024, 6, 4, tzinfo=ZoneInfo('US/Eastern'))
-        self.assertEqual(len(self.miner.get_intervals(60, sat, sun, True)), 0)
-        self.assertEqual(len(self.miner.get_intervals(30, sat, sun, False)), 48+1)
-        self.assertEqual(len(self.miner.get_intervals(60, sun, mon, True)), 0)
-        self.assertEqual(len(self.miner.get_intervals(60, mon, tue, True)), 7)
-        self.assertEqual(len(self.miner.get_intervals(30, mon, tue, True)), 14)
+        self.assertEqual(len(self.miner.get_intervals(60, self.sat, self.sun, True)), 0)
+        self.assertEqual(len(self.miner.get_intervals(30, self.sat, self.sun, False)), 48+1)
+        self.assertEqual(len(self.miner.get_intervals(60, self.sun, self.mon, True)), 0)
+        self.assertEqual(len(self.miner.get_intervals(60, self.mon, self.tue, True)), 7)
+        self.assertEqual(len(self.miner.get_intervals(30, self.mon, self.tue, True)), 14)
 
 
     def test_get_int_syms_combo(self):
@@ -118,6 +118,6 @@ class TestMiner(unittest.TestCase):
     #     freq = 60
     #     start = datetime(2021, 1, 4)
     #     end = datetime(2021, 1, 5)
+    #     self.miner.get_intervals(freq, start, end, True)
     #     inserted = self.miner.mine_alpha(freq, start, end, [self.sym])
-    #     myprint('?', inserted)
     #     self.assertEqual(len(inserted), 25)
