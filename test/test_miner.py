@@ -80,3 +80,11 @@ class TestMiner(unittest.TestCase):
     def test_get_existing_tickers_nonzero_sec(self):
         self.miner.insert_ticker(self.create_dt_ticker(datetime(2001, 1, 1, 1, 1, 1)))
         self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 0)
+
+    def test_get_missing_tickers(self):
+        start = datetime(2021, 1, 1)
+        end = datetime(2021, 1, 2)
+        diff = end - start
+        minutes = diff.total_seconds()/60
+        missing_ticks = self.miner.get_missing_tickers(1, start, end, ['some sym'])
+        self.assertEqual(len(missing_ticks), int(minutes + 1)) # plus 1 for current time bucket
