@@ -1,15 +1,19 @@
 from __future__ import annotations
 from yaat.util import killproc
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Any
 from pymongo import MongoClient
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from subprocess import Popen, DEVNULL
-import atexit, functools, pymongo.errors as mongoerrs
+import atexit, functools, datetime, pymongo.errors as mongoerrs
+from dataclasses import dataclass
 
 class Maester:
     db_name: str = 'yaatdb'
     tz: ZoneInfo = ZoneInfo('UTC')
+
+    # tickers_schema and tickers dataclass need to exacly agree in field name
+
     tickers_schema: Dict = {
         'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
         'required': ['symbol', 'datetime', 'open', 'close', 'high', 'low', 'volume'],
@@ -23,6 +27,16 @@ class Maester:
             'volume':   {'bsonType': ['int', 'null']}
         }
     }
+
+    @dataclass  
+    class tickers_class:
+        symbol: str
+        datetime: datetime.datetime
+        open: float
+        close: float
+        high: float
+        low: float
+        volume: Optional[int] = None
 
     def __new__(cls, connstr:Optional[str]='mongodb://54.205.245.140:27017/', dbdir:Optional[Path | str]=None):
         if connstr is not None: assert dbdir is None, 'cannot specify a connection string and to start a local database'
