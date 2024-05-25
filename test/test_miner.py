@@ -36,7 +36,7 @@ class TestMiner(unittest.TestCase):
 
     def clean_tickers_coll(self): self.miner.maester.tickers_coll.delete_many({})
 
-    def create_dt_ticker(self, dt: datetime) -> Maester.ticker_class: return Maester.ticker_class(self.sym, dt, *[1.0]*4)
+    def create_dt_ticker(self, dt: datetime=middle) -> Maester.ticker_class: return Maester.ticker_class(self.sym, dt, *[1.0]*4)
 
     # tests
     
@@ -82,10 +82,21 @@ class TestMiner(unittest.TestCase):
         self.miner.insert_ticker(self.create_dt_ticker(self.middle.replace(second=1)))
         self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 0)
 
-    # def test_get_missing_tickers(self):
-    #     start = datetime(2021, 1, 1)
-    #     end = datetime(2021, 1, 2)
-    #     diff = end - start
-    #     minutes = diff.total_seconds()/60
-    #     missing_ticks = self.miner.get_missing_tickers(1, start, end, ['some sym'])
-    #     self.assertEqual(len(missing_ticks), int(minutes + 1)) # plus 1 for current time bucket
+    def test_get_int_syms_combo(self):
+        # the plus 1s are because the date ranges are inclusive
+
+        combos = self.miner.get_int_sym_combos(60, datetime(2021, 1, 1), datetime(2021, 1, 2), [self.sym])
+        self.assertEqual(len(combos), 24+1)
+
+        combos = self.miner.get_int_sym_combos(60, datetime(2021, 1, 1), datetime(2021, 1, 2), [self.sym]*2)
+        self.assertEqual(len(combos), (24+1)*2)
+
+        combos = self.miner.get_int_sym_combos(5, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2), [self.sym])
+        self.assertEqual(len(combos), 12+1)
+
+    def test_get_missing_tickers(self):
+        freq = 5
+        self.miner.insert_ticker(self.create_dt_ticker())
+        combos = self.miner.get_int_sym_combos(freq, self.start, self.end, [self.sym])
+        missing_ticks = self.miner.get_missing_tickers(freq, self.start, self.end, [self.sym])
+        self.assertEqual(len(combos)-1, len(missing_ticks))
