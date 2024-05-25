@@ -34,17 +34,24 @@ class Miner:
             }},
         ]))
 
+    def get_int_sym_combos(self, freq_min:int, start:datetime, end:datetime, syms:List[str]) -> pd.DataFrame:
+        self.check_freq_min(freq_min)
+        ints = pd.to_datetime(pd.DataFrame(pd.date_range(start=start, end=end, freq=f"{freq_min}min"), columns=['datetime'])['datetime'])
+        return pd.DataFrame(index=pd.MultiIndex.from_product([ints, syms], names=['datetime', 'symbol'])).reset_index()
+
     def get_missing_tickers(self, freq_min:int, start:datetime, end:datetime, syms:List[str]) -> List[missing_ticker_class]:
         self.check_freq_min(freq_min)
-        existing_ticks = self.get_existing_tickers(freq_min, start, end, syms)
-        missing_ticks: List[self.missing_ticker_class] = []
-        desired_ints = set(pd.date_range(start=start, end=end, freq=f"{freq_min}min"))
-        existing_ticks_df = pd.DataFrame(existing_ticks, columns=['datetime', 'symbol'])
-        for sym in syms:
-            sym_ints = set(existing_ticks_df[existing_ticks_df['symbol'] == sym]['datetime'])
-            missing_ints = desired_ints - sym_ints
-            for interv in missing_ints: missing_ticks.append(self.missing_ticker_class(sym, interv))
-        return missing_ticks
+
+        # get existing and interval/symbol combinations
+        existing = pd.DataFrame(self.get_existing_tickers(freq_min, start, end, syms), columns=['datetime', 'symbol'])
+        existing['datetime'] = pd.to_datetime(existing['datetime']) 
+        ints_syms_combos = self.get_int_sym_combos(freq_min, start, end, syms)
+
+        # merge & filter to get missing
+        merged = pd.merge(ints_syms_combos, existing, on=['datetime', 'symbol'], how='left', indicator=True)
+        missing = merged[merged['_merge'] == 'left_only'].drop('_merge', axis=1)
+
+        return [self.missing_ticker_class(**r.to_dict()) for _, r in missing.iterrows()]
 
     def mine_alpha(self, freq_min:int=15, start:datetime=datetime(2023, 2, 2, tzinfo=Maester.tz), end:datetime=datetime(2023, 4, 2, tzinfo=Maester.tz),
                    syms:List[str]=list({'SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB'})):
