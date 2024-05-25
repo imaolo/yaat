@@ -1,4 +1,4 @@
-from yaat.util import gettime, DEBUG
+from yaat.util import gettime, killproc, DEBUG
 from yaat.maester import Maester
 from pathlib import Path
 from dataclasses import asdict
@@ -35,6 +35,13 @@ class TestMaesterConstructDelete(unittest.TestCase):
     def test_2_dbs(self):
         m = Maester(None, str(self.dp / (getid(self) + '_db1')))
         with self.assertRaises(AssertionError):  Maester(None, str(self.dp / (getid(self) + '_db2')))
+    
+    def test_connstr(self):
+        _, proc = Maester.startlocdb(self.dp / (getid(self) + '_db'))
+        m = Maester('localhost:27017')
+        del m
+        killproc(proc)
+
 
 class TestMaesterTickersColl(unittest.TestCase):
     @classmethod
