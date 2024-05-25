@@ -3,7 +3,7 @@ from yaat.maester import Maester
 from pathlib import Path
 from dataclasses import asdict
 from datetime import datetime
-import unittest, shutil, pymongo.errors as mongoerrors
+import unittest, shutil, atexit, functools, pymongo.errors as mongoerrors
 
 def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
 
@@ -38,6 +38,7 @@ class TestMaesterConstructDelete(unittest.TestCase):
     
     def test_connstr(self):
         _, proc = Maester.startlocdb(self.dp / (getid(self) + '_db'))
+        atexit.register(functools.partial(killproc, proc))
         m = Maester('localhost:27017')
         del m
         killproc(proc)
