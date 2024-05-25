@@ -12,7 +12,7 @@ class TestMiner(unittest.TestCase):
     end:datetime = datetime.combine(datetime.now().date(), datetime.min.time())
     start:datetime = end - timedelta(weeks=12)
     middle:datetime = datetime.combine((start + ((end - start) / 2)).date(), datetime.min.time())
-    sym:str = 'test_sym'
+    sym:str = 'SPY'
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -100,3 +100,6 @@ class TestMiner(unittest.TestCase):
         combos = self.miner.get_int_sym_combos(freq, self.start, self.end, [self.sym])
         missing_ticks = self.miner.get_missing_tickers(freq, self.start, self.end, [self.sym])
         self.assertEqual(len(combos)-1, len(missing_ticks))
+
+    def test_mine_alpha(self):
+        self.miner.mine_alpha(60, self.start, self.end, [self.sym])
