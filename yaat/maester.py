@@ -53,8 +53,7 @@ class Maester:
         if dbdir is None and connstr is None: self.dbdir = Path('yaatdb_local')
 
         # cache arguments
-        self.dbdir = dbdir
-        self.connstr = connstr
+        self.dbdir, self.connstr = dbdir, connstr
 
         # connect db
         self.dbc, self.mongo_proc = self.startlocdb(self.dbdir) if self.connstr is None else (self.conndb(self.connstr), None)
