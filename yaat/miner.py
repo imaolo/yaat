@@ -54,7 +54,7 @@ class Miner:
         return [self.missing_ticker_class(**r.to_dict()) for _, r in missing.iterrows()]
 
     def mine_alpha(self, freq_min:int=15, start:datetime=datetime(2023, 2, 2, tzinfo=Maester.tz), end:datetime=datetime(2023, 4, 2, tzinfo=Maester.tz),
-                   syms:List[str]=list({'SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB'})):
+                   syms:List[str]=list({'SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB'})) -> List[missing_ticker_class]:
         self.check_freq_min(freq_min)
 
         # parameter cleaning
@@ -69,6 +69,7 @@ class Miner:
         missing['month'] = missing['datetime'].dt.month
         missing = missing.groupby(['symbol', 'year', 'month']).agg({'datetime': list}).reset_index()
 
+        inserted: List[self.missing_ticker_class] = []
         for _, m in missing.iterrows():
             res = self.call_alpha(function='TIME_SERIES_INTRADAY', outputsize='full', interval=f'{freq_min}min', symbol=m['symbol'], month=f"{m['year']}-{m['month']:02}")
             assert len(res.keys()) == 2
@@ -84,6 +85,8 @@ class Miner:
                     if 'volume' in ohlcv.keys(): ohlcv['volume'] = int(ohlcv['volume'])
                     dt = datetime.strptime(time, '%Y-%m-%d %H:%M:%S').replace(tzinfo=ZoneInfo(metadata['6. Time Zone'])).astimezone(Maester.tz)
                     self.insert_ticker(Maester.ticker_class(sym, dt, **ohlcv))
+                    inserted.append(self.missing_ticker_class(sym, dt))
+            return inserted
 
     @staticmethod
     def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), "valid minute intervals are 1, 5, 15, 30, 60"
