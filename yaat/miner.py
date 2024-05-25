@@ -3,13 +3,18 @@ from yaat.maester import Maester
 from typing import List, Dict
 from datetime import datetime
 from zoneinfo import ZoneInfo
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 import time, pandas as pd
 
 
 class Miner:
     alpha_url: str = 'https://www.alphavantage.co/query?'
-    alpha_key: str = 'LLE2E6Y7KG1UIS8R'
+    alpha_key: str = 'LLE2E6Y7KG1UIS8R' # TODO - move to constructor
+
+    @dataclass
+    class missing_ticker_class:
+        symbol: int
+        datetime: datetime
 
     def __init__(self, maester:Maester):
         self.maester = maester
@@ -29,15 +34,16 @@ class Miner:
             }},
         ]))
 
-    def get_missing_tickers(self, existing_ticks:List[Dict], freq_min:int, start:datetime, end:datetime, syms:List[str]) -> List[Dict[str, pd.Timestamp | List[str]]]:
+    def get_missing_tickers(self, freq_min:int, start:datetime, end:datetime, syms:List[str]) -> List[missing_ticker_class]:
         self.check_freq_min(freq_min)
-        missing_ticks: List[Dict] = []
+        existing_ticks = self.get_existing_tickers(freq_min, start, end, syms)
+        missing_ticks: List[self.missing_ticker_class] = []
         desired_ints = set(pd.date_range(start=start, end=end, freq=f"{freq_min}min"))
         existing_ticks_df = pd.DataFrame(existing_ticks, columns=['datetime', 'symbol'])
         for sym in syms:
             sym_ints = set(existing_ticks_df[existing_ticks_df['symbol'] == sym]['datetime'])
             missing_ints = desired_ints - sym_ints
-            for interv in missing_ints: missing_ticks.append({'symbol': sym, 'datetime': interv})
+            for interv in missing_ints: missing_ticks.append(self.missing_ticker_class(sym, interv))
         return missing_ticks
 
     def mine_alpha(self, freq_min:int=15, start:datetime=datetime(2023, 2, 2, tzinfo=Maester.tz), end:datetime=datetime(2023, 4, 2, tzinfo=Maester.tz),
