@@ -60,5 +60,5 @@ class TestMaesterTickersColl(unittest.TestCase):
         with self.assertRaises(mongoerrors.WriteError): self.maester.tickers_coll.insert_one({'dummy': 'doc'})
 
     def test_tickers_schema_and_dataclass_agree(self):
-        ticker_dc = Maester.tickers_class('some sym', datetime.now(), 1.0, 1.0, 3.0, 4.0)
+        ticker_dc = Maester.ticker_class('some sym', datetime.now(), 1.0, 1.0, 3.0, 4.0)
         self.maester.tickers_coll.insert_one(asdict(ticker_dc))

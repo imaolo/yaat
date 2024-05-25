@@ -29,7 +29,7 @@ class Maester:
     }
 
     @dataclass  
-    class tickers_class:
+    class ticker_class:
         symbol: str
         datetime: datetime.datetime
         open: float
