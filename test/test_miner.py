@@ -1,46 +1,82 @@
-from yaat.util import gettime, rm, DEBUG
-from yaat.miner import Miner, Depo
-import unittest
+from yaat.util import gettime, DEBUG
+from yaat.miner import Miner
+from yaat.maester import Maester
+from pathlib import Path
+from datetime import datetime
+import unittest, shutil
 
 def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
-class TestMinerSetup(unittest.TestCase):
+
+class TestMiner(unittest.TestCase):
+
+    start = datetime(1,1,1)
+    end = datetime.now()
+    sym = 'test_sym'
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.depo = Depo(db_name=str(gettime())+"_db", dir=f"twork/twork_{cls.__name__}_{gettime()}", connstr=None)
+        cls.dp = Path(f"twork/twork_{cls.__name__}_{gettime()}")
+        cls.dp.mkdir(parents=True, exist_ok=True)
+        cls.miner = Miner(Maester(connstr=None, dbdir=cls.dp/'testdb'))
+
     @classmethod
     def tearDownClass(cls) -> None:
-        if not DEBUG: rm('twork')
+        if not DEBUG: shutil.rmtree(cls.dp)
 
-class TestDepo(TestMinerSetup):
+    def setUp(self) -> None:
+        self.clean_tickers_coll()
+        return super().setUp()
 
-    def test_def_constructor(self):
-        self.depo.db.command('ping')
-        for pc in ['stocks', 'currs']:
-            ticn =  pc+'_tickers'
-            mdn =  pc+'_metadata'
-            self.assertTrue(ticn in self.depo.db.list_collection_names())
-            self.assertTrue('datetime_1' in self.depo.db[ticn].index_information())
-            self.assertTrue(mdn in self.depo.db.list_collection_names())
-            self.assertTrue('metadata_1' in self.depo.db[mdn].index_information())
+    def tearDown(self) -> None:
+        self.clean_tickers_coll()
+        return super().tearDown()
 
-    def test_create_colls(self):
-        cn = 'test_create_colls_coll'
-        ticn = cn + '_tickers'
-        mdn =  cn + '_metadata'
-        self.depo.create_colls(cn)
-        self.assertTrue(ticn in self.depo.db.list_collection_names())
-        self.assertTrue('datetime_1' in self.depo.db[ticn].index_information())
-        self.assertTrue(mdn in self.depo.db.list_collection_names())
-        self.assertTrue('metadata_1' in self.depo.db[mdn].index_information())
+    # helpers
 
-    def test_insert_metadata_simple(self):
-        self.depo.stocks_metadata.delete_many({})
-        rid = self.depo.insert_metadata(self.depo.stocks_metadata, {'Meta Data': ''})
-        self.assertTrue(self.depo.stocks_metadata.count_documents({}) == 1)
+    def clean_tickers_coll(self): self.miner.maester.tickers_coll.delete_many({})
 
-    def test_insert_metadata_no_meta_data_key(self):
-        with self.assertRaises(KeyError): self.depo.insert_metadata(self.depo.stocks_metadata, {})
-class TestMiner(unittest.TestCase):
-    def setUp(self): self.miner = Miner()
+    def create_dt_ticker(self, dt: datetime) -> Maester.ticker_class: return Maester.ticker_class(self.sym, dt, *[1.0]*4)
 
-    def test_mine_simple(self): pass
+    # tests
+    
+    def test_valid_freq(self):
+        for freq in (1, 5, 15, 30, 60): self.miner.check_freq_min(freq)
+        with self.assertRaises(AssertionError): self.miner.check_freq_min(7)
+
+    def test_get_existing_tickers_freq_1m(self):
+        self.miner.insert_ticker(self.create_dt_ticker(datetime(2001, 1, 1, 1, 1)))
+        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 0)
+
+    def test_get_existing_tickers_freq_5m(self):
+        self.miner.insert_ticker(self.create_dt_ticker(datetime(2001, 1, 1, 1, 35)))
+        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(15, self.start, self.end, [self.sym])), 0)
+
+    def test_get_existing_tickers_freq_15m(self):
+        self.miner.insert_ticker(self.create_dt_ticker(datetime(2001, 1, 1, 1, 45)))
+        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(15, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(30, self.start, self.end, [self.sym])), 0)
+
+    def test_get_existing_tickers_freq_30m(self):
+        self.miner.insert_ticker(self.create_dt_ticker(datetime(2001, 1, 1, 1, 30)))
+        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(15, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(30, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(60, self.start, self.end, [self.sym])), 0)
+
+    def test_get_existing_tickers_freq_60m(self):
+        self.miner.insert_ticker(self.create_dt_ticker(datetime(2001, 1, 1, 1)))
+        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(15, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(30, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.miner.get_existing_tickers(60, self.start, self.end, [self.sym])), 1)
+
+    def test_get_existing_tickers_nonzero_sec(self):
+        self.miner.insert_ticker(self.create_dt_ticker(datetime(2001, 1, 1, 1, 1, 1)))
+        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 0)
