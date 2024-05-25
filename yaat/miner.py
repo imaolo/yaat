@@ -63,52 +63,27 @@ class Miner:
         end = end.astimezone(Maester.tz).replace(tzinfo=None)
         if DEBUG: print(f"freq_min: {freq_min}, start: {start}, end: {end}, syms: {syms}")
 
-        # find what is already in the db
-        existing_ticks = self.get_existing_tickers(freq_min, start, end, syms)
-        if DEBUG: print(f"number of existing tickers: {len(existing_ticks)}")
-
-        # get missing symbols and datetimes
-        missing_ticks = self.get_missing_tickers()
-        if DEBUG: print(f"number of missing tickers: {len(missing_ticks)}")
-
         # get misssing symbols and datetimes by month and year
-        missing_ticks = pd.DataFrame(missing_ticks)
-        missing_ticks['year'] = missing_ticks['datetime'].dt.year
-        missing_ticks['month'] = missing_ticks['datetime'].dt.month
-        missing_ticks = missing_ticks.groupby(['symbol', 'year', 'month']).agg({'datetime': list}).reset_index()
+        missing = pd.DataFrame(self.get_missing_tickers(freq_min, start, end, syms))
+        missing['year'] = missing['datetime'].dt.year
+        missing['month'] = missing['datetime'].dt.month
+        missing = missing.groupby(['symbol', 'year', 'month']).agg({'datetime': list}).reset_index()
 
-        # retrieve and insert
-        for _, mt in missing_ticks.iterrows():
-            if DEBUG: print("processing row"); print(mt); myprint("missing ticker datetime", mt['datetime'])
-            res = self.call_alpha(function='TIME_SERIES_INTRADAY', outputsize='full', interval=f'{freq_min}min', symbol=mt['symbol'], month=f"{mt['year']}-{mt['month']:02}")
+        for _, m in missing.iterrows():
+            res = self.call_alpha(function='TIME_SERIES_INTRADAY', outputsize='full', interval=f'{freq_min}min', symbol=m['symbol'], month=f"{m['year']}-{m['month']:02}")
             assert len(res.keys()) == 2
+
             metadata = res['Meta Data']
-            assert metadata['2. Symbol'] == mt['symbol']
+            assert metadata['2. Symbol'] == m['symbol']
+            sym = m['symbol']
+
             tickers: Dict = res[(set(res.keys()) - set(['Meta Data'])).pop()]
             for time, ohlcv in tickers.items():
-                dt = datetime.strptime(time, '%Y-%m-%d %H:%M:%S').replace(tzinfo=ZoneInfo(metadata['6. Time Zone'])).astimezone(Maester.tz)
-                if pd.Timestamp(dt) not in mt['datetime']:
-                    try:
-                        if DEBUG: myprint("inserting(1)", ohlcv); print("inserting(1)", dt)
-                        Maester.tickers_coll.insert_one({
-                            'datetime': dt,
-                            'symbol': mt['symbol'],
-                            'open': ohlcv['1. open'],
-                            'close': ohlcv['4. close'],
-                            'high': ohlcv['2. high'],
-                            'low': ohlcv['3. low'],
-                            'volume': ohlcv['5. volume']
-                        })
-                    except Exception as e:
-                        print('-'*30, "CATCHING FAILED INSERTION", '-'*30)
-                        print("insertion failed - curr datetime", pd.Timestamp(dt))
-                        myprint("insertion failed - curr missing", mt['datetime'])
-                        myprint("from the db", list(Maester.tickers_coll.find({'datetime': dt, 'symbol': mt['symbol']})))
-                        # myprint("insertion failed(1)", ohlcv)
-                        # myprint("insertion failed(2)", dt)
-                        # myprint("insertion failed(3)", mt['datetime'])
-                        # myprint("insertion failed(4)", [pd.Timestamp(dt)])
-                        raise e
+                if pd.Timestamp(time) not in m['datetime']:
+                    ohlcv = {(lambda k: k.split(' ')[1])(k): float(v) for k, v in ohlcv.items()}
+                    if 'volume' in ohlcv.keys(): ohlcv['volume'] = int(ohlcv['volume'])
+                    dt = datetime.strptime(time, '%Y-%m-%d %H:%M:%S').replace(tzinfo=ZoneInfo(metadata['6. Time Zone'])).astimezone(Maester.tz)
+                    self.insert_ticker(Maester.ticker_class(sym, dt, **ohlcv))
 
     @staticmethod
     def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), "valid minute intervals are 1, 5, 15, 30, 60"
@@ -123,6 +98,7 @@ class Miner:
         start = None
         while start is None or (start is not None and (time.time() - start) < 62): # 75req/min
             if 'Information' not in (data:=fetchjson(url)):
+                assert 'Error Message' not in data.keys(), data
                 if DEBUG: myprint("called alpha", data)
                 return data
             if "higher API call volume" not in data['Information']: raise RuntimeError(data)
