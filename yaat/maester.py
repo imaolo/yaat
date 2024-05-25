@@ -5,6 +5,7 @@ from pymongo import MongoClient
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from subprocess import Popen, DEVNULL
+from datetime import datetime, time
 import atexit, functools, datetime, pymongo.errors as mongoerrs
 from dataclasses import dataclass
 
@@ -31,7 +32,7 @@ class Maester:
     @dataclass  
     class ticker_class:
         symbol: str
-        datetime: datetime.datetime
+        datetime: datetime
         open: float
         close: float
         high: float
@@ -68,6 +69,12 @@ class Maester:
         self.tickers_coll.create_index({'symbol':1})
         self.tickers_coll.create_index({'datetime':1})
     
+    @classmethod
+    def is_business_hours(cls, dt: datetime) -> bool:
+        if dt.tzinfo is None: dt = dt.replace(tzinfo=cls.tz)
+        dt = dt.astimezone(ZoneInfo('US/Eastern'))
+        return dt.weekday() < 5 and time(9, 30) <= dt.time() <= time(16, 0)
+
     @classmethod
     def conndb(cls, url:Optional[str]=None) -> MongoClient:
         (c := MongoClient(url, serverSelectionTimeoutMS=5000))['admin'].command('ping')
