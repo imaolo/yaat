@@ -3,6 +3,7 @@ from yaat.maester import Maester
 from pathlib import Path
 from dataclasses import asdict
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import unittest, shutil, atexit, functools, pymongo.errors as mongoerrors
 
 def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
@@ -43,6 +44,13 @@ class TestMaesterConstructDelete(unittest.TestCase):
         del m
         killproc(proc)
 
+    def test_business_hours(self):
+        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 1)))
+        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 8, tzinfo=ZoneInfo('US/Eastern'))))
+        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 9, 29, tzinfo=ZoneInfo('US/Eastern'))))
+        self.assertTrue(Maester.is_business_hours(datetime(2024, 7, 2, 9, 30, tzinfo=ZoneInfo('US/Eastern'))))
+        self.assertTrue(Maester.is_business_hours(datetime(2024, 7, 2, 15, 30, tzinfo=ZoneInfo('US/Eastern'))))
+        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 16, 31, tzinfo=ZoneInfo('US/Eastern'))))
 
 class TestMaesterTickersColl(unittest.TestCase):
     @classmethod
@@ -67,4 +75,3 @@ class TestMaesterTickersColl(unittest.TestCase):
         ticker_dc = Maester.ticker_class('some sym', datetime.now(), 1.0, 1.0, 3.0, 4.0)
         self.maester.tickers_coll.insert_one(asdict(ticker_dc))
         with self.assertRaises(mongoerrors.DuplicateKeyError): self.maester.tickers_coll.insert_one(asdict(ticker_dc))
-
