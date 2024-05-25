@@ -62,3 +62,9 @@ class TestMaesterTickersColl(unittest.TestCase):
     def test_tickers_schema_and_dataclass_agree(self):
         ticker_dc = Maester.ticker_class('some sym', datetime.now(), 1.0, 1.0, 3.0, 4.0)
         self.maester.tickers_coll.insert_one(asdict(ticker_dc))
+
+    def test_duplicate_insert(self):
+        ticker_dc = Maester.ticker_class('some sym', datetime.now(), 1.0, 1.0, 3.0, 4.0)
+        self.maester.tickers_coll.insert_one(asdict(ticker_dc))
+        with self.assertRaises(mongoerrors.DuplicateKeyError): self.maester.tickers_coll.insert_one(asdict(ticker_dc))
+
