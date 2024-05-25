@@ -57,8 +57,7 @@ class Maester:
         self.connstr = connstr
 
         # connect db
-        if self.connstr is None: self.dbc, self.mongo_proc = self.startlocdb(self.dbdir)
-        else: self.dbc = self.conndb(self.connstr)
+        self.dbc, self.mongo_proc = self.startlocdb(self.dbdir) if self.connstr is None else (self.conndb(self.connstr), None)
 
         # get the database from the client
         self.db = self.dbc[self.db_name]
