@@ -1,6 +1,6 @@
 from __future__ import annotations
 from yaat.util import killproc
-from typing import Optional, Tuple, Dict, List
+from typing import Optional, Tuple, Dict, List, Callable
 from pymongo import MongoClient
 from zoneinfo import ZoneInfo
 from pathlib import Path
@@ -9,11 +9,46 @@ from datetime import datetime, time
 import atexit, functools, datetime, pymongo.errors as mongoerrs
 from dataclasses import dataclass, asdict
 
+@dataclass
+class DateRange:
+    freq_min:int
+    start: datetime
+    end: datetime
+
+    def __post_init__(self):
+        print()
+        self.check_freq_min(self.freq_min)
+
+    @staticmethod
+    def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), f"{freq_min} is not a valid minute interval. Valid are 1, 5, 15, 30, 60."
+
+@dataclass  
+class Ticker:
+    symbol: str
+    datetime: datetime
+    open: float
+    close: float
+    high: float
+    low: float
+    volume: Optional[int] = None
+
+@dataclass
+class SymDate:
+    symbol: int
+    datetime: datetime
+
 class Maester:
     db_name: str = 'yaatdb'
     tz: ZoneInfo = ZoneInfo('UTC')
 
-    # tickers_schema and tickers dataclass need to exacly agree in field name
+    intervals_schema: Dict = {
+        'title': 'A sequence of datetimes',
+        'required': ['datetime'],
+        'properties': {'datetime': {'bsonType': 'date'},
+        }
+    }
+
+    # tickers_schema and Tickers dataclass need to exacly agree in field name
 
     tickers_schema: Dict = {
         'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
@@ -28,21 +63,6 @@ class Maester:
             'volume':   {'bsonType': ['int', 'null']}
         }
     }
-
-    @dataclass  
-    class ticker_class:
-        symbol: str
-        datetime: datetime
-        open: float
-        close: float
-        high: float
-        low: float
-        volume: Optional[int] = None
-
-    @dataclass
-    class sym_date_class:
-        symbol: int
-        datetime: datetime
 
     def __new__(cls, connstr:Optional[str]='localhost:27017', dbdir:Optional[Path | str]=None):
         if connstr is not None: assert dbdir is None, 'cannot specify a connection string and to start a local database'
@@ -67,39 +87,36 @@ class Maester:
         # get the database from the client
         self.db = self.dbc[self.db_name]
 
-        # create the tickers collection (schema and indexes too)
+        # create the tickers collection
         if 'tickers' in self.db.list_collection_names(): self.tickers_coll = self.db['tickers']
         else: self.tickers_coll = self.db.create_collection('tickers', validator={'$jsonSchema': self.tickers_schema})
         self.tickers_coll.create_index({'symbol':1, 'datetime':1}, unique=True)
         self.tickers_coll.create_index({'symbol':1})
         self.tickers_coll.create_index({'datetime':1})
+
+        # create the intervals collection
+        if 'intervals' in self.db.list_collection_names(): self.intervals_coll = self.db['intervals']
+        else: self.intervals_coll = self.db.create_collection('intervals', validator={'$jsonSchema': self.intervals_schema})
+        self.intervals_coll.create_index({'datetime':1})
     
-    def insert_ticker(self, ticker:Maester.ticker_class): self.tickers_coll.insert_one(asdict(ticker))
+    def insert_ticker(self, ticker:Ticker): self.tickers_coll.insert_one(asdict(ticker))
 
-    def get_tickers(self, freq_min:int, start:datetime, end:datetime, syms:List[str], dtonly:bool=True) -> List[sym_date_class | ticker_class]:
-        self.check_freq_min(freq_min)
+    def get_tickers(self, inter:DateRange, syms:List[str], dtonly:bool=True) -> List[SymDate | Ticker]:
 
-        if dtonly:
-            proj = {'$project': {'datetime':1, 'symbol': 1, '_id':0}}
-            rettype = self.sym_date_class
-        else:
-            proj = {'$project': {'_id':0}} 
-            rettype = self.ticker_class
+        if dtonly: proj, rettype = {'$project': {'datetime':1, 'symbol': 1, '_id':0}}, SymDate
+        else: proj, rettype = {'$project': {'_id':0}}, Ticker
 
         return list(map(lambda t: rettype(**t), self.tickers_coll.aggregate([
             {'$match': {
-                'datetime': {'$gte': start, '$lte': end},
+                'datetime': {'$gte': inter.start, '$lte': inter.end},
                 'symbol': {'$in': syms},
                 '$expr': {'$and': [
                     {'$eq': [{'$second': '$datetime'}, 0]},
-                    {'$in': [{'$minute': '$datetime'}, list(range(0, 60, freq_min))]}
+                    {'$in': [{'$minute': '$datetime'}, list(range(0, 60, inter.freq_min))]}
                 ]}
             }},
             proj
         ])))
-    
-    @staticmethod
-    def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), "valid minute intervals are 1, 5, 15, 30, 60"
 
     @classmethod
     def is_business_hours(cls, dt: datetime) -> bool:
