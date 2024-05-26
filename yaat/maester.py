@@ -16,8 +16,12 @@ class DateRange:
     end: datetime
 
     def __post_init__(self):
-        print()
         self.check_freq_min(self.freq_min)
+        self.check_datetime(self.start)
+        self.check_datetime(self.end)
+
+    @staticmethod
+    def check_datetime(dt: datetime): assert dt.second == 0 and dt.microsecond == 0, f"datetime must have 0 second and microsend - {dt}"
 
     @staticmethod
     def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), f"{freq_min} is not a valid minute interval. Valid are 1, 5, 15, 30, 60."
