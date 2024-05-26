@@ -2,7 +2,7 @@ from yaat.util import gettime, killproc, DEBUG
 from yaat.maester import Maester
 from pathlib import Path
 from dataclasses import asdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 import unittest, shutil, atexit, functools, pymongo.errors as mongoerrors
 
@@ -52,7 +52,18 @@ class TestMaesterConstructDelete(unittest.TestCase):
         self.assertTrue(Maester.is_business_hours(datetime(2024, 7, 2, 15, 30, tzinfo=ZoneInfo('US/Eastern'))))
         self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 16, 31, tzinfo=ZoneInfo('US/Eastern'))))
 
-class TestMaesterTickersColl(unittest.TestCase):
+class TestMaester(unittest.TestCase):
+
+    end:datetime = datetime.combine(datetime.now().date(), datetime.min.time())
+    start:datetime = end - timedelta(weeks=12)
+    middle:datetime = datetime.combine((start + ((end - start) / 2)).date(), datetime.min.time())
+    sym:str = 'SPY'
+    sat = datetime(2023, 4, 1, tzinfo=ZoneInfo('US/Eastern'))
+    sun = datetime(2023, 4, 2, tzinfo=ZoneInfo('US/Eastern'))
+    mon = datetime(2023, 4, 3, tzinfo=ZoneInfo('US/Eastern'))
+    tue = datetime(2023, 4, 4, tzinfo=ZoneInfo('US/Eastern'))
+    wed = datetime(2023, 4, 5, tzinfo=ZoneInfo('US/Eastern'))
+
     @classmethod
     def setUpClass(cls) -> None:
         cls.dp = Path(f"twork/twork_{cls.__name__}_{gettime()}")
@@ -63,6 +74,20 @@ class TestMaesterTickersColl(unittest.TestCase):
     def tearDownClass(cls) -> None:
         del cls.maester
         if not DEBUG: shutil.rmtree(cls.dp)
+
+    def setUp(self) -> None:
+        self.maester.tickers_coll.delete_many({})
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        self.maester.tickers_coll.delete_many({})
+        return super().tearDown()
+
+    # helpers
+
+    def create_dt_ticker(self, dt: datetime=middle) -> Maester.ticker_class: return Maester.ticker_class(self.sym, dt, *[1.0]*4)
+
+    # tests
 
     def test_schema_bad_keys(self):
         with self.assertRaises(mongoerrors.WriteError): self.maester.tickers_coll.insert_one({'dummy': 'doc'})
@@ -75,3 +100,45 @@ class TestMaesterTickersColl(unittest.TestCase):
         ticker_dc = Maester.ticker_class('some sym', datetime.now(), 1.0, 1.0, 3.0, 4.0)
         self.maester.tickers_coll.insert_one(asdict(ticker_dc))
         with self.assertRaises(mongoerrors.DuplicateKeyError): self.maester.tickers_coll.insert_one(asdict(ticker_dc))
+
+    def test_valid_freq(self):
+        for freq in (1, 5, 15, 30, 60): self.maester.check_freq_min(freq)
+        with self.assertRaises(AssertionError): self.maester.check_freq_min(7)
+
+    def test_get_tickers_freq_1m(self):
+        self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=1)))
+        self.assertEqual(len(self.maester.get_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(5, self.start, self.end, [self.sym])), 0)
+
+    def test_get_tickers_freq_5m(self):
+        self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=35)))
+        self.assertEqual(len(self.maester.get_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(5, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(15, self.start, self.end, [self.sym])), 0)
+
+    def test_get_tickers_freq_15m(self):
+        self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=45)))
+        self.assertEqual(len(self.maester.get_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(5, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(15, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(30, self.start, self.end, [self.sym])), 0)
+
+    def test_get_tickers_freq_30m(self):
+        self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=30)))
+        self.assertEqual(len(self.maester.get_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(5, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(15, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(30, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(60, self.start, self.end, [self.sym])), 0)
+
+    def test_get_tickers_freq_60m(self):
+        self.maester.insert_ticker(self.create_dt_ticker(self.middle))
+        self.assertEqual(len(self.maester.get_tickers(1, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(5, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(15, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(30, self.start, self.end, [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(60, self.start, self.end, [self.sym])), 1)
+
+    def test_get_tickers_nonzero_sec(self):
+        self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(second=1)))
+        self.assertEqual(len(self.maester.get_tickers(1, self.start, self.end, [self.sym])), 0)

@@ -19,21 +19,6 @@ class Miner:
         self.maester = maester
         self.alpha_key = alpha_key
 
-    def insert_ticker(self, ticker:Maester.ticker_class): self.maester.tickers_coll.insert_one(asdict(ticker))
-
-    def get_existing_tickers(self, freq_min:int, start:datetime, end:datetime, syms:List[str]) -> List[Dict]:
-        self.check_freq_min(freq_min)
-        return list(self.maester.tickers_coll.aggregate([
-            {'$match': {
-                'datetime': {'$gte': start, '$lte': end},
-                'symbol': {'$in': syms},
-                '$expr': {'$and': [
-                    {'$eq': [{'$second': '$datetime'}, 0]},
-                    {'$in': [{'$minute': '$datetime'}, list(range(0, 60, freq_min))]}
-                ]}
-            }},
-        ]))
-
     @classmethod
     def get_intervals(cls, freq_min:int, start:datetime, end:datetime, bus_hours:bool) -> pd.DataFrame:
         cls.check_freq_min(freq_min)
@@ -50,7 +35,7 @@ class Miner:
         self.check_freq_min(freq_min)
 
         # get existing and interval/symbol combinations
-        existing = pd.DataFrame(self.get_existing_tickers(freq_min, start, end, syms), columns=['datetime', 'symbol'])
+        existing = pd.DataFrame(self.maester.get_tickers(freq_min, start, end, syms), columns=['datetime', 'symbol'])
         existing['datetime'] = pd.to_datetime(existing['datetime']) 
         ints_syms_combos = self.get_int_sym_combos(freq_min, start, end, syms, bus_hours)
 
@@ -90,7 +75,7 @@ class Miner:
                     ohlcv = {(lambda k: k.split(' ')[1])(k): float(v) for k, v in ohlcv.items()}
                     if 'volume' in ohlcv.keys(): ohlcv['volume'] = int(ohlcv['volume'])
                     dt = datetime.strptime(time, '%Y-%m-%d %H:%M:%S').replace(tzinfo=ZoneInfo(tz)).astimezone(Maester.tz)
-                    self.insert_ticker(Maester.ticker_class(sym, dt, **ohlcv))
+                    self.maester.insert_ticker(Maester.ticker_class(sym, dt, **ohlcv))
                     yield self.missing_ticker_class(sym, dt)
 
     @staticmethod

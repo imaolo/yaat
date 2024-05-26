@@ -45,56 +45,6 @@ class TestMiner(unittest.TestCase):
     def create_dt_ticker(self, dt: datetime=middle) -> Maester.ticker_class: return Maester.ticker_class(self.sym, dt, *[1.0]*4)
 
     # tests
-    
-    def test_valid_freq(self):
-        for freq in (1, 5, 15, 30, 60): self.miner.check_freq_min(freq)
-        with self.assertRaises(AssertionError): self.miner.check_freq_min(7)
-
-    def test_get_existing_tickers_freq_1m(self):
-        self.miner.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=1)))
-        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 0)
-
-    def test_get_existing_tickers_freq_5m(self):
-        self.miner.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=35)))
-        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(15, self.start, self.end, [self.sym])), 0)
-
-    def test_get_existing_tickers_freq_15m(self):
-        self.miner.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=45)))
-        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(15, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(30, self.start, self.end, [self.sym])), 0)
-
-    def test_get_existing_tickers_freq_30m(self):
-        self.miner.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=30)))
-        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(15, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(30, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(60, self.start, self.end, [self.sym])), 0)
-
-    def test_get_existing_tickers_freq_60m(self):
-        self.miner.insert_ticker(self.create_dt_ticker(self.middle))
-        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(5, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(15, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(30, self.start, self.end, [self.sym])), 1)
-        self.assertEqual(len(self.miner.get_existing_tickers(60, self.start, self.end, [self.sym])), 1)
-
-    def test_get_existing_tickers_nonzero_sec(self):
-        self.miner.insert_ticker(self.create_dt_ticker(self.middle.replace(second=1)))
-        self.assertEqual(len(self.miner.get_existing_tickers(1, self.start, self.end, [self.sym])), 0)
-
-    def test_get_intervals(self):
-        self.assertEqual(len(self.miner.get_intervals(60, self.sat, self.sun, True)), 0)
-        self.assertEqual(len(self.miner.get_intervals(30, self.sat, self.sun, False)), 48+1)
-        self.assertEqual(len(self.miner.get_intervals(60, self.sun, self.mon, True)), 0)
-        self.assertEqual(len(self.miner.get_intervals(60, self.mon, self.tue, True)), 7)
-        self.assertEqual(len(self.miner.get_intervals(30, self.mon, self.tue, True)), 14)
-
 
     def test_get_int_syms_combo(self):
         # the plus 1s are because the date ranges are inclusive
@@ -110,7 +60,7 @@ class TestMiner(unittest.TestCase):
 
     def test_get_missing_tickers(self):
         freq = 5
-        self.miner.insert_ticker(self.create_dt_ticker())
+        self.miner.maester.insert_ticker(self.create_dt_ticker())
         combos = self.miner.get_int_sym_combos(freq, self.start, self.end, [self.sym], False)
         missing_ticks = self.miner.get_missing_tickers(freq, self.start, self.end, [self.sym], False)
         self.assertEqual(len(combos)-1, len(missing_ticks))
@@ -134,7 +84,7 @@ class TestMiner(unittest.TestCase):
     def test_mine_alpha_crack_day_60m(self):
         freq = 60
         ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
-        self.miner.insert_ticker(self.create_dt_ticker(self.mon.replace(hour=10)))
+        self.miner.maester.insert_ticker(self.create_dt_ticker(self.mon.replace(hour=10)))
         inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), len(ints)-1-1) # added one document
         inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
@@ -143,7 +93,7 @@ class TestMiner(unittest.TestCase):
     def test_mine_alpha_cracks_day_15m(self):
         freq = 15
         ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
-        self.miner.insert_ticker(self.create_dt_ticker(self.mon.replace(hour=10)))
+        self.miner.maester.insert_ticker(self.create_dt_ticker(self.mon.replace(hour=10)))
         inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), len(ints)-1-1) # added one document
         inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
