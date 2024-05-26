@@ -1,6 +1,6 @@
 from yaat.util import fetchjson, myprint, DEBUG
 from yaat.maester import Maester
-from typing import List, Dict
+from typing import List, Dict, Generator
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from dataclasses import asdict, dataclass
@@ -46,7 +46,7 @@ class Miner:
         ints = cls.get_intervals(freq_min, start, end, bus_hours)               
         return pd.DataFrame(index=pd.MultiIndex.from_product([ints, syms], names=['datetime', 'symbol'])).reset_index()
 
-    def get_missing_tickers(self, freq_min:int, start:datetime, end:datetime, syms:List[str], bus_hours:bool) -> List[missing_ticker_class]:
+    def get_missing_tickers(self, freq_min:int, start:datetime, end:datetime, syms:List[str], bus_hours:bool) -> Generator[missing_ticker_class, None, None]:
         self.check_freq_min(freq_min)
 
         # get existing and interval/symbol combinations
