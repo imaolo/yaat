@@ -60,42 +60,40 @@ class Miner:
 
         return [self.missing_ticker_class(**r.to_dict()) for _, r in missing.iterrows()]
 
-    # def mine_alpha(self, freq_min:int=15, start:datetime=datetime(2023, 2, 2, tzinfo=Maester.tz), end:datetime=datetime(2023, 4, 2, tzinfo=Maester.tz),
-    #                syms:List[str]=list({'SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB'})) -> List[missing_ticker_class]:
-    #     self.check_freq_min(freq_min)
+    # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']
+    def mine_alpha(self, freq_min:int, start:datetime, end:datetime, syms:List[str], bus_hours:bool=True) -> List[missing_ticker_class]:
+        self.check_freq_min(freq_min)
 
-    #     # parameter cleaning
-    #     syms = list(set(syms))
-    #     start = start.astimezone(Maester.tz).replace(tzinfo=None)
-    #     end = end.astimezone(Maester.tz).replace(tzinfo=None)
-    #     if DEBUG: print(f"freq_min: {freq_min}, start: {start}, end: {end}, syms: {syms}")
+        # parameter cleaning
+        syms = list(set(syms))
+        start = start.astimezone(Maester.tz).replace(tzinfo=None)
+        end = end.astimezone(Maester.tz).replace(tzinfo=None)
 
-    #     # get misssing symbols and datetimes by month and year
-    #     missing = pd.DataFrame(self.get_missing_tickers(freq_min, start, end, syms))
-    #     missing['year'] = missing['datetime'].dt.year
-    #     missing['month'] = missing['datetime'].dt.month
-    #     missing = missing.groupby(['symbol', 'year', 'month']).agg({'datetime': list}).reset_index()
+        # get misssing symbols and datetimes by month and year
+        missing = pd.DataFrame(self.get_missing_tickers(freq_min, start, end, syms, bus_hours))
+        missing['year'] = missing['datetime'].dt.year
+        missing['month'] = missing['datetime'].dt.month
+        missing = missing.groupby(['symbol', 'year', 'month']).agg({'datetime': list}).reset_index()
 
-    #     inserted: List[self.missing_ticker_class] = []
-    #     for _, m in missing.iterrows():
-    #         myprint('HERE', m['datetime'])
-    #         res = self.call_alpha(function='TIME_SERIES_INTRADAY', outputsize='full', interval=f'{freq_min}min', symbol=m['symbol'], month=f"{m['year']}-{m['month']:02}")
-    #         assert len(res.keys()) == 2
+        inserted: List[self.missing_ticker_class] = []
+        for _, m in missing.iterrows():
+            res = self.call_alpha(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='false', interval=f'{freq_min}min', symbol=m['symbol'], month=f"{m['year']}-{m['month']:02}")
+            assert len(res.keys()) == 2
 
-    #         metadata = res['Meta Data']
-    #         assert metadata['2. Symbol'] == m['symbol']
-    #         sym = m['symbol']
+            metadata, sym = res['Meta Data'], m['symbol']
+            assert metadata['2. Symbol'] == sym
+            tz = metadata['6. Time Zone']
 
-    #         tickers: Dict = res[(set(res.keys()) - set(['Meta Data'])).pop()]
-    #         for time, ohlcv in tickers.items():
-    #             if pd.Timestamp(time) in m['datetime']:
-    #                 ohlcv = {(lambda k: k.split(' ')[1])(k): float(v) for k, v in ohlcv.items()}
-    #                 if 'volume' in ohlcv.keys(): ohlcv['volume'] = int(ohlcv['volume'])
-    #                 dt = datetime.strptime(time, '%Y-%m-%d %H:%M:%S').replace(tzinfo=ZoneInfo(metadata['6. Time Zone'])).astimezone(Maester.tz)
-    #                 self.insert_ticker(Maester.ticker_class(sym, dt, **ohlcv))
-    #                 inserted.append(self.missing_ticker_class(sym, dt))
-    #             else: print(time)
-    #         return inserted
+            tickers: Dict = res[(set(res.keys()) - set(['Meta Data'])).pop()]
+            for time, ohlcv in tickers.items():
+                nt = pd.Timestamp(time).tz_localize(tz).tz_convert(Maester.tz).tz_localize(None)
+                if nt in m['datetime']:
+                    ohlcv = {(lambda k: k.split(' ')[1])(k): float(v) for k, v in ohlcv.items()}
+                    if 'volume' in ohlcv.keys(): ohlcv['volume'] = int(ohlcv['volume'])
+                    dt = datetime.strptime(time, '%Y-%m-%d %H:%M:%S').replace(tzinfo=ZoneInfo(tz)).astimezone(Maester.tz)
+                    self.insert_ticker(Maester.ticker_class(sym, dt, **ohlcv))
+                    inserted.append(self.missing_ticker_class(sym, dt))
+        return inserted
 
     @staticmethod
     def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), "valid minute intervals are 1, 5, 15, 30, 60"
