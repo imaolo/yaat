@@ -39,7 +39,7 @@ class Maester:
         low: float
         volume: Optional[int] = None
 
-    def __new__(cls, connstr:Optional[str]='mongodb://54.205.245.140:27017/', dbdir:Optional[Path | str]=None):
+    def __new__(cls, connstr:Optional[str]='localhost:27017', dbdir:Optional[Path | str]=None):
         if connstr is not None: assert dbdir is None, 'cannot specify a connection string and to start a local database'
         if dbdir is not None:
             try:
