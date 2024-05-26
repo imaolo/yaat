@@ -40,7 +40,7 @@ class TestMaesterConstructDelete(unittest.TestCase):
     def test_connstr(self):
         _, proc = Maester.startlocdb(self.dp / (getid(self) + '_db'))
         atexit.register(functools.partial(killproc, proc))
-        m = Maester('localhost:27017')
+        m = Maester()
         del m
         killproc(proc)
 

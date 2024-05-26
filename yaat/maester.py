@@ -48,7 +48,7 @@ class Maester:
             except (mongoerrs.ServerSelectionTimeoutError, mongoerrs.ConnectionFailure): pass
         return super().__new__(cls)
 
-    def __init__(self, connstr:Optional[str]='mongodb://54.205.245.140:27017/', dbdir:Optional[Path | str]=None):
+    def __init__(self, connstr:Optional[str]='localhost:27017', dbdir:Optional[Path | str]=None):
         # argument processing
         if dbdir is not None and isinstance(dbdir, str): dbdir = Path(dbdir)
         if dbdir is None and connstr is None: self.dbdir = Path('yaatdb_local')
