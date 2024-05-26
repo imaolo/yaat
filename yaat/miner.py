@@ -21,18 +21,18 @@ class Miner:
 
     @classmethod
     def get_intervals(cls, freq_min:int, start:datetime, end:datetime, bus_hours:bool) -> pd.DataFrame:
-        cls.check_freq_min(freq_min)
+        Maester.check_freq_min(freq_min)
         ints = pd.to_datetime(pd.DataFrame(pd.date_range(start=start, end=end, freq=f"{freq_min}min"), columns=['datetime'])['datetime'])
         return ints[ints.apply(lambda dt: Maester.is_business_hours(dt.to_pydatetime()))] if bus_hours else ints
 
     @classmethod
     def get_int_sym_combos(cls, freq_min:int, start:datetime, end:datetime, syms:List[str], bus_hours:bool) -> pd.DataFrame:
-        cls.check_freq_min(freq_min)
+        Maester.check_freq_min(freq_min)
         ints = cls.get_intervals(freq_min, start, end, bus_hours)               
         return pd.DataFrame(index=pd.MultiIndex.from_product([ints, syms], names=['datetime', 'symbol'])).reset_index()
 
     def get_missing_tickers(self, freq_min:int, start:datetime, end:datetime, syms:List[str], bus_hours:bool) -> Generator[missing_ticker_class, None, None]:
-        self.check_freq_min(freq_min)
+        Maester.check_freq_min(freq_min)
 
         # get existing and interval/symbol combinations
         existing = pd.DataFrame(self.maester.get_tickers(freq_min, start, end, syms), columns=['datetime', 'symbol'])
@@ -46,7 +46,7 @@ class Miner:
         return [self.missing_ticker_class(**r.to_dict()) for _, r in missing.iterrows()]
 
     def mine_alpha(self, freq_min:int, start:datetime, end:datetime, syms:List[str], bus_hours:bool=True) -> Generator[missing_ticker_class, None, None]:
-        self.check_freq_min(freq_min)
+        Maester.check_freq_min(freq_min)
 
         # parameter cleaning
         syms = list(set(syms))
@@ -77,9 +77,6 @@ class Miner:
                     dt = datetime.strptime(time, '%Y-%m-%d %H:%M:%S').replace(tzinfo=ZoneInfo(tz)).astimezone(Maester.tz)
                     self.maester.insert_ticker(Maester.ticker_class(sym, dt, **ohlcv))
                     yield self.missing_ticker_class(sym, dt)
-
-    @staticmethod
-    def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), "valid minute intervals are 1, 5, 15, 30, 60"
 
     def call_alpha(self, **kwargs) -> Dict:
         # construct the url
