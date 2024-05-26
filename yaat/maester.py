@@ -51,7 +51,7 @@ class Maester:
     def __init__(self, connstr:Optional[str]='localhost:27017', dbdir:Optional[Path | str]=None):
         # argument processing
         if dbdir is not None and isinstance(dbdir, str): dbdir = Path(dbdir)
-        if dbdir is None and connstr is None: self.dbdir = Path('yaatdb_local')
+        if dbdir is None and connstr is None: dbdir = Path('yaatdb_local')
 
         # cache arguments
         self.dbdir, self.connstr = dbdir, connstr
