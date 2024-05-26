@@ -60,7 +60,6 @@ class Miner:
 
         return [self.missing_ticker_class(**r.to_dict()) for _, r in missing.iterrows()]
 
-    # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']
     def mine_alpha(self, freq_min:int, start:datetime, end:datetime, syms:List[str], bus_hours:bool=True) -> Generator[missing_ticker_class, None, None]:
         self.check_freq_min(freq_min)
 
