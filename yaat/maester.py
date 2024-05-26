@@ -11,7 +11,7 @@ from dataclasses import dataclass, asdict
 
 @dataclass
 class DateRange:
-    freq_min:int
+    freq_min: int
     start: datetime
     end: datetime
 
@@ -107,7 +107,7 @@ class Maester:
         # create the intervals collection
         if 'intervals' in self.db.list_collection_names(): self.intervals_coll = self.db['intervals']
         else: self.intervals_coll = self.db.create_collection('intervals', validator={'$jsonSchema': self.intervals_schema})
-        self.intervals_coll.create_index({'datetime':1})
+        self.intervals_coll.create_index({'datetime':1}, unique=True)
     
     def insert_ticker(self, ticker:Ticker): self.tickers_coll.insert_one(asdict(ticker))
 
