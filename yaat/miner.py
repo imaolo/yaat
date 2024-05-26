@@ -106,7 +106,7 @@ class Miner:
         start = None
         while start is None or (start is not None and (time.time() - start) < 62): # 75req/min
             if 'Information' not in (data:=fetchjson(url)):
-                assert 'Error Message' not in data.keys(), data
+                assert 'Error Message' not in data.keys(), f"{data} \n\n {url}"
                 if DEBUG: myprint("called alpha", data)
                 return data
             if "higher API call volume" not in data['Information']: raise RuntimeError(data)
