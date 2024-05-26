@@ -1,11 +1,11 @@
 from __future__ import annotations
 from yaat.util import killproc
-from typing import Optional, Tuple, Dict, List, Callable
+from typing import Optional, Tuple, Dict, List, Generator
 from pymongo import MongoClient
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from subprocess import Popen, DEVNULL
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 import atexit, functools, datetime, pymongo.errors as mongoerrs
 from dataclasses import dataclass, asdict
 
@@ -19,6 +19,12 @@ class DateRange:
         self.check_freq_min(self.freq_min)
         self.check_datetime(self.start)
         self.check_datetime(self.end)
+
+    def generate_intervals(self) -> Generator[datetime, None, None]:
+        curr = self.start
+        while curr <= self.end:
+            yield curr
+            curr += timedelta(minutes=self.freq_min)
 
     @staticmethod
     def check_datetime(dt: datetime): assert dt.second == 0 and dt.microsecond == 0, f"datetime must have 0 second and microsend - {dt}"
