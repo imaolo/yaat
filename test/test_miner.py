@@ -118,49 +118,49 @@ class TestMiner(unittest.TestCase):
     def test_mine_alpha_simple_day_60m(self):
         freq = 60
         ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
-        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), len(ints)-1) # the api is not inclusive, but we aren
-        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), 0)
 
     def test_mine_alpha_simple_day_30m(self):
         freq = 30
         ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
-        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), len(ints)-1) # the api is not inclusive, but we are
-        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), 0)
 
     def test_mine_alpha_crack_day_60m(self):
         freq = 60
         ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
         self.miner.insert_ticker(self.create_dt_ticker(self.mon.replace(hour=10)))
-        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), len(ints)-1-1) # added one document
-        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), 0) # no all filled
 
     def test_mine_alpha_cracks_day_15m(self):
         freq = 15
         ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
         self.miner.insert_ticker(self.create_dt_ticker(self.mon.replace(hour=10)))
-        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), len(ints)-1-1) # added one document
-        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), 0)
 
     def test_mine_alpha_cracks_day_60m_15m(self):
-        ins60 = self.miner.mine_alpha(60, self.mon, self.tue, [self.sym]) # 10, 11, 12, 1, 2, 3
-        ins30 = self.miner.mine_alpha(30, self.mon, self.tue, [self.sym]) # 930, 1030, 1130, 1230, 130, 230, 330
+        ins60 = list(self.miner.mine_alpha(60, self.mon, self.tue, [self.sym])) # 10, 11, 12, 1, 2, 3
+        ins30 = list(self.miner.mine_alpha(30, self.mon, self.tue, [self.sym])) # 930, 1030, 1130, 1230, 130, 230, 330
         self.assertEqual(len(ins60), 6)
         self.assertEqual(len(ins30), 7)
 
     def test_mine_alpha_simple_2day_60m(self):
         freq = 60
         ints = self.miner.get_intervals(freq, self.mon, self.wed, True)
-        inserted = self.miner.mine_alpha(freq, self.mon, self.wed, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.wed, [self.sym]))
         self.assertEqual(len(inserted), len(ints)-2) # the api is not inclusive, but we are
-        inserted = self.miner.mine_alpha(freq, self.mon, self.wed, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.wed, [self.sym]))
         self.assertEqual(len(inserted), 0)
-        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        inserted = list(self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym]))
         self.assertEqual(len(inserted), 0)
