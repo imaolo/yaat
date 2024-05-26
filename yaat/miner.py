@@ -16,8 +16,9 @@ class Miner:
         symbol: int
         datetime: datetime
 
-    def __init__(self, maester:Maester):
+    def __init__(self, maester:Maester, alpa_key:str='LLE2E6Y7KG1UIS8R'):
         self.maester = maester
+        self.alpha_key
 
     def insert_ticker(self, ticker:Maester.ticker_class): self.maester.tickers_coll.insert_one(asdict(ticker))
 
@@ -98,10 +99,9 @@ class Miner:
     @staticmethod
     def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), "valid minute intervals are 1, 5, 15, 30, 60"
 
-    @classmethod
-    def call_alpha(cls, **kwargs) -> Dict:
+    def call_alpha(self, **kwargs) -> Dict:
         # construct the url
-        url = cls.alpha_url + ''.join(map(lambda kv: kv[0] + '=' + str(kv[1]) + '&', kwargs.items())) + f'apikey={cls.alpha_key}'
+        url = self.alpha_url + ''.join(map(lambda kv: kv[0] + '=' + str(kv[1]) + '&', kwargs.items())) + f'apikey={self.alpha_key}'
         if DEBUG: print(f"call alpha: {url}")
 
         # call it (with rate limit governance)
