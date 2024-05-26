@@ -76,7 +76,6 @@ class Miner:
         missing['month'] = missing['datetime'].dt.month
         missing = missing.groupby(['symbol', 'year', 'month']).agg({'datetime': list}).reset_index()
 
-        inserted: List[self.missing_ticker_class] = []
         for _, m in missing.iterrows():
             res = self.call_alpha(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='false', interval=f'{freq_min}min', symbol=m['symbol'], month=f"{m['year']}-{m['month']:02}")
             assert len(res.keys()) == 2
@@ -93,8 +92,7 @@ class Miner:
                     if 'volume' in ohlcv.keys(): ohlcv['volume'] = int(ohlcv['volume'])
                     dt = datetime.strptime(time, '%Y-%m-%d %H:%M:%S').replace(tzinfo=ZoneInfo(tz)).astimezone(Maester.tz)
                     self.insert_ticker(Maester.ticker_class(sym, dt, **ohlcv))
-                    inserted.append(self.missing_ticker_class(sym, dt))
-        return inserted
+                    yield self.missing_ticker_class(sym, dt)
 
     @staticmethod
     def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), "valid minute intervals are 1, 5, 15, 30, 60"
