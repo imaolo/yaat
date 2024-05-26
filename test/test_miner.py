@@ -14,10 +14,11 @@ class TestMiner(unittest.TestCase):
     start:datetime = end - timedelta(weeks=12)
     middle:datetime = datetime.combine((start + ((end - start) / 2)).date(), datetime.min.time())
     sym:str = 'SPY'
-    sat = datetime(2024, 6, 1, tzinfo=ZoneInfo('US/Eastern'))
-    sun = datetime(2024, 6, 2, tzinfo=ZoneInfo('US/Eastern'))
-    mon = datetime(2024, 6, 3, tzinfo=ZoneInfo('US/Eastern'))
-    tue = datetime(2024, 6, 4, tzinfo=ZoneInfo('US/Eastern'))
+    sat = datetime(2023, 4, 1, tzinfo=ZoneInfo('US/Eastern'))
+    sun = datetime(2023, 4, 2, tzinfo=ZoneInfo('US/Eastern'))
+    mon = datetime(2023, 4, 3, tzinfo=ZoneInfo('US/Eastern'))
+    tue = datetime(2023, 4, 4, tzinfo=ZoneInfo('US/Eastern'))
+    wed = datetime(2023, 4, 5, tzinfo=ZoneInfo('US/Eastern'))
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -114,10 +115,52 @@ class TestMiner(unittest.TestCase):
         missing_ticks = self.miner.get_missing_tickers(freq, self.start, self.end, [self.sym], False)
         self.assertEqual(len(combos)-1, len(missing_ticks))
 
-    # def test_mine_alpha(self):
-    #     freq = 60
-    #     start = datetime(2021, 1, 4)
-    #     end = datetime(2021, 1, 5)
-    #     self.miner.get_intervals(freq, start, end, True)
-    #     inserted = self.miner.mine_alpha(freq, start, end, [self.sym])
-    #     self.assertEqual(len(inserted), 25)
+    def test_mine_alpha_simple_day_60m(self):
+        freq = 60
+        ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
+        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        self.assertEqual(len(inserted), len(ints)-1) # the api is not inclusive, but we aren
+        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        self.assertEqual(len(inserted), 0)
+
+    def test_mine_alpha_simple_day_30m(self):
+        freq = 30
+        ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
+        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        self.assertEqual(len(inserted), len(ints)-1) # the api is not inclusive, but we are
+        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        self.assertEqual(len(inserted), 0)
+
+    def test_mine_alpha_crack_day_60m(self):
+        freq = 60
+        ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
+        self.miner.insert_ticker(self.create_dt_ticker(self.mon.replace(hour=10)))
+        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        self.assertEqual(len(inserted), len(ints)-1-1) # added one document
+        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        self.assertEqual(len(inserted), 0) # no all filled
+
+    def test_mine_alpha_cracks_day_15m(self):
+        freq = 15
+        ints = self.miner.get_intervals(freq, self.mon, self.tue, True)
+        self.miner.insert_ticker(self.create_dt_ticker(self.mon.replace(hour=10)))
+        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        self.assertEqual(len(inserted), len(ints)-1-1) # added one document
+        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        self.assertEqual(len(inserted), 0)
+
+    def test_mine_alpha_cracks_day_60m_15m(self):
+        ins60 = self.miner.mine_alpha(60, self.mon, self.tue, [self.sym]) # 10, 11, 12, 1, 2, 3
+        ins30 = self.miner.mine_alpha(30, self.mon, self.tue, [self.sym]) # 930, 1030, 1130, 1230, 130, 230, 330
+        self.assertEqual(len(ins60), 6)
+        self.assertEqual(len(ins30), 7)
+
+    def test_mine_alpha_simple_2day_60m(self):
+        freq = 60
+        ints = self.miner.get_intervals(freq, self.mon, self.wed, True)
+        inserted = self.miner.mine_alpha(freq, self.mon, self.wed, [self.sym])
+        self.assertEqual(len(inserted), len(ints)-2) # the api is not inclusive, but we are
+        inserted = self.miner.mine_alpha(freq, self.mon, self.wed, [self.sym])
+        self.assertEqual(len(inserted), 0)
+        inserted = self.miner.mine_alpha(freq, self.mon, self.tue, [self.sym])
+        self.assertEqual(len(inserted), 0)
