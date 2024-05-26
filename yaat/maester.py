@@ -1,13 +1,13 @@
 from __future__ import annotations
 from yaat.util import killproc
-from typing import Optional, Tuple, Dict, Any
+from typing import Optional, Tuple, Dict, List
 from pymongo import MongoClient
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from subprocess import Popen, DEVNULL
 from datetime import datetime, time
 import atexit, functools, datetime, pymongo.errors as mongoerrs
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 class Maester:
     db_name: str = 'yaatdb'
@@ -39,6 +39,11 @@ class Maester:
         low: float
         volume: Optional[int] = None
 
+    @dataclass
+    class sym_date_class:
+        symbol: int
+        datetime: datetime
+
     def __new__(cls, connstr:Optional[str]='localhost:27017', dbdir:Optional[Path | str]=None):
         if connstr is not None: assert dbdir is None, 'cannot specify a connection string and to start a local database'
         if dbdir is not None:
@@ -69,6 +74,33 @@ class Maester:
         self.tickers_coll.create_index({'symbol':1})
         self.tickers_coll.create_index({'datetime':1})
     
+    def insert_ticker(self, ticker:Maester.ticker_class): self.tickers_coll.insert_one(asdict(ticker))
+
+    def get_tickers(self, freq_min:int, start:datetime, end:datetime, syms:List[str], dtonly:bool=True) -> List[sym_date_class | ticker_class]:
+        self.check_freq_min(freq_min)
+
+        if dtonly:
+            proj = {'$project': {'datetime':1, 'symbol': 1, '_id':0}}
+            rettype = self.sym_date_class
+        else:
+            proj = {'$project': {'_id':0}} 
+            rettype = self.ticker_class
+
+        return list(map(lambda t: rettype(**t), self.tickers_coll.aggregate([
+            {'$match': {
+                'datetime': {'$gte': start, '$lte': end},
+                'symbol': {'$in': syms},
+                '$expr': {'$and': [
+                    {'$eq': [{'$second': '$datetime'}, 0]},
+                    {'$in': [{'$minute': '$datetime'}, list(range(0, 60, freq_min))]}
+                ]}
+            }},
+            proj
+        ])))
+    
+    @staticmethod
+    def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), "valid minute intervals are 1, 5, 15, 30, 60"
+
     @classmethod
     def is_business_hours(cls, dt: datetime) -> bool:
         if dt.tzinfo is None: dt = dt.replace(tzinfo=cls.tz)
