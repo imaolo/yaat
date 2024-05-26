@@ -9,16 +9,15 @@ import time, pandas as pd
 
 class Miner:
     alpha_url: str = 'https://www.alphavantage.co/query?'
-    alpha_key: str = 'LLE2E6Y7KG1UIS8R' # TODO - move to constructor
 
     @dataclass
     class missing_ticker_class:
         symbol: int
         datetime: datetime
 
-    def __init__(self, maester:Maester, alpa_key:str='LLE2E6Y7KG1UIS8R'):
+    def __init__(self, maester:Maester, alpha_key:str='LLE2E6Y7KG1UIS8R'):
         self.maester = maester
-        self.alpha_key
+        self.alpha_key = alpha_key
 
     def insert_ticker(self, ticker:Maester.ticker_class): self.maester.tickers_coll.insert_one(asdict(ticker))
 
@@ -70,8 +69,9 @@ class Miner:
         start = start.astimezone(Maester.tz).replace(tzinfo=None)
         end = end.astimezone(Maester.tz).replace(tzinfo=None)
 
-        # get misssing symbols and datetimes by month and year
+        # get missing symbols and datetimes by month and year
         missing = pd.DataFrame(self.get_missing_tickers(freq_min, start, end, syms, bus_hours))
+        if len(missing) == 0: return []
         missing['year'] = missing['datetime'].dt.year
         missing['month'] = missing['datetime'].dt.month
         missing = missing.groupby(['symbol', 'year', 'month']).agg({'datetime': list}).reset_index()
