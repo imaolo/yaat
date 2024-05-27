@@ -27,6 +27,11 @@ class DateRange:
             yield curr
             curr += timedelta(minutes=self.freq_min)
 
+    @property
+    def num_intervals(self) -> int:
+        total_secs = (self.end - self.start).total_seconds()
+        return int(total_secs // (self.freq_min * 60)) + 1
+
     @staticmethod
     def check_datetime(dt: datetime): assert dt.second == 0 and dt.microsecond == 0, f"datetime must have 0 second and microsend - {dt}"
 
@@ -130,9 +135,12 @@ class Maester:
         ])))
 
     def fill_intervals_coll(self, dr: DateRange):
+        ## binary search baby!
         for dt in dr.generate_intervals():
             doc = {'datetime': dt}
             self.intervals_coll.update_one(doc, {'$set': doc}, upsert=True)
+
+    def get_missing_tickers(self, dr: DateRange, syms: List[str]) -> List[SymDate]: pass
 
     @classmethod
     def is_business_hours(cls, dt: datetime) -> bool:
