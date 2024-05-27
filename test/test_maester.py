@@ -170,3 +170,12 @@ class TestMaester(unittest.TestCase):
     def test_get_tickers_nonzero_sec(self):
         self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(second=1)))
         self.assertEqual(len(self.maester.get_tickers(DateRange(1, self.start, self.end), [self.sym])), 0)
+
+    def test_fill_intervals_coll(self): 
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), 0)
+        self.maester.fill_intervals_coll(DateRange(30, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), 3)
+        self.maester.fill_intervals_coll(DateRange(30, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), 3)
+        self.maester.fill_intervals_coll(DateRange(1, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), 61)

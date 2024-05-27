@@ -129,10 +129,10 @@ class Maester:
             {'$project': proj}
         ])))
 
-    # def fill_intervals_coll(self, dr: DateRange):
-    #     for dt in dr.generate_intervals():
-    #         doc = {'datetime': dt}
-    #         self.intervals_coll.update_one(doc, {'$set': doc}, upsert=True)
+    def fill_intervals_coll(self, dr: DateRange):
+        for dt in dr.generate_intervals():
+            doc = {'datetime': dt}
+            self.intervals_coll.update_one(doc, {'$set': doc}, upsert=True)
 
     @classmethod
     def is_business_hours(cls, dt: datetime) -> bool:
