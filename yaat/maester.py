@@ -19,6 +19,7 @@ class DateRange:
         self.check_freq_min(self.freq_min)
         self.check_datetime(self.start)
         self.check_datetime(self.end)
+        assert self.start < self.end, f"start must be before end {self.start, self.end}"
 
     def generate_intervals(self) -> Generator[datetime, None, None]:
         curr = self.start
