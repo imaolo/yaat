@@ -179,7 +179,7 @@ class TestMaester(unittest.TestCase):
         self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(second=1)))
         self.assertEqual(len(self.maester.get_tickers(DateRange(1, self.start, self.end), [self.sym])), 0)
 
-    def test_fill_intervals_coll(self): 
+    def test_fill_intervals_coll_simple(self): 
         self.assertEqual(self.maester.intervals_coll.count_documents({}), 0)
         self.maester.fill_intervals_coll(DateRange(30, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
         self.assertEqual(self.maester.intervals_coll.count_documents({}), 3)
@@ -187,3 +187,32 @@ class TestMaester(unittest.TestCase):
         self.assertEqual(self.maester.intervals_coll.count_documents({}), 3)
         self.maester.fill_intervals_coll(DateRange(1, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
         self.assertEqual(self.maester.intervals_coll.count_documents({}), 61)
+
+    def test_fill_intervals_coll_simple(self): 
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), 0)
+        self.maester.fill_intervals_coll(dr:=DateRange(30, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+        self.maester.fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+        self.maester.fill_intervals_coll(dr:=DateRange(1, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+    def test_fill_intervals_coll_simple_internal(self): 
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), 0)
+        self.maester._fill_intervals_coll(dr:=DateRange(30, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+        self.maester._fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+        self.maester._fill_intervals_coll(dr:=DateRange(1, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+    def test_fill_intervals_coll_complex(self):
+        dr = DateRange(60, datetime(2021, 1, 1), datetime(2022, 1, 1))
+        self.assertEqual(dr.num_intervals, 8761)
+        # self.assertEqual(self.maester.intervals_coll.count_documents({}), 0)
+        # self.maester.fill_intervals_coll(dr:=DateRange(30, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
+        # self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+        # self.maester.fill_intervals_coll(dr)
+        # self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+        # self.maester.fill_intervals_coll(dr:=DateRange(1, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
+        # self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)

@@ -1,7 +1,7 @@
 from __future__ import annotations
 from yaat.util import killproc
 from typing import Optional, Tuple, Dict, List, Generator
-from pymongo import MongoClient
+from pymongo import MongoClient, UpdateOne
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from subprocess import Popen, DEVNULL
@@ -56,6 +56,7 @@ class SymDate:
 class Maester:
     db_name: str = 'yaatdb'
     tz: ZoneInfo = ZoneInfo('UTC')
+    binsearch_threshold = 200
 
     intervals_schema: Dict = {
         'title': 'A sequence of datetimes',
@@ -134,11 +135,26 @@ class Maester:
             {'$project': proj}
         ])))
 
+    def _fill_intervals_coll(self, dr: DateRange):
+        bops = [UpdateOne((doc:={'datetime': dt}), {'$set': doc}, upsert=True) for dt in dr.generate_intervals()]
+        if bops: self.intervals_coll.bulk_write(bops)
+
     def fill_intervals_coll(self, dr: DateRange):
-        ## binary search baby!
-        for dt in dr.generate_intervals():
-            doc = {'datetime': dt}
-            self.intervals_coll.update_one(doc, {'$set': doc}, upsert=True)
+
+        def count_docs(_dr: DateRange) -> int:
+            return self.intervals_coll.count_documents({'datetime': {'$gte': _dr.start, '$lt':  _dr.end}})
+
+        dr2search = [dr]
+        while len(dr2search) > 0:
+            curr_dr = dr2search.pop()
+            if curr_dr.num_intervals == count_docs(dr): continue
+            if curr_dr.num_intervals < self.binsearch_threshold: # fill this range
+                bops = [UpdateOne((doc:={'datetime': dt}), {'$set': doc}, upsert=True) for dt in dr.generate_intervals()]
+                if bops: self.intervals_coll.bulk_write(bops)
+                continue
+            mid_dt = curr_dr.start + (curr_dr.end - curr_dr.start) // 2
+            dr2search.append(DateRange(dr.freq_min, curr_dr.start, mid_dt)) # left
+            dr2search.append(DateRange(dr.freq_min, mid_dt, curr_dr.end)) # right
 
     def get_missing_tickers(self, dr: DateRange, syms: List[str]) -> List[SymDate]: pass
 
