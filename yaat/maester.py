@@ -6,14 +6,14 @@ from zoneinfo import ZoneInfo
 from pathlib import Path
 from subprocess import Popen, DEVNULL
 from datetime import datetime, time, timedelta
-import atexit, functools, datetime, pymongo.errors as mongoerrs
 from dataclasses import dataclass, asdict
+import atexit, functools, datetime, pymongo.errors as mongoerrs, pandas as pd
 
 @dataclass
 class DateRange:
-    freq_min: int
     start: datetime
     end: datetime
+    freq_min: int
 
     def __post_init__(self):
         self.check_freq_min(self.freq_min)
@@ -21,22 +21,17 @@ class DateRange:
         self.check_datetime(self.end)
         assert self.start < self.end, f"start must be before end {self.start, self.end}"
 
-    def generate_intervals(self) -> Generator[datetime, None, None]:
-        curr = self.start
-        while curr <= self.end:
-            yield curr
-            curr += timedelta(minutes=self.freq_min)
+    @property
+    def intervals(self) -> pd.DatetimeIndex: return pd.date_range(start=self.start, end=self.end, freq=f'{self.freq_min}min')
 
     @property
-    def num_intervals(self) -> int:
-        total_secs = (self.end - self.start).total_seconds()
-        return int(total_secs // (self.freq_min * 60)) + 1
+    def num_intervals(self) -> int: return int(((self.end - self.start).total_seconds()) // (self.freq_min * 60)) + 1
 
     @staticmethod
     def check_datetime(dt: datetime): assert dt.second == 0 and dt.microsecond == 0, f"datetime must have 0 second and microsend - {dt}"
 
     @staticmethod
-    def check_freq_min(freq_min:int): assert freq_min in (1, 5, 15, 30, 60), f"{freq_min} is not a valid minute interval. Valid are 1, 5, 15, 30, 60."
+    def check_freq_min(fm:int): assert fm in (1, 5, 15, 30, 60), f"{fm} is not a valid minute interval. Valid are 1, 5, 15, 30, 60."
 
 @dataclass  
 class Ticker:
@@ -56,7 +51,7 @@ class SymDate:
 class Maester:
     db_name: str = 'yaatdb'
     tz: ZoneInfo = ZoneInfo('UTC')
-    binsearch_threshold = 200
+    binsearch_threshold = 10000
 
     intervals_schema: Dict = {
         'title': 'A sequence of datetimes',
@@ -135,26 +130,32 @@ class Maester:
             {'$project': proj}
         ])))
 
-    def _fill_intervals_coll(self, dr: DateRange):
+    def _fill_intervals_coll(self, dr: DateRange) -> int: # simple, no binary search
         bops = [UpdateOne((doc:={'datetime': dt}), {'$set': doc}, upsert=True) for dt in dr.generate_intervals()]
-        if bops: self.intervals_coll.bulk_write(bops)
+        if bops: return self.intervals_coll.bulk_write(bops).inserted_count
+        return 0
 
-    def fill_intervals_coll(self, dr: DateRange):
+    def fill_intervals_coll(self, dr: DateRange) -> int: # binary search
 
         def count_docs(_dr: DateRange) -> int:
             return self.intervals_coll.count_documents({'datetime': {'$gte': _dr.start, '$lt':  _dr.end}})
 
+        def round_datetime(dt):
+            return (dt + timedelta(seconds=30)).replace(second=0, microsecond=0)
+
+        inserted_count = 0
         dr2search = [dr]
         while len(dr2search) > 0:
             curr_dr = dr2search.pop()
-            if curr_dr.num_intervals == count_docs(dr): continue
-            if curr_dr.num_intervals < self.binsearch_threshold: # fill this range
+            if curr_dr.num_intervals == count_docs(curr_dr): continue
+            if curr_dr.num_intervals < self.binsearch_threshold:
                 bops = [UpdateOne((doc:={'datetime': dt}), {'$set': doc}, upsert=True) for dt in dr.generate_intervals()]
-                if bops: self.intervals_coll.bulk_write(bops)
+                if bops: inserted_count += self.intervals_coll.bulk_write(bops).inserted_count
                 continue
-            mid_dt = curr_dr.start + (curr_dr.end - curr_dr.start) // 2
+            mid_dt = round_datetime(curr_dr.start + (curr_dr.end - curr_dr.start) // 2)
             dr2search.append(DateRange(dr.freq_min, curr_dr.start, mid_dt)) # left
             dr2search.append(DateRange(dr.freq_min, mid_dt, curr_dr.end)) # right
+        return inserted_count
 
     def get_missing_tickers(self, dr: DateRange, syms: List[str]) -> List[SymDate]: pass
 

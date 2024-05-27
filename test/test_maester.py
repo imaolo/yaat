@@ -4,7 +4,7 @@ from pathlib import Path
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
-import unittest, shutil, atexit, functools, pymongo.errors as mongoerrors
+import unittest, shutil, atexit, functools, time, random, pymongo.errors as mongoerrors
 
 def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
 
@@ -27,24 +27,32 @@ class TestDateRange(unittest.TestCase):
         with self.assertRaises(AssertionError): DateRange.check_datetime(dt)
 
     def test_post_init(self):
-        DateRange(1, datetime(2021, 1, 1),  datetime(2021, 1, 2))
-        with self.assertRaises(AssertionError): DateRange(2, datetime(2021, 1, 1),  datetime(2021, 1, 2)) # bad freq
-        with self.assertRaises(AssertionError): DateRange(2, datetime(2021, 1, 1),  datetime(2020, 1, 2)) # start > end
-        with self.assertRaises(AssertionError): DateRange(2, datetime(2021, 1, 1, 1, 1, 1),  datetime(2021, 1, 2)) # seconds
+        DateRange(datetime(2021, 1, 1),  datetime(2021, 1, 2), 1)
+        with self.assertRaises(AssertionError): DateRange(datetime(2021, 1, 1),  datetime(2021, 1, 2), 2) # bad freq
+        with self.assertRaises(AssertionError): DateRange(datetime(2021, 1, 1),  datetime(2020, 1, 2), 1) # start > end
+        with self.assertRaises(AssertionError): DateRange(datetime(2021, 1, 1, 1, 1, 1),  datetime(2021, 1, 2), 15) # seconds
 
-    def test_generate_intervals(self):
-        self.assertEqual(len(list(DateRange(1, datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 3)).generate_intervals())), 3)
-        self.assertEqual(len(list(DateRange(5, datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 3)).generate_intervals())), 1)
-        self.assertEqual(len(list(DateRange(5, datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 6)).generate_intervals())), 2)
-        self.assertEqual(len(list(DateRange(60, datetime(2021, 1, 1), datetime(2021, 1, 2)).generate_intervals())), 25)
+    def test_intervals(self):
+        self.assertEqual(len(list(DateRange(datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 3), 1).intervals)), 3)
+        self.assertEqual(len(list(DateRange(datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 3), 5).intervals)), 1)
+        self.assertEqual(len(list(DateRange(datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 6), 5).intervals)), 2)
+        self.assertEqual(len(list(DateRange(datetime(2021, 1, 1), datetime(2021, 1, 2), 60).intervals)), 25)
 
     def test_num_intervals(self): # TODO - fuzz against pandas
-        self.assertEqual(DateRange(1, datetime(2023, 1, 1, 1, 1), datetime(2023, 1, 1, 1, 2)).num_intervals, 2)
-        self.assertEqual(DateRange(1, datetime(2023, 1, 1, 1, 2), datetime(2023, 1, 1, 1, 4)).num_intervals, 3)
-        self.assertEqual(DateRange(15, datetime(2023, 1, 1, 1, 1), datetime(2023, 1, 1, 1, 2)).num_intervals, 1)
-        self.assertEqual(DateRange(15, datetime(2023, 1, 1, 1), datetime(2023, 1, 1, 2)).num_intervals, 5)
-        self.assertEqual(DateRange(60, datetime(2023, 1, 1, 1), datetime(2023, 1, 1, 2)).num_intervals, 2)
-        self.assertEqual(DateRange(60, datetime(2023, 1, 1, 1), datetime(2023, 1, 1, 4)).num_intervals, 4)
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1, 1), datetime(2023, 1, 1, 1, 2), 1)).num_intervals, 2)
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1, 2), datetime(2023, 1, 1, 1, 4), 1)).num_intervals, 3)
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1, 1), datetime(2023, 1, 1, 1, 2), 15)).num_intervals, 1)
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1), datetime(2023, 1, 1, 2), 15)).num_intervals, 5)
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1), datetime(2023, 1, 1, 2), 60)).num_intervals, 2)
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1), datetime(2023, 1, 1, 4), 60)).num_intervals, 4)
+
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1, 1), datetime(2023, 1, 1, 1, 2), 1)).num_intervals, len(dr.intervals))
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1, 2), datetime(2023, 1, 1, 1, 4), 1)).num_intervals, len(dr.intervals))
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1, 1), datetime(2023, 1, 1, 1, 2), 15)).num_intervals, len(dr.intervals))
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1), datetime(2023, 1, 1, 2), 15)).num_intervals, len(dr.intervals))
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1), datetime(2023, 1, 1, 2), 60)).num_intervals, len(dr.intervals))
+        self.assertEqual((dr:=DateRange(datetime(2023, 1, 1, 1), datetime(2023, 1, 1, 4), 60)).num_intervals, len(dr.intervals))
+
 
 class TestMaesterDB(unittest.TestCase):
 
@@ -208,11 +216,60 @@ class TestMaester(unittest.TestCase):
 
     def test_fill_intervals_coll_complex(self):
         dr = DateRange(60, datetime(2021, 1, 1), datetime(2022, 1, 1))
-        self.assertEqual(dr.num_intervals, 8761)
-        # self.assertEqual(self.maester.intervals_coll.count_documents({}), 0)
-        # self.maester.fill_intervals_coll(dr:=DateRange(30, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
-        # self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
-        # self.maester.fill_intervals_coll(dr)
-        # self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
-        # self.maester.fill_intervals_coll(dr:=DateRange(1, datetime(2021, 1, 1, 1), datetime(2021, 1, 1, 2)))
-        # self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+        self.maester.fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+        dr = DateRange(60, datetime(2021, 1, 1), datetime(2023, 1, 1))
+        self.maester._fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+    def test_fill_intervals_coll_complex_internal(self):
+        dr = DateRange(60, datetime(2021, 1, 1), datetime(2022, 1, 1))
+        self.maester._fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+        dr = DateRange(60, datetime(2021, 1, 1), datetime(2023, 1, 1))
+        self.maester._fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+    def test_fill_intervals_coll_complex2(self):
+        dr = DateRange(60, datetime(2021, 3, 4), datetime(2022, 7, 8))
+        self.maester.fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+        dr = DateRange(60, datetime(2021, 1, 5), datetime(2023, 8, 5))
+        self.maester.fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+    def test_fill_intervals_coll_complex2_internal(self):
+        dr = DateRange(60, datetime(2021, 3, 4), datetime(2022, 7, 8))
+        self.maester._fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+        dr = DateRange(60, datetime(2021, 1, 5), datetime(2023, 8, 5))
+        self.maester._fill_intervals_coll(dr)
+        self.assertEqual(self.maester.intervals_coll.count_documents({}), dr.num_intervals)
+
+
+    def test_fill_intervals_coll_time(self):
+        # time binary search
+        dr = DateRange(1, datetime(2021, 1, 1), datetime(2022, 1, 1))
+        self.maester.fill_intervals_coll(dr)
+        dr = DateRange(1, datetime(2021, 1, 1), datetime(2023, 1, 1))
+        start = time.process_time()
+        self.maester.fill_intervals_coll(dr)
+        bintime = time.process_time() - start
+
+        self.maester.intervals_coll.delete_many({})
+
+        # time reg search
+        # dr = DateRange(15, datetime(2021, 1, 1), datetime(2022, 1, 1))
+        # self.maester._fill_intervals_coll(dr)
+        # dr = DateRange(15, datetime(2021, 1, 1), datetime(2023, 1, 1))
+        start = time.process_time()
+        # self.maester._fill_intervals_coll(dr)
+        regtime = time.process_time() - start
+
+        # self.assertLess(bintime, regtime*.5 )       
+
+        assert False, f"bintime {bintime}, regtime {regtime}"
