@@ -8,6 +8,36 @@ import unittest, shutil, atexit, functools, pymongo.errors as mongoerrors
 
 def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
 
+class TestDateRange(unittest.TestCase):
+
+    def test_check_freq_min(self):
+        for freq in (1, 5, 15, 30, 60): DateRange.check_freq_min(freq)
+        with self.assertRaises(AssertionError): DateRange.check_freq_min(7)
+
+    def test_check_datetime(self):
+        def check_inc(_dt, _td):
+            DateRange.check_datetime(dt)
+            return _dt + _td
+        dt = datetime(2021, 1, 1, 1, 1)
+        dt = check_inc(dt, timedelta(hours=1))
+        dt = check_inc(dt, timedelta(minutes=1))
+        dt = check_inc(dt, timedelta(days=1))
+        dt = check_inc(dt, timedelta(weeks=1))
+        dt = check_inc(dt, timedelta(seconds=1))
+        with self.assertRaises(AssertionError): DateRange.check_datetime(dt)
+
+    def test_post_init(self):
+        DateRange(1, datetime(2021, 1, 1),  datetime(2021, 1, 2))
+        with self.assertRaises(AssertionError): DateRange(2, datetime(2021, 1, 1),  datetime(2021, 1, 2)) # bad freq
+        with self.assertRaises(AssertionError): DateRange(2, datetime(2021, 1, 1),  datetime(2020, 1, 2)) # start > end
+        with self.assertRaises(AssertionError): DateRange(2, datetime(2021, 1, 1, 1, 1, 1),  datetime(2021, 1, 2)) # seconds
+
+    def test_generate_intervals(self):
+        self.assertEqual(len(list(DateRange(1, datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 3)).generate_intervals())), 3)
+        self.assertEqual(len(list(DateRange(5, datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 3)).generate_intervals())), 1)
+        self.assertEqual(len(list(DateRange(5, datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 6)).generate_intervals())), 2)
+        self.assertEqual(len(list(DateRange(60, datetime(2021, 1, 1), datetime(2021, 1, 2)).generate_intervals())), 25)
+
 class TestMaesterConstructDelete(unittest.TestCase):
 
     @classmethod
@@ -100,10 +130,6 @@ class TestMaester(unittest.TestCase):
         ticker_dc = Ticker('some sym', datetime.now(), 1.0, 1.0, 3.0, 4.0)
         self.maester.tickers_coll.insert_one(asdict(ticker_dc))
         with self.assertRaises(mongoerrors.DuplicateKeyError): self.maester.tickers_coll.insert_one(asdict(ticker_dc))
-
-    def test_valid_freq(self):
-        for freq in (1, 5, 15, 30, 60): DateRange.check_freq_min(freq)
-        with self.assertRaises(AssertionError): DateRange.check_freq_min(7)
 
     def test_get_tickers_freq_1m(self):
         self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=1)))
