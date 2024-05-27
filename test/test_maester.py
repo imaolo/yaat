@@ -96,10 +96,12 @@ class TestMaester(unittest.TestCase):
 
     def setUp(self) -> None:
         self.maester.tickers_coll.delete_many({})
+        self.maester.intervals_coll.delete_many({})
         return super().setUp()
 
     def tearDown(self) -> None:
         self.maester.tickers_coll.delete_many({})
+        self.maester.intervals_coll.delete_many({})
         return super().tearDown()
 
     # helpers
