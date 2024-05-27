@@ -38,7 +38,7 @@ class TestDateRange(unittest.TestCase):
         self.assertEqual(len(list(DateRange(5, datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 6)).generate_intervals())), 2)
         self.assertEqual(len(list(DateRange(60, datetime(2021, 1, 1), datetime(2021, 1, 2)).generate_intervals())), 25)
 
-    def test_num_intervals(self):
+    def test_num_intervals(self): # TODO - fuzz against pandas
         self.assertEqual(DateRange(1, datetime(2023, 1, 1, 1, 1), datetime(2023, 1, 1, 1, 2)).num_intervals, 2)
         self.assertEqual(DateRange(1, datetime(2023, 1, 1, 1, 2), datetime(2023, 1, 1, 1, 4)).num_intervals, 3)
         self.assertEqual(DateRange(15, datetime(2023, 1, 1, 1, 1), datetime(2023, 1, 1, 1, 2)).num_intervals, 1)
