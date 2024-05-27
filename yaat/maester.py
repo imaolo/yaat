@@ -114,8 +114,8 @@ class Maester:
 
     def get_tickers(self, inter:DateRange, syms:List[str], dtonly:bool=True) -> List[SymDate | Ticker]:
 
-        if dtonly: proj, rettype = {'$project': {'datetime':1, 'symbol': 1, '_id':0}}, SymDate
-        else: proj, rettype = {'$project': {'_id':0}}, Ticker
+        if dtonly: proj, rettype = {'datetime':1, 'symbol': 1, '_id':0}, SymDate
+        else: proj, rettype = {'_id':0}, Ticker
 
         return list(map(lambda t: rettype(**t), self.tickers_coll.aggregate([
             {'$match': {
@@ -126,7 +126,7 @@ class Maester:
                     {'$in': [{'$minute': '$datetime'}, list(range(0, 60, inter.freq_min))]}
                 ]}
             }},
-            proj
+            {'$project': proj}
         ])))
 
     @classmethod
