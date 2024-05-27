@@ -38,7 +38,7 @@ class TestDateRange(unittest.TestCase):
         self.assertEqual(len(list(DateRange(5, datetime(2021, 1, 1, 1, 1), datetime(2021, 1, 1, 1, 6)).generate_intervals())), 2)
         self.assertEqual(len(list(DateRange(60, datetime(2021, 1, 1), datetime(2021, 1, 2)).generate_intervals())), 25)
 
-class TestMaesterConstructDelete(unittest.TestCase):
+class TestMaesterDB(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -48,9 +48,6 @@ class TestMaesterConstructDelete(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         if not DEBUG: shutil.rmtree(cls.dp)
-
-    def test_constructor_bad_args(self):
-        with self.assertRaises(AssertionError): Maester('some conn str', 'some db dir')
 
     def test_constructor_dbdir_path(self):
         m = Maester(None, str(self.dp / (getid(self) + '_db')))
@@ -73,14 +70,6 @@ class TestMaesterConstructDelete(unittest.TestCase):
         m = Maester()
         del m
         killproc(proc)
-
-    def test_business_hours(self):
-        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 1)))
-        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 8, tzinfo=ZoneInfo('US/Eastern'))))
-        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 9, 29, tzinfo=ZoneInfo('US/Eastern'))))
-        self.assertTrue(Maester.is_business_hours(datetime(2024, 7, 2, 9, 30, tzinfo=ZoneInfo('US/Eastern'))))
-        self.assertTrue(Maester.is_business_hours(datetime(2024, 7, 2, 15, 30, tzinfo=ZoneInfo('US/Eastern'))))
-        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 16, 31, tzinfo=ZoneInfo('US/Eastern'))))
 
 class TestMaester(unittest.TestCase):
 
@@ -118,6 +107,17 @@ class TestMaester(unittest.TestCase):
     def create_dt_ticker(self, dt: datetime=middle) -> Ticker: return Ticker(self.sym, dt, *[1.0]*4)
 
     # tests
+
+    def test_constructor_bad_args(self):
+        with self.assertRaises(AssertionError): Maester('some conn str', 'some db dir')
+
+    def test_business_hours(self):
+        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 1)))
+        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 8, tzinfo=ZoneInfo('US/Eastern'))))
+        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 9, 29, tzinfo=ZoneInfo('US/Eastern'))))
+        self.assertTrue(Maester.is_business_hours(datetime(2024, 7, 2, 9, 30, tzinfo=ZoneInfo('US/Eastern'))))
+        self.assertTrue(Maester.is_business_hours(datetime(2024, 7, 2, 15, 30, tzinfo=ZoneInfo('US/Eastern'))))
+        self.assertFalse(Maester.is_business_hours(datetime(2024, 7, 2, 16, 31, tzinfo=ZoneInfo('US/Eastern'))))
 
     def test_schema_bad_keys(self):
         with self.assertRaises(mongoerrors.WriteError): self.maester.tickers_coll.insert_one({'dummy': 'doc'})
