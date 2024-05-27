@@ -112,22 +112,27 @@ class Maester:
     
     def insert_ticker(self, ticker:Ticker): self.tickers_coll.insert_one(asdict(ticker))
 
-    def get_tickers(self, inter:DateRange, syms:List[str], dtonly:bool=True) -> List[SymDate | Ticker]:
+    def get_tickers(self, dr:DateRange, syms:List[str], dtonly:bool=True) -> List[SymDate | Ticker]:
 
         if dtonly: proj, rettype = {'datetime':1, 'symbol': 1, '_id':0}, SymDate
         else: proj, rettype = {'_id':0}, Ticker
 
         return list(map(lambda t: rettype(**t), self.tickers_coll.aggregate([
             {'$match': {
-                'datetime': {'$gte': inter.start, '$lte': inter.end},
+                'datetime': {'$gte': dr.start, '$lte': dr.end},
                 'symbol': {'$in': syms},
                 '$expr': {'$and': [
                     {'$eq': [{'$second': '$datetime'}, 0]},
-                    {'$in': [{'$minute': '$datetime'}, list(range(0, 60, inter.freq_min))]}
+                    {'$in': [{'$minute': '$datetime'}, list(range(0, 60, dr.freq_min))]}
                 ]}
             }},
             {'$project': proj}
         ])))
+
+    # def fill_intervals_coll(self, dr: DateRange):
+    #     for dt in dr.generate_intervals():
+    #         doc = {'datetime': dt}
+    #         self.intervals_coll.update_one(doc, {'$set': doc}, upsert=True)
 
     @classmethod
     def is_business_hours(cls, dt: datetime) -> bool:
