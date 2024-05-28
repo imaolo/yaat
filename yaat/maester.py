@@ -53,14 +53,14 @@ class Maester:
     tz: ZoneInfo = ZoneInfo('UTC')
     binsearch_threshold = 10000
 
-    intervals_schema: Dict = {
+    intervaltimes_schema: Dict = {
         'title': 'A sequence of datetimes',
         'required': ['datetime'],
         'properties': {'datetime': {'bsonType': 'date'},
         }
     }
 
-    # tickers_schema and Tickers dataclass need to exacly agree in field name
+    # tickers_schema and Tickers dataclass must exacly agree on field name
 
     tickers_schema: Dict = {
         'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
@@ -99,19 +99,47 @@ class Maester:
         # get the database from the client
         self.db = self.dbc[self.db_name]
 
-        # create the tickers collection
-        if 'tickers' in self.db.list_collection_names(): self.tickers_coll = self.db['tickers']
-        else: self.tickers_coll = self.db.create_collection('tickers', validator={'$jsonSchema': self.tickers_schema})
-        self.tickers_coll.create_index({'symbol':1, 'datetime':1}, unique=True)
-        self.tickers_coll.create_index({'symbol':1})
-        self.tickers_coll.create_index({'datetime':1})
+        # helper
+        def create_collection(name, schema):
+            if name in self.db.list_collection_names(): return self.db[name]
+            else: return self.db.create_collection(name, validator={'$jsonSchema': schema})
 
-        # create the intervals collection
-        if 'intervals' in self.db.list_collection_names(): self.intervals_coll = self.db['intervals']
-        else: self.intervals_coll = self.db.create_collection('intervals', validator={'$jsonSchema': self.intervals_schema})
-        self.intervals_coll.create_index({'datetime':1}, unique=True)
+        # create the tickers collection
+        self.tickers = create_collection('tickers', self.tickers_schema)
+        self.tickers.create_index({'symbol':1, 'datetime':1}, unique=True)
+        self.tickers.create_index({'symbol':1})
+        self.tickers.create_index({'datetime':1})
+
+        # create the interval times collection
+        self.intervaltimes = create_collection('intervaltimes', self.intervaltimes_schema)
+        self.intervaltimes.create_index({'datetime':1}, unique=True)
     
-    def insert_ticker(self, ticker:Ticker): self.tickers_coll.insert_one(asdict(ticker))
+    def insert_ticker(self, ticker:Ticker): self.tickers.insert_one(asdict(ticker))
+    def insert_intervaltime(self, dt:datetime): self.intervaltimes.insert_one({'datetime': dt})
+
+    @staticmethod
+    def get_dr_match_agg_stage(dr:DateRange) -> Dict:
+        return {'$match': {
+                'datetime': {'$gte': dr.start, '$lte': dr.end}},
+                '$expr': {'$and': [
+                    {'$eq': [{'$second': '$datetime'}, 0]},
+                    {'$in': [{'$minute': '$datetime'}, list(range(0, 60, dr.freq_min))]}
+                ]}
+        }
+
+    def get_intervals(self, dr:DateRange) -> pd.DatetimeIndex:
+        cur = self.intervals_coll.aggregate([
+            self.get_dr_match_agg_stage(dr),
+            {'$project': {'datetime': 1, '_id': 0}},
+        ])
+        return pd.DatetimeIndex([doc['datetime'] for doc in cur])
+
+    def get_missing_intervals(self, dr:DateRange) -> pd.DatetimeIndex: return dr.intervals.difference(self.get_intervals(dr))
+
+    def fill_intervals(self, dr:DateRange) -> int:
+        missing = self.get_missing_intervals(dr)
+        bops = [UpdateOne((doc:={'datetime': dt}), {'$set': doc}, upsert=True) for dt in missing]
+        return self.intervals_coll.bulk_write(bops).inserted_count if bops else 0
 
     def get_tickers(self, dr:DateRange, syms:List[str], dtonly:bool=True) -> List[SymDate | Ticker]:
 
@@ -157,7 +185,6 @@ class Maester:
             dr2search.append(DateRange(dr.freq_min, mid_dt, curr_dr.end)) # right
         return inserted_count
 
-    def get_missing_tickers(self, dr: DateRange, syms: List[str]) -> List[SymDate]: pass
 
     @classmethod
     def is_business_hours(cls, dt: datetime) -> bool:
