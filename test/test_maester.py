@@ -126,6 +126,23 @@ class TestMaester1(unittest.TestCase):
             '_id_': {'key': [('_id', 1)], 'v': 2},
             'datetime_1': {'key': [('datetime', 1)], 'unique': True, 'v': 2}})
 
+    def test_tickers_schema_bad_doc(self):
+        with self.assertRaises(mongoerrors.WriteError): self.maester.tickers.insert_one({'dummy': 'doc'})
+
+    def test_intervaltimes_schema_bad_doc(self):
+        with self.assertRaises(mongoerrors.WriteError): self.maester.intervaltimes.insert_one({'dummy': 'doc'})
+
+    def test_tickers_duplicate_doc(self):
+        self.maester.insert_ticker(t:=Ticker('some sym', datetime.now(), 1.0, 1.0, 3.0, 4.0))
+        with self.assertRaises(mongoerrors.DuplicateKeyError): self.maester.insert_ticker(t)
+
+    def test_intervaltimes_duplicate_doc(self):
+        self.maester.insert_intervaltime(dt:=datetime(2021, 1, 1))
+        with self.assertRaises(mongoerrors.DuplicateKeyError): self.maester.insert_intervaltime(dt)
+
+    def test_intervaltimes_insert_bad_doc(self):
+        with self.assertRaises(AssertionError): self.maester.insert_intervaltime(datetime.now())
+        
 class TestMaester(unittest.TestCase):
 
     end:datetime = datetime.combine(datetime.now().date(), datetime.min.time())
