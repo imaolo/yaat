@@ -1,4 +1,4 @@
-from yaat.util import gettime, killproc, DEBUG
+from yaat.util import gettime, killproc, myprint, DEBUG
 from yaat.maester import Maester, DateRange, Ticker
 from pathlib import Path
 from dataclasses import asdict
@@ -87,6 +87,45 @@ class TestMaesterDB(unittest.TestCase):
         del m
         killproc(proc)
 
+class TestMaester1(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.dp = Path(f"twork/twork_{cls.__name__}_{gettime()}")
+        cls.dp.mkdir(parents=True, exist_ok=True)
+        cls.maester = Maester(None, cls.dp / 'dbdir')
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        del cls.maester
+        if not DEBUG: shutil.rmtree(cls.dp)
+
+    def setUp(self) -> None:
+        self.maester.tickers.delete_many({})
+        self.maester.intervaltimes.delete_many({})
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        self.maester.tickers.delete_many({})
+        self.maester.intervaltimes.delete_many({})
+        return super().tearDown()
+
+    # tests
+
+    def test_tickers_coll_info(self):
+        self.assertIn('tickers', self.maester.db.list_collection_names())
+        self.assertDictEqual(self.maester.tickers.index_information(),{
+            '_id_': {'key': [('_id', 1)], 'v': 2},
+            'datetime_1': {'key': [('datetime', 1)], 'v': 2},
+            'symbol_1': {'key': [('symbol', 1)], 'v': 2},
+            'symbol_1_datetime_1': {'key': [('symbol', 1), ('datetime', 1)],'unique': True,'v': 2}})
+
+    def test_intervaltimes_coll_info(self):
+        self.assertIn('intervaltimes', self.maester.db.list_collection_names())
+        self.assertDictEqual(self.maester.intervaltimes.index_information(),{
+            '_id_': {'key': [('_id', 1)], 'v': 2},
+            'datetime_1': {'key': [('datetime', 1)], 'unique': True, 'v': 2}})
+
 class TestMaester(unittest.TestCase):
 
     end:datetime = datetime.combine(datetime.now().date(), datetime.min.time())
@@ -151,14 +190,14 @@ class TestMaester(unittest.TestCase):
 
     def test_get_tickers_freq_1m(self):
         self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=1)))
-        self.assertEqual(len(self.maester.get_tickers(DateRange(1, self.start, self.end), [self.sym])), 1)
-        self.assertEqual(len(self.maester.get_tickers(DateRange(5, self.start, self.end), [self.sym])), 0)
+        self.assertEqual(len(self.maester.get_tickers(DateRange(self.start, self.end, 1), [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(DateRange(self.start, self.end, 5), [self.sym])), 0)
 
     def test_get_tickers_freq_5m(self):
         self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=35)))
-        self.assertEqual(len(self.maester.get_tickers(DateRange(1, self.start, self.end), [self.sym])), 1)
-        self.assertEqual(len(self.maester.get_tickers(DateRange(5, self.start, self.end), [self.sym])), 1)
-        self.assertEqual(len(self.maester.get_tickers(DateRange(15, self.start, self.end), [self.sym])), 0)
+        self.assertEqual(len(self.maester.get_tickers(DateRange(self.start, self.end, 1), [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(DateRange(self.start, self.end, 5), [self.sym])), 1)
+        self.assertEqual(len(self.maester.get_tickers(DateRange(self.start, self.end, 15), [self.sym])), 0)
 
     def test_get_tickers_freq_15m(self):
         self.maester.insert_ticker(self.create_dt_ticker(self.middle.replace(minute=45)))
