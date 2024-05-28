@@ -115,7 +115,10 @@ class Maester:
         self.intervaltimes.create_index({'datetime':1}, unique=True)
     
     def insert_ticker(self, ticker:Ticker): self.tickers.insert_one(asdict(ticker))
-    def insert_intervaltime(self, dt:datetime): self.intervaltimes.insert_one({'datetime': dt})
+
+    def insert_intervaltime(self, dt:datetime):
+        DateRange.check_datetime(dt)
+        self.intervaltimes.insert_one({'datetime': dt})
 
     @staticmethod
     def get_dr_match_agg_stage(dr:DateRange) -> Dict:
