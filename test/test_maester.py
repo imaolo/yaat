@@ -126,6 +126,11 @@ class TestMaester(unittest.TestCase):
         self.maester.tickers.delete_many({})
         return super().tearDown()
 
+    # helpers
+
+    def insert_dt_ticker(self, ts: datetime, sym:str = 'somesym'):
+        self.maester.tickers.insert_one({'timestamp': ts, 'symbol': sym, 'open': 1.0, 'close': 1.0, 'high': 1.0, 'low': 1.0, 'volume':1})
+
     # tests
 
     def test_tickers_coll_info(self):
@@ -142,3 +147,25 @@ class TestMaester(unittest.TestCase):
     def test_tickers_duplicate_doc(self):
         self.maester.tickers.insert_one(doc:={'symbol': 'some field', 'timestamp': datetime.now(), 'open': 1.0, 'close': 1.0, 'high': 1.0, 'low': 1.0, 'volume': 1})
         with self.assertRaises(mongoerrs.DuplicateKeyError): self.maester.tickers.insert_one(doc)
+
+    def test_get_ts_agg(self):
+        end = (datetime.combine(self.start, time()) + timedelta(weeks=52)).date()
+        tr = TimeRange(self.start, end, self.times)
+        
+        # check in range
+        dt = datetime.combine(self.start, self.times[0]) + timedelta(weeks=4)
+        self.insert_dt_ticker(dt)
+        docs = list(self.maester.tickers.aggregate(Maester.get_ts_agg(tr)))
+        self.assertEqual(len(docs), 1)
+
+        # check in range but bad frequency
+        dt = datetime.combine(self.start, time(second=1))
+        self.insert_dt_ticker(dt)
+        docs = list(self.maester.tickers.aggregate(Maester.get_ts_agg(tr)))
+        self.assertEqual(len(docs), 1)
+
+        # check out of range
+        dt = datetime.combine(self.start, self.times[0]) + timedelta(weeks=55)
+        self.insert_dt_ticker(dt)
+        docs = list(self.maester.tickers.aggregate(Maester.get_ts_agg(tr)))
+        self.assertEqual(len(docs), 1)
