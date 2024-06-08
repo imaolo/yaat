@@ -36,4 +36,19 @@ class TestTimeRange(unittest.TestCase):
         start = date(2024, 6, 3)
         for i in range(5):
             self.assertEqual(len(TimeRange(start, start + timedelta(days=i), self.times).days), i+1) # inclusive
+    
+        self.assertEqual(len(TimeRange(start, start + timedelta(days=5), self.times).days), 5) # saturday
+        self.assertEqual(len(TimeRange(start, start + timedelta(days=6), self.times).days), 5) # sunday
+        self.assertEqual(len(TimeRange(start, start + timedelta(days=7), self.times).days), 6) # monday
+
+    def test_timestamps(self):
+        start = date(2024, 6, 3)
+        for i in range(5):
+            self.assertEqual(len(TimeRange(start, start + timedelta(days=i), self.times).timestamps), (i+1) * len(self.times)) # inclusive
+    
+        self.assertEqual(len(TimeRange(start, start + timedelta(days=5), self.times).timestamps), 5 * len(self.times)) # saturday
+        self.assertEqual(len(TimeRange(start, start + timedelta(days=6), self.times).timestamps), 5 * len(self.times)) # sunday
+        self.assertEqual(len(TimeRange(start, start + timedelta(days=7), self.times).timestamps), 6 * len(self.times)) # monday
+        
+        
 

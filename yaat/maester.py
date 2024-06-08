@@ -25,6 +25,8 @@ class TimeRange:
 
         self.days = self.calendar.schedule(self.start, self.end)
 
+        self.timestamps = self.days.index.repeat(len(self.times)) + pd.to_timedelta(self.times * len(self.days))
+
     @staticmethod
     def clean_date(d: date | str) -> str:
         if isinstance(d, date): return d.strftime(DATE_FORMAT)
