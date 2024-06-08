@@ -117,16 +117,6 @@ class TestMaesterColls(unittest.TestCase):
         del cls.maester
         if not DEBUG: shutil.rmtree(cls.dp)
 
-    def setUp(self) -> None:
-        self.maester.tickers.delete_many({})
-        self.maester.timestamps.delete_many({})
-        return super().setUp()
-
-    def tearDown(self) -> None:
-        self.maester.tickers.delete_many({})
-        self.maester.timestamps.delete_many({})
-        return super().tearDown()
-
     # tests
 
     def test_tickers_coll_info(self):
