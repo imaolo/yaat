@@ -7,7 +7,6 @@ from typing import List, Dict, Optional, Tuple
 from pathlib import Path
 import atexit, functools, pandas as pd, pymongo.errors as mongoerrs, pandas_market_calendars as mcal
 
-
 DATE_FORMAT = '%Y-%m-%d'
 TIME_FORMAT = '%H:%M:%S'
 
