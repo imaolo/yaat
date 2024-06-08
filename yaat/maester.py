@@ -1,7 +1,11 @@
+from yaat.util import killproc, DEBUG
 from dataclasses import dataclass
 from datetime import date, time, datetime
-from typing import List
-import pandas as pd, pandas_market_calendars as mcal
+from pymongo import MongoClient
+from subprocess import Popen, DEVNULL
+from typing import List, Dict, Optional, Tuple
+from pathlib import Path
+import atexit, functools, pandas as pd, pymongo.errors as mongoerrs, pandas_market_calendars as mcal
 
 
 DATE_FORMAT = '%Y-%m-%d'
@@ -41,3 +45,50 @@ class TimeRange:
         if isinstance(t, str): return datetime.strptime(t, TIME_FORMAT).time().strftime(TIME_FORMAT)
         raise RuntimeError(f"invalid time {t}")
 
+class Maester:
+    db_name: str = 'yaatdb'
+
+    # construction
+
+    def __new__(cls, connstr:Optional[str]=None, dbdir:Optional[Path | str]=None):
+        if connstr is not None: 
+            if dbdir is not None: raise RuntimeError('cannot specify a connection string and to start a local database')
+        else:
+            try:
+                cls.conndb()
+                raise RuntimeError('Local database already started(1)')
+            except (mongoerrs.ServerSelectionTimeoutError, mongoerrs.ConnectionFailure): pass
+        return super().__new__(cls)
+
+    def __init__(self, connstr:Optional[str]=None, dbdir:Optional[Path | str]=None):
+        # clean and store arguments
+        self.connstr = connstr if connstr is not None else 'localhost:27017'
+        self.dbdir = Path(dbdir) if dbdir is not None else Path('yaatdb_local')
+
+        # connect db (None connection string means start the database - connect via localhost)
+        self.dbc, self.mongo_proc = self.startlocdb(self.dbdir) if connstr is None else (self.conndb(self.connstr), None)
+
+        # get the database from the client connection
+        self.db = self.dbc[self.db_name]
+
+    # database
+
+    @classmethod
+    def conndb(cls, url:Optional[str]=None) -> MongoClient:
+        (c := MongoClient(url, serverSelectionTimeoutMS=5000))['admin'].command('ping')
+        return c
+
+    @classmethod
+    def startlocdb(cls, dbdir:Path) -> Tuple[MongoClient, Popen]:
+        dbdir.mkdir(parents=True, exist_ok=True)
+        try: 
+            cls.conndb()
+            assert False, 'Local database already started(2)'
+        except (mongoerrs.ServerSelectionTimeoutError, mongoerrs.ConnectionFailure):
+            try: mongo_proc = Popen(['mongod', '--dbpath', str(dbdir.absolute())], stdout=DEVNULL, stderr=DEVNULL) # NOTE: --logpath
+            except Exception as e: print(f"mongod failed: {e}"); raise
+            atexit.register(functools.partial(killproc, mongo_proc))
+            return cls.conndb(), mongo_proc
+
+    def __del__(self):
+        if self.mongo_proc is not None: killproc(self.mongo_proc)

@@ -1,8 +1,11 @@
-from yaat.maester import TimeRange, TIME_FORMAT, DATE_FORMAT
+from yaat.util import killproc, gettime, DEBUG
+from yaat.maester import Maester, TimeRange, TIME_FORMAT, DATE_FORMAT
 from datetime import date, time, timedelta
 from zoneinfo import ZoneInfo
-import unittest
+from pathlib import Path
+import unittest, atexit, functools, shutil
 
+def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
 
 class TestTimeRange(unittest.TestCase):
     start, end, times = date(2020, 1, 1), date(2020, 1, 1), [time(), time(1)]
@@ -49,6 +52,51 @@ class TestTimeRange(unittest.TestCase):
         self.assertEqual(len(TimeRange(start, start + timedelta(days=5), self.times).timestamps), 5 * len(self.times)) # saturday
         self.assertEqual(len(TimeRange(start, start + timedelta(days=6), self.times).timestamps), 5 * len(self.times)) # sunday
         self.assertEqual(len(TimeRange(start, start + timedelta(days=7), self.times).timestamps), 6 * len(self.times)) # monday
-        
-        
 
+
+class TestMaesterDB(unittest.TestCase):
+
+    # setup
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.dp = Path(f"twork/twork_{cls.__name__}_{gettime()}")
+        cls.dp.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if not DEBUG: shutil.rmtree(cls.dp)
+
+    def setUp(self) -> None:
+        self.m = None
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        if hasattr(self, 'm'): del self.m
+        return super().tearDown()
+    
+    # tests
+
+    def test_connstr_and_dbdir(self):
+        with self.assertRaises(RuntimeError): Maester('some connstr', 'some dbdir')
+
+    def test_local_db(self):
+        self.m = Maester(dbdir=self.dp / (getid(self) + '_db'))
+
+    def test_cleanup(self):
+        self.m = Maester(dbdir=self.dp / (getid(self) + '_db'))
+        proc = self.m.mongo_proc
+        del self.m
+        self.assertEqual(proc.poll(), 0)
+
+    def test_2_dbs(self):
+        self.m = Maester(dbdir=self.dp / (getid(self) + '_db1'))
+        with self.assertRaises(RuntimeError):  Maester(dbdir=self.dp / (getid(self) + '_db2'))
+    
+    def test_connstr(self):
+        _, proc = Maester.startlocdb(self.dp / (getid(self) + '_db'))
+        atexit.register(functools.partial(killproc, proc))
+        self.m = Maester('localhost:27017')
+        del self.m
+        self.assertNotEqual(proc.poll(), 0)
+        killproc(proc)
