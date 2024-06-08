@@ -50,15 +50,6 @@ class Maester:
     alpha_key:str='LLE2E6Y7KG1UIS8R'
     alpha_url: str = 'https://www.alphavantage.co/query?'
 
-    # collection schemas
-
-    timestamps_schema: Dict = {
-        'title': 'Timestamps for merging',
-        'required': ['timestamp'],
-        'properties': {'timestamp': {'bsonType': 'date'},
-        }
-    }
-
     tickers_schema: Dict = {
         'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
         'required': ['symbol', 'timestamp', 'open', 'close', 'high', 'low', 'volume'],
@@ -106,12 +97,6 @@ class Maester:
         self.tickers.create_index({'symbol':1, 'timestamp':1}, unique=True)
         self.tickers.create_index({'symbol':1})
         self.tickers.create_index({'timestamp':1})
-
-        # create the interval times collection
-        self.timestamps = create_collection('timestamps', self.timestamps_schema)
-        self.timestamps.create_index({'timestamp':1}, unique=True)
-
-    # tickers and timestamps
 
     @staticmethod
     def get_ts_agg(tr: TimeRange) -> List[Dict]:

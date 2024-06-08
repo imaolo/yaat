@@ -102,7 +102,7 @@ class TestMaesterDB(unittest.TestCase):
         killproc(proc)
 
 
-class TestMaesterColls(unittest.TestCase):
+class TestMaester(unittest.TestCase):
     start, end, times = date(2024, 6, 3), date(2024, 6, 3), [time(), time(1)]
 
     # setup
@@ -120,12 +120,10 @@ class TestMaesterColls(unittest.TestCase):
     
     def setUp(self) -> None:
         self.maester.tickers.delete_many({})
-        self.maester.timestamps.delete_many({})
         return super().setUp()
 
     def tearDown(self) -> None:
         self.maester.tickers.delete_many({})
-        self.maester.timestamps.delete_many({})
         return super().tearDown()
 
     # tests
@@ -138,34 +136,9 @@ class TestMaesterColls(unittest.TestCase):
             'symbol_1': {'key': [('symbol', 1)], 'v': 2},
             'symbol_1_timestamp_1': {'key': [('symbol', 1), ('timestamp', 1)],'unique': True,'v': 2}})
 
-    def test_timestamps_coll_info(self):
-        self.assertIn('timestamps', self.maester.db.list_collection_names())
-        self.assertDictEqual(self.maester.timestamps.index_information(),{
-            '_id_': {'key': [('_id', 1)], 'v': 2},
-            'timestamp_1': {'key': [('timestamp', 1)], 'unique': True, 'v': 2}})
-
     def test_tickers_schema_bad_doc(self):
         with self.assertRaises(mongoerrs.WriteError): self.maester.tickers.insert_one({'dummy': 'doc'})
 
-    def test_timestamps_schema_bad_doc(self):
-        with self.assertRaises(mongoerrs.WriteError): self.maester.timestamps.insert_one({'dummy': 'doc'})
-
     def test_tickers_duplicate_doc(self):
-        self.maester.tickers.insert_one(doc:={'symbol': 'some field', 'datetime': datetime.now(), 'open': 1.0, 'close': 1.0, 'high': 1.0, 'low': 1.0, 'volume': 1})
+        self.maester.tickers.insert_one(doc:={'symbol': 'some field', 'timestamp': datetime.now(), 'open': 1.0, 'close': 1.0, 'high': 1.0, 'low': 1.0, 'volume': 1})
         with self.assertRaises(mongoerrs.DuplicateKeyError): self.maester.tickers.insert_one(doc)
-
-    def test_tickers_duplicate_doc(self):
-        self.maester.timestamps.insert_one(doc:={'timestamp': datetime.now()})
-        with self.assertRaises(mongoerrs.DuplicateKeyError): self.maester.timestamps.insert_one(doc)
-
-    def test_get_timestamps_agg_stages(self):
-        tr = TimeRange(self.start, self.end, self.times)
-        self.maester.timestamps.insert_many({'timestamp': ts} for ts in tr.timestamps)
-        pl = self.maester.get_ts_agg(tr)
-        docs = list(self.maester.timestamps.aggregate(pl))
-        self.assertEqual(len(docs), len(tr.timestamps))
-        
-        new_dt = self.end + timedelta(days=1)
-        new_dt = datetime.combine(new_dt, time())
-        self.maester.timestamps.insert_one({'timestamp': new_dt})
-        self.assertEqual(len(docs), len(tr.timestamps))
