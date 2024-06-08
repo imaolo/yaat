@@ -27,9 +27,9 @@ class TimeRange:
         self.times = list(map(self.clean_time, self.times))
         self.calendar = mcal.get_calendar(self.calendar_name)
 
-        self.days = self.calendar.schedule(self.start, self.end).index
+        self.days: pd.DatetimeIndex = self.calendar.schedule(self.start, self.end).index
 
-        self.timestamps = self.days.repeat(len(self.times)) + pd.to_timedelta(self.times * len(self.days))
+        self.timestamps: pd.DatetimeIndex = self.days.repeat(len(self.times)) + pd.to_timedelta(self.times * len(self.days))
 
     @staticmethod
     def clean_date(d: date | str) -> str:
