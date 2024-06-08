@@ -59,10 +59,10 @@ class Maester:
 
     tickers_schema: Dict = {
         'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
-        'required': ['symbol', 'datetime', 'open', 'close', 'high', 'low', 'volume'],
+        'required': ['symbol', 'timestamp', 'open', 'close', 'high', 'low', 'volume'],
         'properties': {
             'symbol':     {'bsonType': 'string'},
-            'timestamps': {'bsonType': 'date'},
+            'timestamp': {'bsonType': 'date'},
             'open':       {'bsonType': 'double'},
             'close':      {'bsonType': 'double'},
             'high':       {'bsonType': 'double'},
@@ -146,3 +146,14 @@ class Maester:
 
     def __del__(self):
         if self.mongo_proc is not None: killproc(self.mongo_proc)
+
+    # data retrieval
+
+    def mine_alpha(self, tr:TimeRange, sym: str):
+        # get existing tickers
+        existing_tickers = pd.DataFrame(list(self.tickers.aggregate(self.get_ts_agg(tr) + [{'$match': {'ticker': sym}}])))
+
+        # get missing years and months
+        missing_mys = (tr.timestamps.difference(pd.DatetimeIndex(existing_tickers['timestamp'])) if len(existing_tickers) > 0 else tr.timestamps).to_period('M').unique()
+
+        for my in missing_mys: pass # TODO fetch
