@@ -138,14 +138,52 @@ class Maester:
 
     # alpha vantage functions
 
-    def mine_alpha(self, tr:TimeRange, sym: str):
+    @staticmethod
+    def get_tz(res: Dict) -> str: return res['Meta Data']['6. Time Zone']
+
+    @staticmethod
+    def get_data(res: Dict) -> Dict: return  res[(set(res.keys()) - set(['Meta Data'])).pop()]
+
+    # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']  - 'XLRE'
+    def mine_alpha(self, start:date, end: date, sym: str, freq_min:int):
+        assert freq_min in (1, 5, 15, 30, 60), f"{freq_min} is not a valid minute interval. Valid are 1, 5, 15, 30, 60."
+
+        # create the time range (make sample api call and get the unique times from it)
+        res = self.call_alpha(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f'{freq_min}min', extended_hours='false', month='2022-01', outputsize='full')
+        times = pd.unique(pd.DatetimeIndex(self.get_data(res).keys()).tz_localize(self.get_tz(res)).tz_convert('UTC').time)
+        tr = TimeRange(start, end, list(times))
+
         # get existing tickers
-        existing_tickers = pd.DataFrame(list(self.tickers.aggregate(self.get_ts_agg(tr) + [{'$match': {'ticker': sym}}])))
+        existing_tickers = pd.DataFrame(list(self.tickers.aggregate([{'$match': {'symbol': sym}}] + self.get_ts_agg(tr))))
 
-        # get missing years and months
-        missing_mys = (tr.timestamps.difference(pd.DatetimeIndex(existing_tickers['timestamp'])) if len(existing_tickers) > 0 else tr.timestamps).to_period('M').unique()
+        # get missing timestamps
+        missing_ts = tr.timestamps.difference(pd.DatetimeIndex(existing_tickers['timestamp'])) if len(existing_tickers) > 0 else tr.timestamps
+        missing_mys = missing_ts.to_period('M').unique().strftime('%Y-%m')
 
-        for my in missing_mys: pass # TODO fetch
+        # insert the missing tickers
+        for my in missing_mys:
+            # make api call
+            res = self.call_alpha(function='TIME_SERIES_INTRADAY', symbol=sym, interval=f'{freq_min}min', extended_hours='false', month=my, outputsize='full')
+
+            # get tickers as dataframe
+            tickers = pd.DataFrame.from_dict(self.get_data(res), orient='index')
+            ohlcv_names = tickers.columns
+            tickers.reset_index(inplace=True)
+            tickers.rename(columns={**{'index': 'timestamp'}, **{name:name.split(' ')[1] for name in ohlcv_names}}, inplace=True)
+
+            # process timezone
+            tickers['timestamp'] = pd.to_datetime(tickers['timestamp'], errors='raise').dt.tz_localize(self.get_tz(res), ambiguous='raise').dt.tz_convert('UTC').dt.tz_localize(None, ambiguous='raise')
+
+            # get only the missing tickers
+            tickers = tickers[tickers['timestamp'].isin(missing_ts)]
+
+            # set the datatypes
+            tickers[floatcols] = tickers[floatcols:=['open', 'close', 'high', 'low']].astype(float)
+            tickers['volume'] = tickers['volume'].astype(int)
+
+            # insert
+            tickers['symbol'] = sym
+            self.tickers.insert_many(tickers.to_dict('records'))
 
 
     @classmethod
