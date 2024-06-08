@@ -13,7 +13,7 @@ class TestTimeRange(unittest.TestCase):
 
     # should probably test clean_date and clean_time too but this mostly covers it
 
-    def test__bad_arg_types(self):
+    def test_bad_arg_types(self):
         with self.assertRaises(RuntimeError): TimeRange(1, 1, 1)
         with self.assertRaises(RuntimeError): TimeRange(self.start, 1, 1)
         with self.assertRaises(RuntimeError): TimeRange(1, self.end, 1)
@@ -103,6 +103,7 @@ class TestMaesterDB(unittest.TestCase):
 
 
 class TestMaesterColls(unittest.TestCase):
+    start, end, times = date(2024, 6, 3), date(2024, 6, 3), [time(), time(1)]
 
     # setup
 
@@ -116,6 +117,16 @@ class TestMaesterColls(unittest.TestCase):
     def tearDownClass(cls) -> None:
         del cls.maester
         if not DEBUG: shutil.rmtree(cls.dp)
+    
+    def setUp(self) -> None:
+        self.maester.tickers.delete_many({})
+        self.maester.timestamps.delete_many({})
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        self.maester.tickers.delete_many({})
+        self.maester.timestamps.delete_many({})
+        return super().tearDown()
 
     # tests
 
@@ -146,3 +157,15 @@ class TestMaesterColls(unittest.TestCase):
     def test_tickers_duplicate_doc(self):
         self.maester.timestamps.insert_one(doc:={'timestamp': datetime.now()})
         with self.assertRaises(mongoerrs.DuplicateKeyError): self.maester.timestamps.insert_one(doc)
+
+    def test_get_timestamps_agg_stages(self):
+        tr = TimeRange(self.start, self.end, self.times)
+        self.maester.timestamps.insert_many({'timestamp': ts} for ts in tr.timestamps)
+        pl = self.maester.get_ts_agg(tr)
+        docs = list(self.maester.timestamps.aggregate(pl))
+        self.assertEqual(len(docs), len(tr.timestamps))
+        
+        new_dt = self.end + timedelta(days=1)
+        new_dt = datetime.combine(new_dt, time())
+        self.maester.timestamps.insert_one({'timestamp': new_dt})
+        self.assertEqual(len(docs), len(tr.timestamps))

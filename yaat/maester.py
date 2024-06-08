@@ -109,6 +109,20 @@ class Maester:
         self.timestamps = create_collection('timestamps', self.timestamps_schema)
         self.timestamps.create_index({'timestamp':1}, unique=True)
 
+    @staticmethod
+    def get_ts_agg(tr: TimeRange) -> List[Dict]:
+        return  [
+            {'$addFields':{
+                'just_date': {'$dateToString': {'format': DATE_FORMAT, 'date': '$timestamp'}},
+                'just_time': {'$dateToString': {'format': TIME_FORMAT, 'date': '$timestamp'}}
+            }},
+            {'$match': {
+                'just_time': {'$in': tr.times},
+                'just_date': {'$in': tr.days.strftime(DATE_FORMAT).to_list()}
+            }},
+            {'$project': {'just_time': 0, 'just_date': 0}}
+        ]
+
     # database
 
     @classmethod
