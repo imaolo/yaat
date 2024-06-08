@@ -48,6 +48,29 @@ class TimeRange:
 class Maester:
     db_name: str = 'yaatdb'
 
+    # collection schemas
+
+    timestamps_schema: Dict = {
+        'title': 'Timestamps for merging',
+        'required': ['timestamp'],
+        'properties': {'timestamp': {'bsonType': 'date'},
+        }
+    }
+
+    tickers_schema: Dict = {
+        'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
+        'required': ['symbol', 'datetime', 'open', 'close', 'high', 'low', 'volume'],
+        'properties': {
+            'symbol':   {'bsonType': 'string'},
+            'datetime': {'bsonType': 'date'},
+            'open':     {'bsonType': 'double'},
+            'close':    {'bsonType': 'double'},
+            'high':     {'bsonType': 'double'},
+            'low':      {'bsonType': 'double'},
+            'volume':   {'bsonType': ['int', 'null']}
+        }
+    }
+
     # construction
 
     def __new__(cls, connstr:Optional[str]=None, dbdir:Optional[Path | str]=None):
@@ -70,6 +93,21 @@ class Maester:
 
         # get the database from the client connection
         self.db = self.dbc[self.db_name]
+
+        # helper
+        def create_collection(name, schema):
+            if name in self.db.list_collection_names(): return self.db[name]
+            else: return self.db.create_collection(name, validator={'$jsonSchema': schema})
+
+        # create the tickers collection
+        self.tickers = create_collection('tickers', self.tickers_schema)
+        self.tickers.create_index({'symbol':1, 'datetime':1}, unique=True)
+        self.tickers.create_index({'symbol':1})
+        self.tickers.create_index({'datetime':1})
+
+        # create the interval times collection
+        self.timestamps = create_collection('timestamps', self.timestamps_schema)
+        self.timestamps.create_index({'timestamp':1}, unique=True)
 
     # database
 
