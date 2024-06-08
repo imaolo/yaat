@@ -62,7 +62,7 @@ class Maester:
         'required': ['symbol', 'timestamp', 'open', 'close', 'high', 'low', 'volume'],
         'properties': {
             'symbol':     {'bsonType': 'string'},
-            'timestamp': {'bsonType': 'date'},
+            'timestamp':  {'bsonType': 'date'},
             'open':       {'bsonType': 'double'},
             'close':      {'bsonType': 'double'},
             'high':       {'bsonType': 'double'},
