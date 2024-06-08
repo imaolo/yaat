@@ -177,3 +177,19 @@ class TestMaester(unittest.TestCase):
     def test_alpha_get_times(self):
         expected = [time(20, 0), time(19, 0), time(18, 0), time(17, 0), time(16, 0), time(15, 0)]
         self.assertListEqual(expected, Maester.alpha_get_times(60))
+
+    def test_alpha_mine(self):
+        times = Maester.alpha_get_times(60)
+        tr = TimeRange(date(2020, 1, 1), date(2020, 2, 1), times)
+        self.maester.alpha_mine(tr.start, tr.end, 'IBM', 60)
+        self.assertEqual(self.maester.tickers.count_documents({}), len(tr.timestamps))
+
+        times = Maester.alpha_get_times(15)
+        tr = TimeRange(date(2020, 1, 1), date(2020, 2, 1), times)
+        self.maester.alpha_mine(tr.start, tr.end, 'IBM', 15)
+        self.assertEqual(self.maester.tickers.count_documents({}), len(tr.timestamps))
+
+        times = Maester.alpha_get_times(15)
+        tr = TimeRange(date(2020, 1, 1), date(2020, 2, 1), times)
+        self.maester.alpha_mine(tr.start, tr.end, 'SPY', 15)
+        self.assertEqual(self.maester.tickers.count_documents({}), len(tr.timestamps)*2)
