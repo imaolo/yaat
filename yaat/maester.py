@@ -1,4 +1,4 @@
-from yaat.util import killproc, DEBUG
+from yaat.util import killproc, fetchjson, myprint, DEBUG
 from dataclasses import dataclass
 from datetime import date, time, datetime
 from pymongo import MongoClient
@@ -47,6 +47,8 @@ class TimeRange:
 
 class Maester:
     db_name: str = 'yaatdb'
+    alpha_key:str='LLE2E6Y7KG1UIS8R'
+    alpha_url: str = 'https://www.alphavantage.co/query?'
 
     # collection schemas
 
@@ -157,3 +159,20 @@ class Maester:
         missing_mys = (tr.timestamps.difference(pd.DatetimeIndex(existing_tickers['timestamp'])) if len(existing_tickers) > 0 else tr.timestamps).to_period('M').unique()
 
         for my in missing_mys: pass # TODO fetch
+
+    @classmethod
+    def call_alpha(cls, **kwargs) -> Dict:
+        # construct the url
+        url = cls.alpha_url + ''.join(map(lambda kv: kv[0] + '=' + str(kv[1]) + '&', kwargs.items())) + f'apikey={cls.alpha_key}'
+        if DEBUG: print(f"call alpha: {url}")
+
+        # call it (with rate limit governance)
+        start = None
+        while start is None or (start is not None and (time() - start) < 62): # 75req/min
+            if 'Information' not in (data:=fetchjson(url)):
+                assert 'Error Message' not in data.keys(), f"{data} \n\n {url}"
+                if DEBUG: myprint("called alpha", data)
+                return data
+            if "higher API call volume" not in data['Information']: raise RuntimeError(data)
+            if start is None: start = time()
+        raise RuntimeError(data)
