@@ -61,13 +61,13 @@ class Maester:
         'title': 'OHCL(V) stock, currency, and crypto currency tickers (currencies in USD)',
         'required': ['symbol', 'datetime', 'open', 'close', 'high', 'low', 'volume'],
         'properties': {
-            'symbol':   {'bsonType': 'string'},
-            'datetime': {'bsonType': 'date'},
-            'open':     {'bsonType': 'double'},
-            'close':    {'bsonType': 'double'},
-            'high':     {'bsonType': 'double'},
-            'low':      {'bsonType': 'double'},
-            'volume':   {'bsonType': ['int', 'null']}
+            'symbol':     {'bsonType': 'string'},
+            'timestamps': {'bsonType': 'date'},
+            'open':       {'bsonType': 'double'},
+            'close':      {'bsonType': 'double'},
+            'high':       {'bsonType': 'double'},
+            'low':        {'bsonType': 'double'},
+            'volume':     {'bsonType': ['int', 'null']}
         }
     }
 
@@ -101,9 +101,9 @@ class Maester:
 
         # create the tickers collection
         self.tickers = create_collection('tickers', self.tickers_schema)
-        self.tickers.create_index({'symbol':1, 'datetime':1}, unique=True)
+        self.tickers.create_index({'symbol':1, 'timestamp':1}, unique=True)
         self.tickers.create_index({'symbol':1})
-        self.tickers.create_index({'datetime':1})
+        self.tickers.create_index({'timestamp':1})
 
         # create the interval times collection
         self.timestamps = create_collection('timestamps', self.timestamps_schema)

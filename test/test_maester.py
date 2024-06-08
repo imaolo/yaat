@@ -123,9 +123,9 @@ class TestMaesterColls(unittest.TestCase):
         self.assertIn('tickers', self.maester.db.list_collection_names())
         self.assertDictEqual(self.maester.tickers.index_information(),{
             '_id_': {'key': [('_id', 1)], 'v': 2},
-            'datetime_1': {'key': [('datetime', 1)], 'v': 2},
+            'timestamp_1': {'key': [('timestamp', 1)], 'v': 2},
             'symbol_1': {'key': [('symbol', 1)], 'v': 2},
-            'symbol_1_datetime_1': {'key': [('symbol', 1), ('datetime', 1)],'unique': True,'v': 2}})
+            'symbol_1_timestamp_1': {'key': [('symbol', 1), ('timestamp', 1)],'unique': True,'v': 2}})
 
     def test_timestamps_coll_info(self):
         self.assertIn('timestamps', self.maester.db.list_collection_names())
