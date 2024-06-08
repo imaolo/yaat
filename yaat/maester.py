@@ -109,6 +109,8 @@ class Maester:
         self.timestamps = create_collection('timestamps', self.timestamps_schema)
         self.timestamps.create_index({'timestamp':1}, unique=True)
 
+    # tickers and timestamps
+
     @staticmethod
     def get_ts_agg(tr: TimeRange) -> List[Dict]:
         return  [
