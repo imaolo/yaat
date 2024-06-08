@@ -143,6 +143,16 @@ class Maester:
     @staticmethod
     def alpha_get_data(res: Dict) -> Dict: return  res[(set(res.keys()) - {'Meta Data'}).pop()]
 
+    @staticmethod
+    def alpha_check_freq_min(freq_min:int):
+        if freq_min not in (1, 5, 15, 30, 60): raise RuntimeError(f"{freq_min} is not a valid minute interval. Valid are 1, 5, 15, 30, 60.")
+
+    @classmethod
+    def alpha_get_times(cls, freq_min:int) -> List[time]:
+        cls.alpha_check_freq_min(freq_min)
+        res = cls.alpha_call(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f'{freq_min}min', extended_hours='false', month='2022-01', outputsize='full')
+        return list(pd.unique(pd.DatetimeIndex(cls.alpha_get_data(res).keys()).tz_localize(cls.alpha_get_tz(res)).tz_convert('UTC').time))
+
     # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']  - 'XLRE'
     def alpha_mine(self, start:date, end: date, sym: str, freq_min:int):
         assert freq_min in (1, 5, 15, 30, 60), f"{freq_min} is not a valid minute interval. Valid are 1, 5, 15, 30, 60."
