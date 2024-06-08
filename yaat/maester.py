@@ -136,6 +136,8 @@ class Maester:
             {'$project': {'just_time': 0, 'just_date': 0}}
         ]
 
+    # alpha vantage functions
+
     def mine_alpha(self, tr:TimeRange, sym: str):
         # get existing tickers
         existing_tickers = pd.DataFrame(list(self.tickers.aggregate(self.get_ts_agg(tr) + [{'$match': {'ticker': sym}}])))
