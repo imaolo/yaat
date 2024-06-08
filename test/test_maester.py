@@ -1,9 +1,9 @@
 from yaat.util import killproc, gettime, DEBUG
 from yaat.maester import Maester, TimeRange, TIME_FORMAT, DATE_FORMAT
-from datetime import date, time, timedelta
+from datetime import date, time, datetime, timedelta
 from zoneinfo import ZoneInfo
 from pathlib import Path
-import unittest, atexit, functools, shutil
+import unittest, atexit, functools, shutil, pymongo.errors as mongoerrs
 
 def getid(tc:unittest.TestCase): return tc.id().split('.')[-1]
 
@@ -100,3 +100,59 @@ class TestMaesterDB(unittest.TestCase):
         del self.m
         self.assertNotEqual(proc.poll(), 0)
         killproc(proc)
+
+
+class TestMaesterColls(unittest.TestCase):
+
+    # setup
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.dp = Path(f"twork/twork_{cls.__name__}_{gettime()}")
+        cls.dp.mkdir(parents=True, exist_ok=True)
+        cls.maester = Maester(None, cls.dp / 'dbdir')
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        del cls.maester
+        if not DEBUG: shutil.rmtree(cls.dp)
+
+    def setUp(self) -> None:
+        self.maester.tickers.delete_many({})
+        self.maester.timestamps.delete_many({})
+        return super().setUp()
+
+    def tearDown(self) -> None:
+        self.maester.tickers.delete_many({})
+        self.maester.timestamps.delete_many({})
+        return super().tearDown()
+
+    # tests
+
+    def test_tickers_coll_info(self):
+        self.assertIn('tickers', self.maester.db.list_collection_names())
+        self.assertDictEqual(self.maester.tickers.index_information(),{
+            '_id_': {'key': [('_id', 1)], 'v': 2},
+            'datetime_1': {'key': [('datetime', 1)], 'v': 2},
+            'symbol_1': {'key': [('symbol', 1)], 'v': 2},
+            'symbol_1_datetime_1': {'key': [('symbol', 1), ('datetime', 1)],'unique': True,'v': 2}})
+
+    def test_timestamps_coll_info(self):
+        self.assertIn('timestamps', self.maester.db.list_collection_names())
+        self.assertDictEqual(self.maester.timestamps.index_information(),{
+            '_id_': {'key': [('_id', 1)], 'v': 2},
+            'timestamp_1': {'key': [('timestamp', 1)], 'unique': True, 'v': 2}})
+
+    def test_tickers_schema_bad_doc(self):
+        with self.assertRaises(mongoerrs.WriteError): self.maester.tickers.insert_one({'dummy': 'doc'})
+
+    def test_timestamps_schema_bad_doc(self):
+        with self.assertRaises(mongoerrs.WriteError): self.maester.timestamps.insert_one({'dummy': 'doc'})
+
+    def test_tickers_duplicate_doc(self):
+        self.maester.tickers.insert_one(doc:={'symbol': 'some field', 'datetime': datetime.now(), 'open': 1.0, 'close': 1.0, 'high': 1.0, 'low': 1.0, 'volume': 1})
+        with self.assertRaises(mongoerrs.DuplicateKeyError): self.maester.tickers.insert_one(doc)
+
+    def test_tickers_duplicate_doc(self):
+        self.maester.timestamps.insert_one(doc:={'timestamp': datetime.now()})
+        with self.assertRaises(mongoerrs.DuplicateKeyError): self.maester.timestamps.insert_one(doc)
