@@ -141,7 +141,7 @@ class Maester:
     def get_tz(res: Dict) -> str: return res['Meta Data']['6. Time Zone']
 
     @staticmethod
-    def get_data(res: Dict) -> Dict: return  res[(set(res.keys()) - set(['Meta Data'])).pop()]
+    def get_data(res: Dict) -> Dict: return  res[(set(res.keys()) - {'Meta Data'}).pop()]
 
     # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']  - 'XLRE'
     def mine_alpha(self, start:date, end: date, sym: str, freq_min:int):
