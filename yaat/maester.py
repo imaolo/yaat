@@ -155,7 +155,7 @@ class Maester:
 
     # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']  - 'XLRE'
     def alpha_mine(self, start:date, end: date, sym: str, freq_min:int):
-        assert freq_min in (1, 5, 15, 30, 60), f"{freq_min} is not a valid minute interval. Valid are 1, 5, 15, 30, 60."
+        self.alpha_check_freq_min(freq_min)
 
         # create the time range (make sample api call and get the unique times from it)
         res = self.alpha_call(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f'{freq_min}min', extended_hours='false', month='2022-01', outputsize='full')
