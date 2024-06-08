@@ -169,3 +169,7 @@ class TestMaester(unittest.TestCase):
         self.insert_dt_ticker(dt)
         docs = list(self.maester.tickers.aggregate(Maester.get_ts_agg(tr)))
         self.assertEqual(len(docs), 1)
+
+    def test_get_data(self):
+        res = Maester.call_alpha(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f"{60}min", extended_hours='false', month='2022-01')
+        self.assertIn('2022-01-06 12:00:00', Maester.get_data(res).keys())
