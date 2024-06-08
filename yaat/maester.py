@@ -98,20 +98,6 @@ class Maester:
         self.tickers.create_index({'symbol':1})
         self.tickers.create_index({'timestamp':1})
 
-    @staticmethod
-    def get_ts_agg(tr: TimeRange) -> List[Dict]:
-        return  [
-            {'$addFields':{
-                'just_date': {'$dateToString': {'format': DATE_FORMAT, 'date': '$timestamp'}},
-                'just_time': {'$dateToString': {'format': TIME_FORMAT, 'date': '$timestamp'}}
-            }},
-            {'$match': {
-                'just_time': {'$in': tr.times},
-                'just_date': {'$in': tr.days.strftime(DATE_FORMAT).to_list()}
-            }},
-            {'$project': {'just_time': 0, 'just_date': 0}}
-        ]
-
     # database
 
     @classmethod
@@ -136,6 +122,20 @@ class Maester:
 
     # data retrieval
 
+    @staticmethod
+    def get_ts_agg(tr: TimeRange) -> List[Dict]:
+        return  [
+            {'$addFields':{
+                'just_date': {'$dateToString': {'format': DATE_FORMAT, 'date': '$timestamp'}},
+                'just_time': {'$dateToString': {'format': TIME_FORMAT, 'date': '$timestamp'}}
+            }},
+            {'$match': {
+                'just_time': {'$in': tr.times},
+                'just_date': {'$in': tr.days.strftime(DATE_FORMAT).to_list()}
+            }},
+            {'$project': {'just_time': 0, 'just_date': 0}}
+        ]
+
     def mine_alpha(self, tr:TimeRange, sym: str):
         # get existing tickers
         existing_tickers = pd.DataFrame(list(self.tickers.aggregate(self.get_ts_agg(tr) + [{'$match': {'ticker': sym}}])))
@@ -144,6 +144,7 @@ class Maester:
         missing_mys = (tr.timestamps.difference(pd.DatetimeIndex(existing_tickers['timestamp'])) if len(existing_tickers) > 0 else tr.timestamps).to_period('M').unique()
 
         for my in missing_mys: pass # TODO fetch
+
 
     @classmethod
     def call_alpha(cls, **kwargs) -> Dict:
