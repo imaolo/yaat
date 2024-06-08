@@ -138,18 +138,18 @@ class Maester:
     # alpha vantage functions
 
     @staticmethod
-    def get_tz(res: Dict) -> str: return res['Meta Data']['6. Time Zone']
+    def alpha_get_tz(res: Dict) -> str: return res['Meta Data']['6. Time Zone']
 
     @staticmethod
-    def get_data(res: Dict) -> Dict: return  res[(set(res.keys()) - {'Meta Data'}).pop()]
+    def alpha_get_data(res: Dict) -> Dict: return  res[(set(res.keys()) - {'Meta Data'}).pop()]
 
     # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']  - 'XLRE'
-    def mine_alpha(self, start:date, end: date, sym: str, freq_min:int):
+    def alpha_mine(self, start:date, end: date, sym: str, freq_min:int):
         assert freq_min in (1, 5, 15, 30, 60), f"{freq_min} is not a valid minute interval. Valid are 1, 5, 15, 30, 60."
 
         # create the time range (make sample api call and get the unique times from it)
-        res = self.call_alpha(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f'{freq_min}min', extended_hours='false', month='2022-01', outputsize='full')
-        times = pd.unique(pd.DatetimeIndex(self.get_data(res).keys()).tz_localize(self.get_tz(res)).tz_convert('UTC').time)
+        res = self.alpha_call(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f'{freq_min}min', extended_hours='false', month='2022-01', outputsize='full')
+        times = pd.unique(pd.DatetimeIndex(self.alpha_get_data(res).keys()).tz_localize(self.alpha_get_tz(res)).tz_convert('UTC').time)
         tr = TimeRange(start, end, list(times))
 
         # get existing tickers
@@ -162,16 +162,16 @@ class Maester:
         # insert the missing tickers
         for my in missing_mys:
             # make api call
-            res = self.call_alpha(function='TIME_SERIES_INTRADAY', symbol=sym, interval=f'{freq_min}min', extended_hours='false', month=my, outputsize='full')
+            res = self.alpha_call(function='TIME_SERIES_INTRADAY', symbol=sym, interval=f'{freq_min}min', extended_hours='false', month=my, outputsize='full')
 
             # get tickers as dataframe
-            tickers = pd.DataFrame.from_dict(self.get_data(res), orient='index')
+            tickers = pd.DataFrame.from_dict(self.alpha_get_data(res), orient='index')
             ohlcv_names = tickers.columns
             tickers.reset_index(inplace=True)
             tickers.rename(columns={**{'index': 'timestamp'}, **{name:name.split(' ')[1] for name in ohlcv_names}}, inplace=True)
 
             # process timezone
-            tickers['timestamp'] = pd.to_datetime(tickers['timestamp'], errors='raise').dt.tz_localize(self.get_tz(res), ambiguous='raise').dt.tz_convert('UTC').dt.tz_localize(None, ambiguous='raise')
+            tickers['timestamp'] = pd.to_datetime(tickers['timestamp'], errors='raise').dt.tz_localize(self.alpha_get_tz(res), ambiguous='raise').dt.tz_convert('UTC').dt.tz_localize(None, ambiguous='raise')
 
             # get only the missing tickers
             tickers = tickers[tickers['timestamp'].isin(missing_ts)]
@@ -186,7 +186,7 @@ class Maester:
 
 
     @classmethod
-    def call_alpha(cls, **kwargs) -> Dict:
+    def alpha_call(cls, **kwargs) -> Dict:
         # construct the url
         url = cls.alpha_url + ''.join(map(lambda kv: kv[0] + '=' + str(kv[1]) + '&', kwargs.items())) + f'apikey={cls.alpha_key}'
         if DEBUG: print(f"call alpha: {url}")
