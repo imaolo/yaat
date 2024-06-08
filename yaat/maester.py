@@ -194,7 +194,6 @@ class Maester:
             tickers['symbol'] = sym
             self.tickers.insert_many(tickers.to_dict('records'))
 
-
     @classmethod
     def alpha_call(cls, **kwargs) -> Dict:
         # construct the url
