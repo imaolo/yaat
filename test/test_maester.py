@@ -177,7 +177,7 @@ class TestMaester(unittest.TestCase):
         self.assertEqual(len(docs), 1)
 
     def test_alpha_get_data(self):
-        res = Maester.alpha_call(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f"{60}min", extended_hours='false', month='2022-01')
+        res = Maester.alpha_call(Maester.alpha_get_api_str(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f"{60}min", extended_hours='false', month='2022-01'))
         self.assertIn('2022-01-06 12:00:00', Maester.alpha_get_data(res).keys())
 
     def test_alpha_get_times(self):

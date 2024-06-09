@@ -157,7 +157,8 @@ class Maester:
     @classmethod
     def alpha_get_times(cls, freq_min:int) -> List[time]:
         cls.alpha_check_freq_min(freq_min)
-        res = cls.alpha_call(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f'{freq_min}min', extended_hours='false', month='2022-01', outputsize='full')
+        url = cls.alpha_get_api_str(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f'{freq_min}min', extended_hours='false', month='2022-01', outputsize='full')
+        res = cls.alpha_call(url)
         return list(pd.unique(pd.DatetimeIndex(cls.alpha_get_data(res).keys()).tz_localize(cls.alpha_get_tz(res)).tz_convert('UTC').time))
 
     def alpha_mine(self, start:date, end: date, sym: str, freq_min:int):
@@ -178,7 +179,8 @@ class Maester:
         # insert the missing tickers
         for ym in missing_yms:
             # make api call
-            res = self.alpha_call(function='TIME_SERIES_INTRADAY', symbol=sym, interval=f'{freq_min}min', extended_hours='false', month=ym, outputsize='full')
+            url = self.alpha_get_api_str(function='TIME_SERIES_INTRADAY', symbol=sym, interval=f'{freq_min}min', extended_hours='false', month=ym, outputsize='full')
+            res = self.alpha_call(url)
 
             # get tickers as dataframe
             tickers = pd.DataFrame.from_dict(self.alpha_get_data(res), orient='index')
@@ -200,14 +202,14 @@ class Maester:
             tickers['symbol'] = sym
             self.tickers.insert_many(tickers.to_dict('records'))
 
-    @classmethod
-    def alpha_call(cls, **kwargs) -> Dict:
-        # construct the url
-        url = cls.alpha_url + ''.join(map(lambda kv: kv[0] + '=' + str(kv[1]) + '&', kwargs.items())) + f'apikey={cls.alpha_key}'
-        if DEBUG: print(f"call alpha: {url}")
 
-        # call it (with rate limit governance)
-        start = None
+    @classmethod
+    def alpha_get_api_str(cls, **kwargs) -> str: return cls.alpha_url + ''.join(map(lambda kv: kv[0] + '=' + str(kv[1]) + '&', kwargs.items())) + f'apikey={cls.alpha_key}'
+
+    @staticmethod
+    def alpha_call(url:str) -> Dict:
+        if DEBUG: print(f"call alpha: {url}")
+        start = None # call with rate limite governance
         while start is None or (start is not None and (time() - start) < 62): # 75req/min
             if 'Information' not in (data:=fetchjson(url)):
                 assert 'Error Message' not in data.keys(), f"{data} \n\n {url}"
