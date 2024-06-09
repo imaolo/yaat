@@ -163,10 +163,8 @@ class Maester:
     def alpha_mine(self, start:date, end: date, sym: str, freq_min:int):
         self.alpha_check_freq_min(freq_min)
 
-        # create the time range (make sample api call and get the unique times from it)
-        res = self.alpha_call(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f'{freq_min}min', extended_hours='false', month='2022-01', outputsize='full')
-        times = pd.unique(pd.DatetimeIndex(self.alpha_get_data(res).keys()).tz_localize(self.alpha_get_tz(res)).tz_convert('UTC').time)
-        tr = TimeRange(start, end, list(times))
+        # create the time range
+        tr = TimeRange(start, end, self.alpha_get_times(freq_min))
 
         # get existing tickers
         existing_tickers = pd.DataFrame(list(self.tickers.aggregate([{'$match': {'symbol': sym}}] + self.get_ts_agg(tr))))
