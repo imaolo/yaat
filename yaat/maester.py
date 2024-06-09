@@ -153,8 +153,8 @@ class Maester:
         res = cls.alpha_call(function='TIME_SERIES_INTRADAY', symbol='IBM', interval=f'{freq_min}min', extended_hours='false', month='2022-01', outputsize='full')
         return list(pd.unique(pd.DatetimeIndex(cls.alpha_get_data(res).keys()).tz_localize(cls.alpha_get_tz(res)).tz_convert('UTC').time))
 
-    # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']  - 'XLRE'
     def alpha_mine(self, start:date, end: date, sym: str, freq_min:int):
+        # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']  - 'XLRE'
         self.alpha_check_freq_min(freq_min)
 
         # create the time range (make sample api call and get the unique times from it)
