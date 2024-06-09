@@ -101,6 +101,12 @@ class TestMaesterDB(unittest.TestCase):
         self.assertNotEqual(proc.poll(), 0)
         killproc(proc)
 
+    def test_dbdir(self):
+        dbdir = self.dp / (getid(self) + '_db')
+        self.m = Maester(dbdir=self.dp / (getid(self) + '_db'))
+        m1 = Maester(connstr='localhost:27017')
+        self.assertIsNone(m1.dbdir)
+        self.assertEqual(self.m.dbdir, dbdir)
 
 class TestMaester(unittest.TestCase):
     start, end, times = date(2024, 6, 3), date(2024, 6, 3), [time(), time(1)]

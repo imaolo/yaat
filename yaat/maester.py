@@ -78,7 +78,8 @@ class Maester:
     def __init__(self, connstr:Optional[str]=None, dbdir:Optional[Path | str]=None):
         # clean and store arguments
         self.connstr = connstr if connstr is not None else 'localhost:27017'
-        self.dbdir = Path(dbdir) if dbdir is not None else Path('yaatdb_local')
+        if connstr is not None: self.dbdir = None
+        else: self.dbdir = Path(dbdir) if dbdir is not None else Path('yaatdb_local')
 
         # connect db (None connection string means start the database - connect via localhost)
         self.dbc, self.mongo_proc = self.startlocdb(self.dbdir) if connstr is None else (self.conndb(self.connstr), None)
