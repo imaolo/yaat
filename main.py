@@ -1,4 +1,3 @@
-from yaat.util import DEBUG
 from yaat.maester import Maester, TimeRange, DATE_FORMAT
 import argparse
 
@@ -28,10 +27,18 @@ if __name__ == '__main__':
     args = main_parser.parse_args()
 
     if args.cmd == 'mine':
-        if DEBUG: print(f"mining {args.symbols} from {args.start} to {args.end}")
+        print(f"mining {args.symbols} from {args.start} to {args.end}")
+
+        # start the maester
         m = Maester(args.db_connstr, args.db_dir)
+
+        print(f"number of tickers before mining: {m.tickers.count_documents({})}")
+
+        # mine!
         for sym in args.symbols:
-            if DEBUG: print(f"mining {sym}")
+            print(f"mining {sym}")
             m.alpha_mine(args.start, args.end, sym, args.freq_min)
+
+        print(f"number of tickers after mining: {m.tickers.count_documents({})}")
     else:
         raise RuntimeError(f"improper arguemnts {args}")
