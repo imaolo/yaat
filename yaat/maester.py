@@ -1,11 +1,15 @@
+from __future__ import annotations
 from yaat.util import killproc, fetchjson, myprint, DEBUG
 from dataclasses import dataclass
 from datetime import date, time, datetime
 from pymongo import MongoClient
 from subprocess import Popen, DEVNULL
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional, Tuple, TYPE_CHECKING
 from pathlib import Path
 import atexit, functools, pandas as pd, pymongo.errors as mongoerrs, pandas_market_calendars as mcal
+
+if TYPE_CHECKING:
+    from pymongo.collection import Collection
 
 DATE_FORMAT = '%Y-%m-%d'
 TIME_FORMAT = '%H:%M:%S'
@@ -88,7 +92,7 @@ class Maester:
         self.db = self.dbc[self.db_name]
 
         # helper
-        def create_collection(name, schema):
+        def create_collection(name, schema) -> Collection:
             if name in self.db.list_collection_names(): return self.db[name]
             else: return self.db.create_collection(name, validator={'$jsonSchema': schema})
 
