@@ -19,7 +19,7 @@ mine_parser = main_subparser.add_parser(n:='mine', help=f"{n} command help")
 mine_parser.add_argument('--symbols', nargs='+', required=True, help='tickers to mine in form "sym1 sym2 sym3')
 mine_parser.add_argument('--start', type=TimeRange.clean_date, required=True, help=f"start date in the format {DATE_FORMAT}")
 mine_parser.add_argument('--end', type=TimeRange.clean_date, required=True, help=f"end date in the format {DATE_FORMAT}")
-mine_parser.add_argument('--freq_min', default=60, help=f"frequency in minutes between tickers")
+mine_parser.add_argument('--freq_min', type=int, default=60, help=f"frequency in minutes between tickers")
 mine_parser.add_argument('--db_connstr', default=None, help=f"connection string for the database")
 mine_parser.add_argument('--db_dir', default=None, help=f"directory for the database")
 
