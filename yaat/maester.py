@@ -170,13 +170,15 @@ class Maester:
         existing_tickers = pd.DataFrame(list(self.tickers.aggregate([{'$match': {'symbol': sym}}] + self.get_ts_agg(tr))))
 
         # get missing timestamps
-        missing_ts = tr.timestamps.difference(pd.DatetimeIndex(existing_tickers['timestamp'])) if len(existing_tickers) > 0 else tr.timestamps
-        missing_mys = missing_ts.to_period('M').unique().strftime('%Y-%m')
+        missing_tss = tr.timestamps.difference(pd.DatetimeIndex(existing_tickers['timestamp'])) if len(existing_tickers) > 0 else tr.timestamps
+
+        # getting missing year-months
+        missing_yms = missing_tss.to_period('M').unique().strftime('%Y-%m')
 
         # insert the missing tickers
-        for my in missing_mys:
+        for ym in missing_yms:
             # make api call
-            res = self.alpha_call(function='TIME_SERIES_INTRADAY', symbol=sym, interval=f'{freq_min}min', extended_hours='false', month=my, outputsize='full')
+            res = self.alpha_call(function='TIME_SERIES_INTRADAY', symbol=sym, interval=f'{freq_min}min', extended_hours='false', month=ym, outputsize='full')
 
             # get tickers as dataframe
             tickers = pd.DataFrame.from_dict(self.alpha_get_data(res), orient='index')
@@ -188,7 +190,7 @@ class Maester:
             tickers['timestamp'] = pd.to_datetime(tickers['timestamp'], errors='raise').dt.tz_localize(self.alpha_get_tz(res), ambiguous='raise').dt.tz_convert('UTC').dt.tz_localize(None, ambiguous='raise')
 
             # get only the missing tickers
-            tickers = tickers[tickers['timestamp'].isin(missing_ts)]
+            tickers = tickers[tickers['timestamp'].isin(missing_tss)]
 
             # set the datatypes
             tickers[floatcols] = tickers[floatcols:=['open', 'close', 'high', 'low']].astype(float)
