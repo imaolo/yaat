@@ -86,6 +86,8 @@ class Maester:
         else: self.dbdir = Path(dbdir) if dbdir is not None else Path('yaatdb_local')
 
         # connect db (None connection string means start the database - connect via localhost)
+        # theres a bug here if either of these calls fail -> mongo_proc is undefined
+        self.mongo_proc = None
         self.dbc, self.mongo_proc = self.startlocdb(self.dbdir) if connstr is None else (self.conndb(self.connstr), None)
 
         # get the database from the client connection
