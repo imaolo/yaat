@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from typing import Any, List, Dict, Type
@@ -6,7 +5,6 @@ import subprocess, pprint, select, os, pickle, json, time, requests
 
 def getenv(key:str, default=None) -> Any: return os.getenv(key, default) if default is not None else os.environ[key]
 
-load_dotenv()
 DEBUG = getenv("DEBUG", 0)
 ROOT = getenv('ROOT', ".yaat")
 DBNAME = getenv('DBNAME', 'yaatdb')
