@@ -1,9 +1,4 @@
-from yaat.miner import Miner
-
-# dt = datetime(1,1,1,0, tzinfo=ZoneInfo('US/Eastern'))
-
-Miner.mine_alpha()
-
+from yaat.maester import Maester
 
 # from yaat.maester2 import Maester2
 # from yaat.maester import Maester
