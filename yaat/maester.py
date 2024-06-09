@@ -119,7 +119,7 @@ class Maester:
     def __del__(self):
         if self.mongo_proc is not None: killproc(self.mongo_proc)
 
-    # data retrieval
+    # query helpers
 
     @staticmethod
     def get_ts_agg(tr: TimeRange) -> List[Dict]:
