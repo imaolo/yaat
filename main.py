@@ -2,6 +2,10 @@ from yaat.util import DEBUG
 from yaat.maester import Maester, TimeRange, DATE_FORMAT
 import argparse
 
+### common usage ### 
+
+# nohup python3.11 main.py mine --start 2005-1-1 --end 2020-1-1 --symbols SPY XLK XLV XLY IBB XLF XLP XLE XLU XLI XLB --freq_min 1 --db_connstr localhost:27017 > mine.log 2>&1 &
+
 ### usage ### 
 
 # main parser
