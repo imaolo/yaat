@@ -154,7 +154,6 @@ class Maester:
         return list(pd.unique(pd.DatetimeIndex(cls.alpha_get_data(res).keys()).tz_localize(cls.alpha_get_tz(res)).tz_convert('UTC').time))
 
     def alpha_mine(self, start:date, end: date, sym: str, freq_min:int):
-        # ['SPY', 'XLK', 'XLV', 'XLY', 'IBB', 'XLF', 'XLP', 'XLE', 'XLU', 'XLI','XLB']  - 'XLRE'
         self.alpha_check_freq_min(freq_min)
 
         # create the time range (make sample api call and get the unique times from it)
