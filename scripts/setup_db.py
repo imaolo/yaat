@@ -42,7 +42,7 @@ coll.create_index({'window_start':1})
 
 # read each file into the database
 filenames = [fn for fn in FROM_DIR.rglob('*.csv.*')]
-for fn in tqdm.tqdm(filenames, desc="combining dataframes"): 
+for fn in tqdm.tqdm(filenames, desc="Insering dataframes into database"): 
     df = pd.read_csv(fn)
 
     # type casting
