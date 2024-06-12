@@ -70,8 +70,15 @@ for fn in tqdm.tqdm(filenames, desc="Downloading files"):
     # insert
     try: coll.insert_many(records, ordered=False)
     except Exception as e: print(f"failed processing: {fn}")
+print("insertion complete")
 
 # create indexes after writes
-coll.create_index({'ticker':1, 'window_start':1}, unique=True)
-coll.create_index({'ticker':1})
-coll.create_index({'window_start':1})
+
+coll.create_index(idx:={'ticker':1, 'window_start':1}, unique=True)
+print(f"created index: {idx}")
+
+coll.create_index(idx:={'ticker':1})
+print(f"created index: {idx}")
+
+coll.create_index(idx:={'window_start':1})
+print(f"created index: {idx}")
