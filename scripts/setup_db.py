@@ -68,11 +68,8 @@ for fn in tqdm.tqdm(filenames, desc="Downloading files"):
         record['transactions'] = Int64(record['transactions'])
 
     # insert
-    try:
-        coll.insert_many(records, ordered=False)
-    except Exception as e:
-        print(f"failed processing: {fn}")
-        print(e)
+    try: coll.insert_many(records, ordered=False)
+    except Exception as e: print(f"failed processing: {fn}")
 
 # create indexes after writes
 coll.create_index({'ticker':1, 'window_start':1}, unique=True)
