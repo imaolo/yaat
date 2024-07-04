@@ -16,8 +16,6 @@ class InformerArgs:
 
 class Informer:
 
-    class Args: pass
-
     def __init__(self, **kwargs):
         # enc_in, dec_in, and c_out must match input feature width, no reason to parameterize here
 
