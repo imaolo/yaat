@@ -1,5 +1,6 @@
 from typing import Optional
 from exp.exp_informer import Exp_Informer
+import torch
 
 class Informer:
 
@@ -19,6 +20,17 @@ class Informer:
         self.args_dict.pop('self', None)
         self.args = self.Args()
         for arg_name, arg_value in self.args_dict.items(): setattr(self.args, arg_name, arg_value)
+
+        # set these manually
+        self.args.use_gpu = torch.cuda.is_available() and self.args.use_gpu
+        if self.args.use_gpu and self.args.use_multi_gpu:
+            self.args.devices = self.args.devices.replace(' ','')
+            device_ids = self.args.devices.split(',')
+            self.args.device_ids = [int(id_) for id_ in device_ids]
+            self.args.gpu = self.args.device_ids[0]
+        self.args.s_layers = [int(s_l) for s_l in self.args.s_layers.replace(' ','').split(',')]
+        self.args.detail_freq = self.args.freq
+        self.args.freq = self.args.freq[-1:]
 
         # create the model
         self.model = Exp_Informer(self.args)
