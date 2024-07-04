@@ -18,13 +18,7 @@ class Informer:
         self.args_dict = locals()
         self.args_dict.pop('self', None)
         self.args = self.Args()
-        for k, v in self.args_dict.items(): setattr(self.args, k ,v)
-
-        setting = '{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_at{}_fc{}_eb{}_dt{}_mx{}_{}_{}'.format(self.args.model, self.args.data, self.args.features, 
-            self.args.seq_len, self.args.label_len, self.args.pred_len,
-            self.args.d_model, self.args.n_heads, self.args.e_layers, self.args.d_layers, self.args.d_ff, self.args.attn, self.args.factor, 
-            self.args.embed, self.args.distil, self.args.mix, self.args.des, 0)
-        print(setting)
+        for arg_name, arg_value in self.args_dict.items(): setattr(self.args, arg_name, arg_value)
 
         # create the model
         self.model = Exp_Informer(self.args)
