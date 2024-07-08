@@ -41,14 +41,17 @@ class Informer:
         # create the model
         self.model = Exp_Informer(self.args)
 
-    def train(self) -> Path:
-        self.model.train(self.settings)
-        return Path.cwd() / self.args.checkpoints / self.settings / 'checkpoints.pth'
+    @property
+    def weights_file_path(self) -> Path: return Path.cwd() / self.args.checkpoints / self.settings / 'checkpoints.pth'
 
-    def test(self) -> Path:
-        self.model.test(self.settings)
-        return Path.cwd() / 'results' / self.settings
+    @property
+    def results_directory_path(self) -> Path: return Path.cwd() / 'results' / self.settings
 
-    def predict(self) -> Path:
-        self.model.predict(self.settings)
-        return Path.cwd() / 'results' / self.settings / 'real_prediction.npy'
+    @property
+    def predictions_file_path(self) -> Path: return Path.cwd() / 'results' / self.settings / 'real_prediction.npy'
+
+    def train(self) -> Path: self.model.train(self.settings)
+
+    def test(self) -> Path: self.model.test(self.settings)
+
+    def predict(self) -> Path: self.model.predict(self.settings)
