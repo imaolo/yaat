@@ -72,7 +72,8 @@ args = main_parser.parse_args()
 maester = Maester(connstr=args.connstr, dbdir=args.dbdir)
 
 if args.cmd == 'train':
-    # TODO - deploy on gpu instance if specified
+    # TODO - deploy on gpu instance if specified'
+    # TODO - add dataset support
 
     from yaat.informer import Informer, InformerArgs
 
