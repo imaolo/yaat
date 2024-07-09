@@ -2,7 +2,7 @@ from typing import Optional
 from dataclasses import dataclass
 from exp.exp_informer import Exp_Informer
 from pathlib import Path
-import torch
+import torch, io, copy, time
 
 @dataclass
 class InformerArgs:
@@ -16,11 +16,15 @@ class InformerArgs:
 
 class Informer:
 
-    def __init__(self, **kwargs):
+    def __init__(self, args:InformerArgs):
         # enc_in, dec_in, and c_out must match input feature width, no reason to parameterize here
 
-        # create the arguments object
-        self.args = InformerArgs(**kwargs)
+        # cache arguments
+        self.og_args = copy.copy(args)
+        self.args = copy.copy(args)
+
+        # record creation time
+        self.timestamp = time.time()
 
         # set these manually
         self.args.use_gpu = torch.cuda.is_available() and self.args.use_gpu
@@ -39,7 +43,7 @@ class Informer:
             self.args.factor, self.args.embed, self.args.distil, self.args.mix, self.args.des)
 
         # create the model
-        self.model = Exp_Informer(self.args)
+        self.exp_model = Exp_Informer(self.args)
 
     @property
     def weights_file_path(self) -> Path: return Path.cwd() / self.args.checkpoints / self.settings / 'checkpoints.pth'
@@ -50,8 +54,14 @@ class Informer:
     @property
     def predictions_file_path(self) -> Path: return Path.cwd() / 'results' / self.settings / 'real_prediction.npy'
 
-    def train(self) -> Path: self.model.train(self.settings)
+    @property
+    def byte_weights(self) -> bytes:
+        with io.BytesIO() as bytes_io:
+            torch.save(self.exp_model.model.state_dict(), bytes_io)
+            return bytes_io.getvalue()
 
-    def test(self) -> Path: self.model.test(self.settings)
+    def train(self) -> Path: self.exp_model.train(self.settings)
 
-    def predict(self) -> Path: self.model.predict(self.settings)
+    def test(self) -> Path: self.exp_model.test(self.settings)
+
+    def predict(self) -> Path: self.exp_model.predict(self.settings)
