@@ -37,10 +37,10 @@ class Informer:
         self.args.detail_freq = self.args.freq
         self.args.freq = self.args.freq[-1:]
 
-        self.settings = '{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_at{}_fc{}_eb{}_dt{}_mx{}_{}'.format(
+        self.settings = '{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_at{}_fc{}_eb{}_dt{}_mx{}_{}_ts{}'.format(
             self.args.model, self.args.data, self.args.features, self.args.seq_len, self.args.label_len, self.args.pred_len,
             self.args.d_model, self.args.n_heads, self.args.e_layers, self.args.d_layers, self.args.d_ff, self.args.attn,
-            self.args.factor, self.args.embed, self.args.distil, self.args.mix, self.args.des)
+            self.args.factor, self.args.embed, self.args.distil, self.args.mix, self.args.des, self.timestamp)
 
         # create the model
         self.exp_model = Exp_Informer(self.args)
