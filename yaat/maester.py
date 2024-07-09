@@ -30,12 +30,11 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights_file_id', 'dataset', 'settings', 'finished', 'timestamp', 'mse'],
+                        + ['weights_file_id', 'dataset', 'settings', 'timestamp', 'mse'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
-                        | {'weights_file_id': {'bsonType': 'objectId'}} # TODO - get rid of null
+                        | {'weights_file_id': {'bsonType': ['null', 'objectId']}} # TODO - get rid of null
                         | {'dataset': {'bsonType': ['null', 'object']}} # TODO - get rid of null
                         | {'settings': {'bsonType': 'string'}}
-                        | {'finished': {'bsonType': 'bool'}}
                         | {'timestamp': {'bsonType': 'timestamp'}}
                         | {'mse': {'bsonType': ['double', 'null']}}
     }
@@ -98,14 +97,10 @@ class Maester:
     # database ops
 
     def insert_informer(self, informer: Informer):
-        # store the weights
-        weights_file_id = self.fs.put(informer.byte_weights)
-
-        # do the insert
         self.informer_weights.insert_one(asdict(informer.og_args)
             | {'settings' : informer.settings}
             | {'timestamp': Timestamp(int(informer.timestamp), 1)}
-            | {'weights_file_id': weights_file_id}
+            | {'weights_file_id': None}
             | {'finished': False}
             | {'dataset': None}
             | {'mse': None})
@@ -132,20 +127,12 @@ class Maester:
         weights_doc = list(self.informer_weights.find(self.get_informer_query(informer)))
         assert len(weights_doc) == 1, "found {len(weights_doc)} informer weight documents"
         weights_doc = weights_doc[0]
-        assert not weights_doc['finished'], "model weights already updated"
 
-        # get the file id
-        old_weights_file_id = weights_doc['weights_file_id']
-
-        # delete old file
-        self.fs.delete(old_weights_file_id)
-
-        # upload new file
-        new_weights_file_id = self.fs.put(informer.byte_weights)
+        # upload weights file
+        weights_file_id = self.fs.put(informer.byte_weights)
 
         # set the new weights file id
-        self.informer_weights.update_one(self.get_informer_query(informer), {'$set': {'weights_file_id': new_weights_file_id, 'finished': True}})
-
+        self.informer_weights.update_one(self.get_informer_query(informer), {'$set': {'weights_file_id': weights_file_id}})
 
     # database helpers
 
