@@ -6,10 +6,13 @@ from pymongo import MongoClient
 from subprocess import Popen, DEVNULL
 from yaat.informer import InformerArgs
 from yaat.util import killproc
-import atexit, functools, pymongo.errors as mongoerrs
+from bson.timestamp import Timestamp
+from dataclasses import asdict
+import atexit, functools, gridfs, io, torch, pymongo.errors as mongoerrs
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection
+    from yaat.informer import Informer
 
 pybson_tmap = {
     str: 'string',
@@ -27,10 +30,14 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights', 'dataset'],
+                        + ['weights_file_id', 'dataset', 'settings', 'finished', 'timestamp', 'mse'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
-                        | {'weights': {'bsonType': 'binData'}}
-                        | {'dataset': {'bsonType': 'object'}}
+                        | {'weights_file_id': {'bsonType': 'objectId'}} # TODO - get rid of null
+                        | {'dataset': {'bsonType': ['null', 'object']}} # TODO - get rid of null
+                        | {'settings': {'bsonType': 'string'}}
+                        | {'finished': {'bsonType': 'bool'}}
+                        | {'timestamp': {'bsonType': 'timestamp'}}
+                        | {'mse': {'bsonType': ['double', 'null']}}
     }
 
     # construction
@@ -40,6 +47,7 @@ class Maester:
         self.dbdir = dbdir
 
         # database start or connect
+
         if self.connstr is None: # start
             try:
                 self.conndb(timeout=1000)
@@ -60,7 +68,11 @@ class Maester:
 
         self.informer_weights = create_collection('informer_weights', self.informer_weights_schema)
 
-    # database
+        # file store
+
+        self.fs = gridfs.GridFS(self.db)
+
+    # database config
 
     @classmethod
     def conndb(cls, url:Optional[str]=None, timeout:int=5000) -> MongoClient:
@@ -82,3 +94,60 @@ class Maester:
     def __del__(self):
         if hasattr(self, 'mongo_proc') and self.mongo_proc is not None and killproc is not None:
             killproc(self.mongo_proc)
+
+    # database ops
+
+    def insert_informer(self, informer: Informer):
+        # store the weights
+        weights_file_id = self.fs.put(informer.byte_weights)
+
+        # do the insert
+        self.informer_weights.insert_one(asdict(informer.og_args)
+            | {'settings' : informer.settings}
+            | {'timestamp': Timestamp(int(informer.timestamp), 1)}
+            | {'weights_file_id': weights_file_id}
+            | {'finished': False}
+            | {'dataset': None}
+            | {'mse': None})
+
+    def load_informer(self, informer: Informer):
+        # get the weights document
+        weights_doc = list(self.informer_weights.find(self.get_informer_query(informer)))
+        assert len(weights_doc) == 1, "found {len(weights_doc)} informer weight documents"
+        weights_doc = weights_doc[0]
+
+        # get the weights file
+        weights_file = self.fs.get(weights_doc['weights_file_id'])
+
+        # get the bytes
+        state_dict_bytes = weights_file.read()
+
+        # load the bytes into the model
+        with io.BytesIO(state_dict_bytes) as bytes_io:
+            state_dict_deser = torch.load(bytes_io)
+        informer.exp_model.model.load_state_dict(state_dict_deser)
+
+    def udpate_informer_weights(self, informer:Informer):
+        # get the weights document
+        weights_doc = list(self.informer_weights.find(self.get_informer_query(informer)))
+        assert len(weights_doc) == 1, "found {len(weights_doc)} informer weight documents"
+        weights_doc = weights_doc[0]
+        assert not weights_doc['finished'], "model weights already updated"
+
+        # get the file id
+        old_weights_file_id = weights_doc['weights_file_id']
+
+        # delete old file
+        self.fs.delete(old_weights_file_id)
+
+        # upload new file
+        new_weights_file_id = self.fs.put(informer.byte_weights)
+
+        # set the new weights file id
+        self.informer_weights.update_one(self.get_informer_query(informer), {'$set': {'weights_file_id': new_weights_file_id, 'finished': True}})
+
+
+    # database helpers
+
+    def get_informer_query(self, informer:Informer):
+        return {'settings': informer.settings, 'timestamp': Timestamp(int(informer.timestamp), 1)}
