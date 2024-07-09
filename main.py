@@ -1,4 +1,5 @@
 from yaat.maester import Maester
+from dataclasses import asdict
 import argparse
 
 # main parser
@@ -73,24 +74,25 @@ maester = Maester(connstr=args.connstr, dbdir=args.dbdir)
 if args.cmd == 'train':
     # TODO - deploy on gpu instance if specified
 
-    from yaat.informer import Informer
+    from yaat.informer import Informer, InformerArgs
 
-    # check if the model exists in the database already
-    # - specs
-    # - data trained on
-    # TODO
+    # get the args
+    train_arg_names = [action.dest for action in train_parser._actions]
+    train_args = {k: v for k, v in vars(args).items() if k in train_arg_names}
+    informer_args = InformerArgs(**train_args)
+    informer_args_dict = asdict(informer_args)
 
-    # get train sub-command arguments
-    train_args = [action.dest for action in train_parser._actions]
+    # create the model
+    informer = Informer(informer_args)
 
-    # create the model (filter out non-train sub-command arguments)
-    informer = Informer(**{k: v for k, v in vars(args).items() if k in train_args})
+    # store the model
+    maester.insert_informer(informer)
 
     # train the model
-    informer.train()
-    
-    # store the model in the database
-    # TODO
+    print("training model"); informer.train(); print("training complete")
+
+    # store the new weights
+    maester.udpate_informer_weights(informer)
 
 elif args.cmd == 'maester':
     pass # TODO - list the models available
