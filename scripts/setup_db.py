@@ -4,33 +4,14 @@ from bson.int64 import Int64
 from datetime import datetime, time
 from botocore.config import Config
 import pymongo, boto3, tqdm, tempfile, pandas as pd
+from yaat.maester import Maester
 
 # connect to the database
-dbc = pymongo.MongoClient('localhost:27017')
+maester = Maester(connstr='mongodb://Earl:pink-Flamingo1317@localhost:27017/')
 
-# get the yaat db
-db = dbc['yaatdb']
-
-# define the candles schema
-schema = {
-    'title': 'Candles every 1 minute',
-    'required': ['ticker', 'volume', 'open', 'close', 'high', 'low', 'window_start', 'transactions'],
-    'properties': {
-        'ticker':       {'bsonType': 'string'},
-        'volume':       {'bsonType': 'long'},
-        'open':         {'bsonType': 'double'},
-        'close':        {'bsonType': 'double'},
-        'high':         {'bsonType': 'double'},
-        'low':          {'bsonType': 'double'},
-        'window_start': {'bsonType': 'date'},
-        'transactions': {'bsonType': 'long'},
-    }
-}
-
-# create the candles collection
-collname = 'candles1min'
-assert collname not in (names:=db.list_collection_names()), names
-coll = db.create_collection(collname, validator={'$jsonSchema': schema})
+# clean the candles collection
+maester.candles1min.delete_many({})
+maester.candles1min.drop_indexes()
 
 # get s3 client
 s3 = boto3.Session(
@@ -68,17 +49,17 @@ for fn in tqdm.tqdm(filenames, desc="Downloading files"):
         record['transactions'] = Int64(record['transactions'])
 
     # insert
-    try: coll.insert_many(records, ordered=False)
+    try: maester.candles1min.insert_many(records, ordered=False)
     except Exception as e: print(f"failed processing: {fn}")
 print("insertion complete")
 
-# create indexes after writes
+# add the indexes back after the writes are completed   
 
-coll.create_index(idx:={'ticker':1, 'window_start':1}, unique=True)
+maester.candles1min.create_index(idx:={'ticker':1, 'window_start':1}, unique=True)
 print(f"created index: {idx}")
 
-coll.create_index(idx:={'ticker':1})
+maester.candles1min.create_index(idx:={'ticker':1})
 print(f"created index: {idx}")
 
-coll.create_index(idx:={'window_start':1})
+maester.candles1min.create_index(idx:={'window_start':1})
 print(f"created index: {idx}")
