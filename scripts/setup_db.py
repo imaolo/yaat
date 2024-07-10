@@ -56,8 +56,11 @@ for fn in tqdm.tqdm(filenames, desc="Downloading files"):
        record['transactions'] = Int64(record['transactions'])
 
    # insert
-   try: maester.candles1min.insert_many(records, ordered=False)
-   except Exception as e: print(f"failed processing: {fn} - {e}")
+   batch_size = 1000
+   for i in range(0, len(records), batch_size):
+      batch_records = records[i:i+batch_size]
+      try: maester.candles1min.insert_many(batch_records, ordered=False)
+      except Exception as e: print(f"failed processing: {fn} - {e}")
 print("insertion complete")
 
 # add the indexes back after the writes are completed   
