@@ -155,9 +155,6 @@ class Maester:
         informer.exp_model.model.load_state_dict(state_dict_deser)
 
     def set_informer_weights(self, informer:Informer):
-        # get the weights document
-        weights_doc = self.get_weights_doc(informer)
-
         # upload weights file
         weights_file_id = self.fs.put(informer.byte_weights)
 
@@ -165,9 +162,6 @@ class Maester:
         self.informer_weights.update_one(self.get_informer_query(informer), {'$set': {'weights_file_id': weights_file_id}})
 
     def set_informer_loss(self, informer: Informer):
-        # get the weights document
-        weights_doc = self.get_weights_doc(informer)
-
         # get the mse loss
         mse = float(np.load(informer.results_directory_path / 'metrics.npy')[1])
 
