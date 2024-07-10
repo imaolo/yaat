@@ -93,7 +93,7 @@ class Maester:
 
         self.informer_weights = create_collection('informer_weights', self.informer_weights_schema)
         self.datasets = create_collection('datasets', self.datasets_schema)
-        self.candles1min = create_collection('candles1min', self.datasets_schema)
+        self.candles1min = create_collection('candles1min', self.candles1min_schema)
 
         # create indexes
 
