@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Optional, TYPE_CHECKING
+from typing import Dict, Optional, Set, TYPE_CHECKING
 from dataclasses import fields
 from pathlib import Path
 from pymongo import MongoClient
@@ -8,7 +8,7 @@ from yaat.informer import InformerArgs
 from yaat.util import killproc
 from bson.timestamp import Timestamp
 from dataclasses import asdict
-import atexit, functools, gridfs, io, torch, pymongo.errors as mongoerrs
+import atexit, functools, gridfs, io, torch, numpy as np, pymongo.errors as mongoerrs
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection
@@ -39,6 +39,32 @@ class Maester:
                         | {'mse': {'bsonType': ['double', 'null']}}
     }
 
+    datasets_schema: Dict = {
+        'title': 'A collection of dataset documents describing datasets stored in gridfs',
+        'required': ['name', 'file_id', 'query', 'collection'],
+        'properties': {
+            'name': {'bsonType': 'string'},
+            'file_id': {'bsonType': 'objectId'},
+            'query': {'bsonType': 'object'},
+            'collection': {'bsonType': 'string'}
+        }
+    }
+
+    candles1min_schema = {
+        'title': 'Candles every 1 minute',
+        'required': ['ticker', 'volume', 'open', 'close', 'high', 'low', 'date', 'transactions'],
+        'properties': {
+            'ticker': {'bsonType': 'string'},
+            'volume': {'bsonType': 'long'},
+            'open': {'bsonType': 'double'},
+            'close': {'bsonType': 'double'},
+            'high': {'bsonType': 'double'},
+            'low': {'bsonType': 'double'},
+            'date': {'bsonType': 'date'},
+            'transactions': {'bsonType': 'long'},
+        }
+    }
+
     # construction
 
     def __init__(self, connstr:Optional[str]=None, dbdir:Optional[Path | str]=None):
@@ -66,6 +92,14 @@ class Maester:
             else: return self.db.create_collection(name, validator={'$jsonSchema': schema})
 
         self.informer_weights = create_collection('informer_weights', self.informer_weights_schema)
+        self.datasets = create_collection('datasets', self.datasets_schema)
+        self.candles1min = create_collection('candles1min', self.datasets_schema)
+
+        # create indexes
+
+        self.candles1min.create_index(idx:={'ticker':1, 'date':1}, unique=True)
+        self.candles1min.create_index(idx:={'ticker':1})
+        self.candles1min.create_index(idx:={'date':1})
 
         # file store
 
@@ -107,9 +141,7 @@ class Maester:
 
     def load_informer(self, informer: Informer):
         # get the weights document
-        weights_doc = list(self.informer_weights.find(self.get_informer_query(informer)))
-        assert len(weights_doc) == 1, "found {len(weights_doc)} informer weight documents"
-        weights_doc = weights_doc[0]
+        weights_doc = self.get_weights_doc(informer)
 
         # get the weights file
         weights_file = self.fs.get(weights_doc['weights_file_id'])
@@ -122,11 +154,9 @@ class Maester:
             state_dict_deser = torch.load(bytes_io)
         informer.exp_model.model.load_state_dict(state_dict_deser)
 
-    def udpate_informer_weights(self, informer:Informer):
+    def set_informer_weights(self, informer:Informer):
         # get the weights document
-        weights_doc = list(self.informer_weights.find(self.get_informer_query(informer)))
-        assert len(weights_doc) == 1, "found {len(weights_doc)} informer weight documents"
-        weights_doc = weights_doc[0]
+        weights_doc = self.get_weights_doc(informer)
 
         # upload weights file
         weights_file_id = self.fs.put(informer.byte_weights)
@@ -134,7 +164,29 @@ class Maester:
         # set the new weights file id
         self.informer_weights.update_one(self.get_informer_query(informer), {'$set': {'weights_file_id': weights_file_id}})
 
+    def set_informer_loss(self, informer: Informer):
+        # get the weights document
+        weights_doc = self.get_weights_doc(informer)
+
+        # get the mse loss
+        mse = float(np.load(informer.results_directory_path / 'metrics.npy')[1])
+
+        # set the mse loss
+        self.informer_weights.update_one(self.get_informer_query(informer), {'$set': {'mse': mse}})
+
     # database helpers
 
     def get_informer_query(self, informer:Informer):
         return {'settings': informer.settings, 'timestamp': Timestamp(int(informer.timestamp), 1)}
+    
+    def get_weights_doc(self, informer: Informer) -> Dict:
+        weights_doc = list(self.informer_weights.find(self.get_informer_query(informer)))
+        assert len(weights_doc) == 1, f"found {len(weights_doc)} informer weight documents"
+        return weights_doc[0]
+
+
+    # database properties
+
+    @property
+    def data_collections(self) -> Set[str]:
+        return set(self.db.list_collection_names()) - set(['informer_weights', 'datasets', 'fs.chunks', 'fs.files'])
