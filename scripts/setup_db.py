@@ -3,7 +3,7 @@
 from bson.int64 import Int64
 from datetime import datetime, time
 from botocore.config import Config
-import pymongo, boto3, tqdm, tempfile, pandas as pd
+import boto3, tqdm, tempfile, pandas as pd
 from yaat.maester import Maester
 
 # connect to the database
@@ -36,30 +36,37 @@ prefix = 'us_stocks_sip'
 temp_file_path = tempfile.NamedTemporaryFile(delete=False).name + '.csv.gz'
 filenames = [obj['Key'] for page in paginator.paginate(Bucket='flatfiles', Prefix=prefix) for obj in page['Contents'] if is_valid_fn(obj['Key'])]
 for fn in tqdm.tqdm(filenames, desc="Downloading files"): 
-    # dowload the file
-    s3.download_file('flatfiles', fn, temp_file_path)
+   # dowload the file
+   s3.download_file('flatfiles', fn, temp_file_path)
 
-    # process into list of dictionaries
-    df = pd.read_csv(temp_file_path)
-    df[floatcols] = df[floatcols:=['open', 'close', 'high', 'low']].astype(float)
-    df['window_start'] = pd.to_datetime(df['window_start'], unit='ns')
-    records = df.to_dict('records')  # long fields must be casted after to_dict - adds 7-10 seconds to each loop :(
-    for record in records:
-        record['volume'] = Int64(record['volume'])
-        record['transactions'] = Int64(record['transactions'])
+    # create the dataframe
+   df = pd.read_csv(temp_file_path)
 
-    # insert
-    try: maester.candles1min.insert_many(records, ordered=False)
-    except Exception as e: print(f"failed processing: {fn}")
+   # rename window start to date
+   df.rename(columns={'window_start': 'date'}, inplace=True)
+
+   # set the types
+   df[floatcols] = df[floatcols:=['open', 'close', 'high', 'low']].astype(float)
+   df['date'] = pd.to_datetime(df['date'], unit='ns')
+
+   # make into list of dicts
+   records = df.to_dict('records')  # long fields must be casted after to_dict - adds 7-10 seconds to each loop :(
+   for record in records:
+       record['volume'] = Int64(record['volume'])
+       record['transactions'] = Int64(record['transactions'])
+
+   # insert
+   try: maester.candles1min.insert_many(records, ordered=False)
+   except Exception as e: print(f"failed processing: {fn} - {e}")
 print("insertion complete")
 
 # add the indexes back after the writes are completed   
 
-maester.candles1min.create_index(idx:={'ticker':1, 'window_start':1}, unique=True)
+maester.candles1min.create_index(idx:={'ticker':1, 'date':1}, unique=True)
 print(f"created index: {idx}")
 
 maester.candles1min.create_index(idx:={'ticker':1})
 print(f"created index: {idx}")
 
-maester.candles1min.create_index(idx:={'window_start':1})
+maester.candles1min.create_index(idx:={'date':1})
 print(f"created index: {idx}")
