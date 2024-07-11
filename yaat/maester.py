@@ -31,23 +31,24 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights_file_id', 'dataset', 'settings', 'timestamp', 'mse'],
+                        + ['weights_file_id', 'dataset', 'settings', 'timestamp', 'mse', 'name'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
-                        | {'weights_file_id': {'bsonType': ['null', 'objectId']}} # TODO - get rid of null
-                        | {'dataset': {'bsonType': ['null', 'object']}} # TODO - get rid of null and make it a DBRef
+                        | {'weights_file_id': {'bsonType': ['null', 'objectId']}}
+                        | {'dataset': {'bsonType': 'string'}}
                         | {'settings': {'bsonType': 'string'}}
                         | {'timestamp': {'bsonType': 'timestamp'}}
                         | {'mse': {'bsonType': ['double', 'null']}}
+                        | {'name': {'bsonType': 'string'}}
     }
 
     # add tickers list, remove the query field
     datasets_schema: Dict = {
         'title': 'A collection of dataset documents describing datasets stored in gridfs',
-        'required': ['name', 'file_id', 'query', 'collection'],
+        'required': ['name', 'file_id', 'tickers', 'collection'],
         'properties': {
             'name': {'bsonType': 'string'},
+            'tickers': {'bsonType': 'array'},
             'file_id': {'bsonType': 'objectId'},
-            'query': {'bsonType': 'object'},
             'collection': {'bsonType': 'string'}
         }
     }
@@ -87,7 +88,13 @@ class Maester:
         self.dbc = self.conndb(self.connstr)
         self.db = self.dbc[self.db_name]
 
-        # database schemas
+        # drop old schemas
+
+        if cn:='candles1min' in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
+        if cn:='informer_weights' in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
+        if cn:='datasets' in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
+
+        # create schemas
 
         def create_collection(name, schema) -> Collection:
             if name in self.db.list_collection_names(): return self.db[name]
@@ -104,6 +111,8 @@ class Maester:
         self.candles1min.create_index(idx:={'date':1})
 
         self.datasets.create_index(idx:={'name':1}, unique=True)
+
+        self.informer_weights.create_index(idx:={'name':1}, unique=True)
 
         # file store
 
