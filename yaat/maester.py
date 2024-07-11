@@ -191,3 +191,7 @@ class Maester:
 
     def create_dataset(self, name:str, tickers:List[str]):
         pass # TODO
+
+        existing_dataset = self.datasets.find_one({'name':name})
+        if existing_dataset is not None: raise RuntimeError(f"dataset {name} already exists")
+
