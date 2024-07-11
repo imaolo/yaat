@@ -19,7 +19,6 @@ train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
 
 maester_parser.add_argument('--describe_tickers', nargs='+', type=str, default=None)
 maester_parser.add_argument('--coll', type=str, default='candles1min', help='which collection to look in (doesnt apply to all flags)')
-maester_parser.add_argument('--list_datasets', action='store_true', default=False, help='list datasets')
 maester_parser.add_argument('--list_tickers', action='store_true', default=False, help='list unique tickers')
 maester_parser.add_argument('--list_data_colls', action='store_true', default=False, help='list data collections')
 maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, help='list the top N most occuring tickers')
@@ -123,10 +122,6 @@ elif args.cmd == 'maester':
         # TODO - print count, start_date, and end_date
         for tick in args.describe_tickers:
             print(tick, maester.db[args.coll].count_documents({'ticker': tick}))
-
-    if args.list_datasets:
-        datasets = list(maester.datasets.find({}))
-        pprint([ds['name'] for ds in datasets], compact=True)
 
     if args.list_tickers:
         pprint(list(maester.db[args.coll].distinct('ticker')), compact=True)

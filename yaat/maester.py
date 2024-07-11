@@ -42,18 +42,6 @@ class Maester:
                         | {'name': {'bsonType': 'string'}}
     }
 
-    # add tickers list, remove the query field
-    datasets_schema: Dict = {
-        'title': 'A collection of dataset documents describing datasets stored in gridfs',
-        'required': ['name', 'file_id', 'tickers', 'collection'],
-        'properties': {
-            'name': {'bsonType': 'string'},
-            'tickers': {'bsonType': 'array'},
-            'file_id': {'bsonType': 'objectId'},
-            'collection': {'bsonType': 'string'}
-        }
-    }
-
     candles1min_schema = {
         'title': 'Candles every 1 minute',
         'required': ['ticker', 'volume', 'open', 'close', 'high', 'low', 'date', 'transactions'],
@@ -93,7 +81,6 @@ class Maester:
 
         if (cn:='candles1min') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
         if (cn:='informer_weights') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
-        if (cn:='datasets') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
 
         # create schemas
 
@@ -106,7 +93,6 @@ class Maester:
 
 
         self.informer_weights = create_collection('informer_weights', self.informer_weights_schema)
-        self.datasets = create_collection('datasets', self.datasets_schema)
         self.candles1min = create_collection('candles1min', self.candles1min_schema)
 
         # create indexes
@@ -114,8 +100,6 @@ class Maester:
         self.candles1min.create_index(idx:={'ticker':1, 'date':1}, unique=True)
         self.candles1min.create_index(idx:={'ticker':1})
         self.candles1min.create_index(idx:={'date':1})
-
-        self.datasets.create_index(idx:={'name':1}, unique=True)
 
         self.informer_weights.create_index(idx:={'name':1}, unique=True)
 
@@ -201,7 +185,7 @@ class Maester:
 
     @property
     def data_collections(self) -> Set[str]:
-        return set(self.db.list_collection_names()) - set(['informer_weights', 'datasets', 'fs.chunks', 'fs.files'])
+        return set(self.db.list_collection_names()) - set(['informer_weights', 'fs.chunks', 'fs.files'])
 
     # misc
 
