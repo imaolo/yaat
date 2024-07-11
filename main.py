@@ -23,7 +23,7 @@ maester_parser.add_argument('--coll', type=str, default='candles1min', help='whi
 maester_parser.add_argument('--list_datasets', action='store_true', default=False, help='list datasets')
 maester_parser.add_argument('--list_tickers', action='store_true', default=False, help='list unique tickers')
 maester_parser.add_argument('--list_data_colls', action='store_true', default=False, help='list data collections')
-maester_parser.add_argument('--list_tickers_by_count', type=int, default=None, help='list the top N most occuring tickers')
+maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, help='list the top N most occuring tickers')
 
 # create_dataset command arguments
 
@@ -120,7 +120,7 @@ elif args.cmd == 'maester':
     if args.describe_tickers is not None:
         # TODO - print count, start_date, and end_date
         for tick in args.describe_tickers:
-            print(tick, maester.candles1min.count_documents({'ticker': tick}))
+            print(tick, maester.db[args.coll].count_documents({'ticker': tick}))
 
     if args.list_datasets:
         datasets = list(maester.datasets.find({}))
@@ -133,8 +133,20 @@ elif args.cmd == 'maester':
         pprint(maester.data_collections)
 
     if args.list_tickers_by_counts is not None:
-        pass
-        # TODO - list tickers counts, top n
+        ticker_conts = list(maester.db[args.coll].aggregate([
+            {'$group': {
+                '_id': '$ticker',
+                'count': {'$sum': 1},
+            }},
+            {'$sort': {'count': -1}},
+            {'$project': {
+                'ticker': '$_id',
+                'count': 1,
+                '_id': 0
+            }},
+            {'$limit': args.list_tickers_by_counts}
+        ]))
+        pprint(ticker_conts)
 
 elif args.cmd == 'create_dataset':
 
