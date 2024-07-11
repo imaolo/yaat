@@ -135,7 +135,7 @@ elif args.cmd == 'maester':
         pprint(maester.data_collections)
 
     if args.list_tickers_by_counts is not None:
-        ticker_conts = list(maester.db[args.coll].aggregate([
+        ticker_counts = list(maester.db[args.coll].aggregate([
             {'$group': {
                 '_id': '$ticker',
                 'count': {'$sum': 1},
@@ -148,4 +148,5 @@ elif args.cmd == 'maester':
             }},
             {'$limit': args.list_tickers_by_counts}
         ]))
-        pprint(ticker_conts)
+        pprint(ticker_counts)
+    
