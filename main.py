@@ -13,7 +13,6 @@ main_parser.add_argument('--connstr', type=str, default=None, help='database con
 # sub - commands
 main_subparser = main_parser.add_subparsers(dest='cmd', required=True, help='yaat command help')
 maester_parser = main_subparser.add_parser(n:='maester', help=f"{n} command help")
-create_dataset_parser = main_subparser.add_parser(n:='create_dataset', help=f"{n} command help")
 train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
 
 # maester command arguments
@@ -24,11 +23,6 @@ maester_parser.add_argument('--list_datasets', action='store_true', default=Fals
 maester_parser.add_argument('--list_tickers', action='store_true', default=False, help='list unique tickers')
 maester_parser.add_argument('--list_data_colls', action='store_true', default=False, help='list data collections')
 maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, help='list the top N most occuring tickers')
-
-# create_dataset command arguments
-
-create_dataset_parser.add_argument('--tickers', nargs='+', type=str)
-create_dataset_parser.add_argument('--name', required=True, type=str)
 
 # train command arguments
 
@@ -150,13 +144,6 @@ elif args.cmd == 'maester':
             {'$limit': args.list_tickers_by_counts}
         ]))
         pprint(ticker_conts)
-
-elif args.cmd == 'create_dataset':
-
-    print(f"creating dataset for {args.tickers}")
-    maester.create_dataset(args.name, args.tickers)
-
-
 
 # graveyard
 
