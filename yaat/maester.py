@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Optional, Set, TYPE_CHECKING
+from typing import Dict, Optional, Set, List, TYPE_CHECKING
 from dataclasses import fields
 from pathlib import Path
 from pymongo import MongoClient
@@ -186,3 +186,8 @@ class Maester:
     @property
     def data_collections(self) -> Set[str]:
         return set(self.db.list_collection_names()) - set(['informer_weights', 'datasets', 'fs.chunks', 'fs.files'])
+
+    # misc
+
+    def create_dataset(self, name:str, tickers:List[str]):
+        pass # TODO
