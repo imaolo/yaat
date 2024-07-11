@@ -156,4 +156,5 @@ elif args.cmd == 'maester':
             if res.deleted_count > 0: print(f"deleted model {mod}")
             else: print(f"model {mod} dne")
         
+# TODO - predict
     
