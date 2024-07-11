@@ -98,8 +98,12 @@ class Maester:
         # create schemas
 
         def create_collection(name, schema) -> Collection:
-            if name in self.db.list_collection_names(): return self.db[name]
-            else: return self.db.create_collection(name, validator={'$jsonSchema': schema})
+            if name in self.db.list_collection_names():
+                self.db.command('collMod', name, validator={'$jsonSchema': schema})
+                return self.db[name]
+            else:
+                return self.db.create_collection(name, validator={'$jsonSchema': schema})
+
 
         self.informer_weights = create_collection('informer_weights', self.informer_weights_schema)
         self.datasets = create_collection('datasets', self.datasets_schema)
