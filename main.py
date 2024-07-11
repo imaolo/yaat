@@ -22,7 +22,7 @@ maester_parser.add_argument('--coll', type=str, default='candles1min', help='whi
 maester_parser.add_argument('--list_tickers', action='store_true', default=False, help='list unique tickers')
 maester_parser.add_argument('--list_data_colls', action='store_true', default=False, help='list data collections')
 maester_parser.add_argument('--list_models', action='store_true', default=False, help='list data collections')
-maester_parser.add_argument('--delete_model', type=str, default=None)
+maester_parser.add_argument('--delete_models', nargs='+', type=str, default=None)
 maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, help='list the top N most occuring tickers')
 
 # train command arguments
@@ -151,9 +151,10 @@ elif args.cmd == 'maester':
         model_docs = list(maester.informer_weights.find({}, {'name': 1, 'mse': 1, 'tickers': 1, 'timestamp': 1, '_id': 0}))
         pprint(model_docs)
 
-    if args.delete_model is not None:
-        res = maester.informer_weights.delete_one({'name': args.delete_model})
-        if res.deleted_count > 0: print(f"deleted model {args.delete_model}")
-        else: raise RuntimeError(f"model {args.delete_model} dne")
+    if args.delete_models is not None:
+        for mod in args.delete_models:
+            res = maester.informer_weights.delete_one({'name': mod})
+            if res.deleted_count > 0: print(f"deleted model {mod}")
+            else: print(f"model {mod} dne")
         
     
