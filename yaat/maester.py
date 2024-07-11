@@ -143,14 +143,15 @@ class Maester:
 
     # database ops
 
-    def insert_informer(self, informer: Informer):
+    def insert_informer(self, name:str, informer: Informer):
         self.informer_weights.insert_one(asdict(informer.og_args)
             | {'settings' : informer.settings}
             | {'timestamp': Timestamp(int(informer.timestamp), 1)}
             | {'weights_file_id': None}
             | {'finished': False}
             | {'dataset': None}
-            | {'mse': None})
+            | {'mse': None}
+            | {'name': name})
 
     def load_informer(self, informer: Informer):
         # get the weights document

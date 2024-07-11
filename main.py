@@ -32,6 +32,8 @@ create_dataset_parser.add_argument('--name', required=True, type=str)
 
 # train command arguments
 
+train_parser.add_argument('--name', type=str, required=True, help='name of this model, for human readability')
+
 train_parser.add_argument('--model', type=str, default='informer',help='model of experiment, options: [informer, informerstack, informerlight(TBD)]')
 
 train_parser.add_argument('--data', type=str, default='custom', help='data')
@@ -102,7 +104,7 @@ if args.cmd == 'train':
     informer = Informer(informer_args)
 
     # store the model
-    maester.insert_informer(informer)
+    maester.insert_informer(args.name, informer)
 
     # train the model
     print("training model"); informer.train(); print("training complete")
