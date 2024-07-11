@@ -14,6 +14,7 @@ main_parser.add_argument('--connstr', type=str, default=None, help='database con
 main_subparser = main_parser.add_subparsers(dest='cmd', required=True, help='yaat command help')
 maester_parser = main_subparser.add_parser(n:='maester', help=f"{n} command help")
 train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
+predict_parser = main_subparser.add_parser(n:='predict', help=f"{n} command help")
 
 # maester command arguments
 
@@ -24,6 +25,9 @@ maester_parser.add_argument('--list_data_colls', action='store_true', default=Fa
 maester_parser.add_argument('--list_models', action='store_true', default=False, help='list data collections')
 maester_parser.add_argument('--delete_models', nargs='+', type=str, default=None)
 maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, help='list the top N most occuring tickers')
+
+# predict command arguments
+predict_parser.add_argument('--model_name', type=str, required=True)
 
 # train command arguments
 
@@ -117,6 +121,10 @@ if args.cmd == 'train':
     # store the test's results
     maester.set_informer_loss(informer)
 
+elif args.cmd == 'predict': pass
+
+    # TODO
+
 elif args.cmd == 'maester':
 
     if args.describe_tickers is not None:
@@ -155,6 +163,3 @@ elif args.cmd == 'maester':
             res = maester.informer_weights.delete_one({'name': mod})
             if res.deleted_count > 0: print(f"deleted model {mod}")
             else: print(f"model {mod} dne")
-        
-# TODO - predict
-    
