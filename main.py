@@ -152,20 +152,20 @@ elif args.cmd == 'maester':
 elif args.cmd == 'create_dataset':
 
     print(f"creating dataset for {args.tickers}")
-
-    exist_dataset = maester.datasets.find_one({'name':args.name})
-    if exist_dataset is not None: raise RuntimeError(f"dataset {args.name} already exists")
-
-    ohlcvs = list(maester.candles1min.aggregate([
-        {'$match': {'ticker': {'$in': args.tickers}}}
-    ]))
-
-    pprint(ohlcvs)
+    maester.create_dataset(args.name, args.tickers)
 
 
 
-    # TODO - create the actual dataset (properly fill in missing info) using start_date, end_date, tickers
+# graveyard
 
+# exist_dataset = maester.datasets.find_one({'name':args.name})
+# if exist_dataset is not None: raise RuntimeError(f"dataset {args.name} already exists")
+
+# ohlcvs = list(maester.candles1min.aggregate([
+#     {'$match': {'ticker': {'$in': args.tickers}}}
+# ]))
+
+# pprint(ohlcvs)
 
 # maester.candles1min.database.command('collMod', maester.candles1min.name, validator={})
 # maester.candles1min.drop_indexes()
