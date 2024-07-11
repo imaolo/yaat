@@ -7,4 +7,4 @@
 # print(informer.predict())
 
 from yaat.maester import Maester
-m = Maester()
+m = Maester(connstr='mongodb://Earl:pink-Flamingo@52.91.137.11/')
