@@ -101,6 +101,8 @@ class Maester:
         self.candles1min.create_index(idx:={'ticker':1})
         self.candles1min.create_index(idx:={'date':1})
 
+        self.datasets.create_index(idx:={'name':1}, unique=True)
+
         # file store
 
         self.fs = gridfs.GridFS(self.db)
