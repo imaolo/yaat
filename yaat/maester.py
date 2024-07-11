@@ -33,7 +33,7 @@ class Maester:
                         + ['weights_file_id', 'dataset', 'settings', 'timestamp', 'mse'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
                         | {'weights_file_id': {'bsonType': ['null', 'objectId']}} # TODO - get rid of null
-                        | {'dataset': {'bsonType': ['null', 'object']}} # TODO - get rid of null
+                        | {'dataset': {'bsonType': ['null', 'object']}} # TODO - get rid of null and make it a DBRef
                         | {'settings': {'bsonType': 'string'}}
                         | {'timestamp': {'bsonType': 'timestamp'}}
                         | {'mse': {'bsonType': ['double', 'null']}}
