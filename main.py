@@ -147,7 +147,7 @@ elif args.cmd == 'maester':
         pprint(ticker_counts)
 
     if args.list_models:
-        model_docs = list(maester.informer_weights.find({}, {'name': 1, 'mse': 1, 'tickers': 1, 'timestamp': 1, '_id': 0}))
+        model_docs = list(maester.informer_weights.find({}, {'name': 1, 'mse': 1, 'tickers': 1, 'timestamp': 1, 'weights_file_id': 1, '_id': 0}))
         pprint(model_docs)
 
     if args.delete_models is not None:
