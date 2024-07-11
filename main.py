@@ -28,6 +28,7 @@ maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, 
 # create_dataset command arguments
 
 create_dataset_parser.add_argument('--tickers', nargs='+', type=str)
+create_dataset_parser.add_argument('--name', required=True, type=str)
 
 # train command arguments
 
@@ -152,7 +153,17 @@ elif args.cmd == 'create_dataset':
 
     print(f"creating dataset for {args.tickers}")
 
-    # TODO - describe each ticker
+    exist_dataset = maester.datasets.find_one({'name':args.name})
+    if exist_dataset is not None: raise RuntimeError(f"dataset {args.name} already exists")
+
+    ohlcvs = list(maester.candles1min.aggregate([
+        {'$match': {'ticker': {'$in': args.tickers}}}
+    ]))
+
+    pprint(ohlcvs)
+
+
+
     # TODO - create the actual dataset (properly fill in missing info) using start_date, end_date, tickers
 
 
