@@ -26,13 +26,13 @@ maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, 
 
 # train command arguments
 
+train_parser.add_argument('--tickers', type=str, required=True, nargs='+', help='ticker symbols to train on')
+
 train_parser.add_argument('--name', type=str, required=True, help='name of this model, for human readability')
 
 train_parser.add_argument('--model', type=str, default='informer',help='model of experiment, options: [informer, informerstack, informerlight(TBD)]')
 
 train_parser.add_argument('--data', type=str, default='custom', help='data')
-train_parser.add_argument('--root_path', type=str, default='./data/ETT/', help='root path of the data file')
-train_parser.add_argument('--data_path', type=str, default='ETTh1.csv', help='data file')    
 train_parser.add_argument('--features', type=str, default='M', help='forecasting task, options:[M, S, MS]; M:multivariate predict multivariate, S:univariate predict univariate, MS:multivariate predict univariate')
 train_parser.add_argument('--target', type=str, default='OT', help='target feature in S or MS task')
 train_parser.add_argument('--freq', type=str, default='h', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
@@ -88,10 +88,15 @@ if args.cmd == 'train':
 
     from yaat.informer import Informer, InformerArgs
 
-    # get the args
+    # get the dataset
+    print(f"retrieving the dataset for {args.tickers}")
+    dataset_size, dataset_path = maester.get_dataset(args.tickers)
+    print("dataset size: ", dataset_size)
+
+    # get the args (remove those not in InformerArgs)
     train_arg_names = [action.dest for action in train_parser._actions]
-    train_args = {k: v for k, v in vars(args).items() if k in train_arg_names}
-    informer_args = InformerArgs(**train_args)
+    train_args = {k: v for k, v in vars(args).items() if k in train_arg_names and k not in ['tickers', 'name']}
+    informer_args = InformerArgs(**(train_args | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)}))
     informer_args_dict = asdict(informer_args)
 
     # create the model
