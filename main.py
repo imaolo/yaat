@@ -1,5 +1,6 @@
 from yaat.maester import Maester
 from dataclasses import asdict
+from pprint import pprint
 import argparse
 
 # main parser
@@ -12,11 +13,23 @@ main_parser.add_argument('--connstr', type=str, default=None, help='database con
 # sub - commands
 main_subparser = main_parser.add_subparsers(dest='cmd', required=True, help='yaat command help')
 maester_parser = main_subparser.add_parser(n:='maester', help=f"{n} command help")
+create_dataset_parser = main_subparser.add_parser(n:='create_dataset', help=f"{n} command help")
 train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
 
-# The maester command just prints the models
+# maester command arguments
+
+maester_parser.add_argument('--describe_tickers', nargs='+', type=str, default=None)
+maester_parser.add_argument('--coll', type=str, default='candles1min', help='which collection to look in (doesnt apply to all flags)')
+maester_parser.add_argument('--list_datasets', action='store_true', default=False)
+maester_parser.add_argument('--list_tickers', action='store_true', default=False)
+maester_parser.add_argument('--list_data', action='store_true', default=False)
+
+# create_dataset command arguments
+
+create_dataset_parser.add_argument('--tickers', nargs='+', type=str)
 
 # train command arguments
+
 train_parser.add_argument('--model', type=str, default='informer',help='model of experiment, options: [informer, informerstack, informerlight(TBD)]')
 
 train_parser.add_argument('--data', type=str, default='custom', help='data')
@@ -93,9 +106,40 @@ if args.cmd == 'train':
     print("training model"); informer.train(); print("training complete")
 
     # store the new weights
-    maester.udpate_informer_weights(informer)
+    maester.set_informer_weights(informer)
+
+    # test the model
+    print("testing model"); informer.test(); print("testing complete")
+
+    # store the test's results
+    maester.set_informer_loss(informer)
 
 elif args.cmd == 'maester':
-    pass # TODO - list the models available
 
+    if args.describe_tickers is not None:
+        # TODO - print count, start_date, and end_date
+        for tick in args.describe_tickers:
+            print(tick, maester.candles1min.count_documents({'ticker': tick}))
+
+    if args.list_datasets:
+        datasets = list(maester.datasets.find({}))
+        pprint([ds['name'] for ds in datasets], compact=True)
+
+    if args.list_tickers:
+        pprint(list(maester.db[args.coll].distinct('ticker')), compact=True)
+
+    if args.list_data:
+        pprint(maester.data_collections)
+
+elif args.cmd == 'create_dataset':
+
+    print(f"creating dataset for {args.tickers}")
+
+    # TODO - describe each ticker
+    # TODO - create the actual dataset (properly fill in missing info) using start_date, end_date, tickers
+
+
+# maester.candles1min.database.command('collMod', maester.candles1min.name, validator={})
+# maester.candles1min.drop_indexes()
+# maester.candles1min.update_many({}, {'$rename': { 'window_start': 'date' } })
     
