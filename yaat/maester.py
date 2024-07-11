@@ -32,10 +32,10 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights_file_id', 'dataset', 'settings', 'timestamp', 'mse', 'name'],
+                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'mse', 'name'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
                         | {'weights_file_id': {'bsonType': ['null', 'objectId']}}
-                        | {'dataset': {'bsonType': 'string'}}
+                        | {'tickers': {'bsonType': 'array'}}
                         | {'settings': {'bsonType': 'string'}}
                         | {'timestamp': {'bsonType': 'timestamp'}}
                         | {'mse': {'bsonType': ['double', 'null']}}
@@ -144,13 +144,12 @@ class Maester:
 
     # database ops
 
-    def insert_informer(self, name:str, informer: Informer):
+    def insert_informer(self, name:str, tickers:List[str], informer: Informer):
         self.informer_weights.insert_one(asdict(informer.og_args)
             | {'settings' : informer.settings}
             | {'timestamp': Timestamp(int(informer.timestamp), 1)}
             | {'weights_file_id': None}
-            | {'finished': False}
-            | {'dataset': None}
+            | {'tickers': tickers}
             | {'mse': None}
             | {'name': name})
 

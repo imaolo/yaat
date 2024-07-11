@@ -103,7 +103,7 @@ if args.cmd == 'train':
     informer = Informer(informer_args)
 
     # store the model
-    maester.insert_informer(args.name, informer)
+    maester.insert_informer(args.name, args.tickers, informer)
 
     # train the model
     print("training model"); informer.train(); print("training complete")
