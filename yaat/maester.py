@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Dict, Optional, Set, List, TYPE_CHECKING
+from typing import Dict, Optional, Set, List, Tuple, TYPE_CHECKING
 from dataclasses import fields
 from pathlib import Path
 from pymongo import MongoClient
@@ -8,7 +8,8 @@ from yaat.informer import InformerArgs
 from yaat.util import killproc
 from bson.timestamp import Timestamp
 from dataclasses import asdict
-import atexit, functools, gridfs, io, torch, numpy as np, pymongo.errors as mongoerrs
+from functools import reduce
+import atexit, functools, gridfs, io, torch, tempfile, numpy as np, pymongo.errors as mongoerrs, pandas as pd
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection
@@ -90,9 +91,9 @@ class Maester:
 
         # drop old schemas
 
-        if cn:='candles1min' in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
-        if cn:='informer_weights' in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
-        if cn:='datasets' in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
+        if (cn:='candles1min') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
+        if (cn:='informer_weights') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
+        if (cn:='datasets') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
 
         # create schemas
 
@@ -201,9 +202,28 @@ class Maester:
 
     # misc
 
-    def create_dataset(self, name:str, tickers:List[str]):
-        pass # TODO
+    def get_dataset(self, tickers:List[str]) -> Tuple[int, Path]:
+        # prepend column names with ticker and drop the ticker column
+        dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
+        for tick, df in dfs.items():
+            df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
+                               'high': f'{tick}_high', 'low': f'{tick}_low', 'transactions': f'{tick}_transactions'},
+                               inplace=True)
+            df.drop('ticker', axis=1, inplace=True)
 
-        existing_dataset = self.datasets.find_one({'name':name})
-        if existing_dataset is not None: raise RuntimeError(f"dataset {name} already exists")
+        # merge the ticker dataframes
+        result_df = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), dfs.values())
 
+        # clean nulls
+        result_df.dropna(inplace=True)
+
+        # save to file
+        temp_file_path = tempfile.NamedTemporaryFile(delete=False).name + '.csv'
+        result_df.to_csv(temp_file_path)
+
+        # return size and filepath
+        return len(result_df), Path(temp_file_path)
+
+
+
+        
