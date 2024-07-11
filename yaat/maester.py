@@ -26,7 +26,8 @@ class Maester:
 
     def_dbdir = Path('yaatdb_local')
     db_name: str = 'yaatdb'
-    
+
+    # TODO - add name field
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
@@ -39,6 +40,7 @@ class Maester:
                         | {'mse': {'bsonType': ['double', 'null']}}
     }
 
+    # add tickers list, remove the query field
     datasets_schema: Dict = {
         'title': 'A collection of dataset documents describing datasets stored in gridfs',
         'required': ['name', 'file_id', 'query', 'collection'],
