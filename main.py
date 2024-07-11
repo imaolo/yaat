@@ -20,9 +20,10 @@ train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
 
 maester_parser.add_argument('--describe_tickers', nargs='+', type=str, default=None)
 maester_parser.add_argument('--coll', type=str, default='candles1min', help='which collection to look in (doesnt apply to all flags)')
-maester_parser.add_argument('--list_datasets', action='store_true', default=False)
-maester_parser.add_argument('--list_tickers', action='store_true', default=False)
-maester_parser.add_argument('--list_data', action='store_true', default=False)
+maester_parser.add_argument('--list_datasets', action='store_true', default=False, help='list datasets')
+maester_parser.add_argument('--list_tickers', action='store_true', default=False, help='list unique tickers')
+maester_parser.add_argument('--list_data_colls', action='store_true', default=False, help='list data collections')
+maester_parser.add_argument('--list_tickers_by_count', type=int, default=None, help='list the top N most occuring tickers')
 
 # create_dataset command arguments
 
@@ -128,8 +129,12 @@ elif args.cmd == 'maester':
     if args.list_tickers:
         pprint(list(maester.db[args.coll].distinct('ticker')), compact=True)
 
-    if args.list_data:
+    if args.list_data_colls:
         pprint(maester.data_collections)
+
+    if args.list_tickers_by_counts is not None:
+        pass
+        # TODO - list tickers counts, top n
 
 elif args.cmd == 'create_dataset':
 
