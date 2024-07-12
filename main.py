@@ -1,6 +1,7 @@
 from yaat.maester import Maester
 from dataclasses import asdict
 from pprint import pprint
+from datetime import datetime
 from yaat.informer import Informer, InformerArgs
 import argparse, io, torch
 
@@ -29,6 +30,7 @@ maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, 
 
 # predict command arguments
 predict_parser.add_argument('--model_name', type=str, required=True)
+predict_parser.add_argument('--start_date', type=str, default=datetime.now().strftime('%Y-%m-%d'))
 
 # train command arguments
 
@@ -128,7 +130,7 @@ elif args.cmd == 'predict':
     if model_doc is None: raise RuntimeError(f"model name {args.model_name} dne")
 
     # get the prediction data
-    last_date, dataset_path = maester.get_prediction_data(model_doc)
+    last_date, dataset_path = maester.get_prediction_data(args.start_date, model_doc)
     print("last prediction data date: ", last_date)
     print("prediction data path: ", dataset_path)
 

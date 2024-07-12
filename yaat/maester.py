@@ -218,9 +218,9 @@ class Maester:
         # return size and filepath
         return len(result_df), Path(temp_file_path)
 
-    def get_prediction_data(self, informer_doc: Dict) -> Tuple[str, Path]:
+    def get_prediction_data(self, start_date: str, informer_doc: Dict) -> Tuple[str, Path]:
         # create the ticker dataframes
-        curr_date = datetime.today()
+        curr_date = datetime.strptime(start_date, '%Y-%m-%d')
         dfs = {}
         for tick in informer_doc['tickers']:
             # grab the data
