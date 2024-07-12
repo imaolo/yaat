@@ -60,6 +60,18 @@ class Maester:
         }
     }
 
+    predictions_schema = {
+        'title': 'predictions',
+        'required': ['model_name', 'last_date', 'predictions', 'timestamp'],
+        'properties': {
+            'model_name': {'bsonType': 'string'},
+            'last_date': {'bsonType': 'date'},
+            'predictions': {'bsonType': 'array'},
+            'timestamp': {'bsonType': 'date'},
+
+        }
+    }
+
     # construction
 
     def __init__(self, connstr:Optional[str]=None, dbdir:Optional[Path | str]=None):
@@ -84,6 +96,7 @@ class Maester:
 
         if (cn:='candles1min') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
         if (cn:='informer_weights') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
+        if (cn:='predictions') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
 
         # create schemas
 
@@ -97,6 +110,7 @@ class Maester:
 
         self.informer_weights = create_collection('informer_weights', self.informer_weights_schema)
         self.candles1min = create_collection('candles1min', self.candles1min_schema)
+        self.predictions = create_collection('predictions', self.predictions_schema)
 
         # create indexes
 
@@ -260,7 +274,24 @@ class Maester:
         result_df.to_csv(temp_file_path)
 
         # return size and filepath
-        return result_df.tail(1)['date'], Path(temp_file_path)
+        return result_df.tail(1)['date'].values[0], Path(temp_file_path)
+    
+
+    def store_predictions(self, model_name:str, pred_date:str, pred_fp:Path) -> datetime:
+
+        preds = np.load(pred_fp)
+        print(preds.shape)
+        print(preds[0][0][0])
+        timestamp = datetime.now()
+
+        self.predictions.insert_one({
+            'model_name': model_name,
+            'last_date': datetime.strptime(pred_date, '%Y-%m-%d %H:%M:%S'),
+            'predictions': preds.tolist(),
+            'timestamp': timestamp
+        })
+
+        return timestamp
 
 
         
