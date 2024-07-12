@@ -157,7 +157,9 @@ elif args.cmd == 'predict':
     # do prediction
     informer.predict()
 
-    # TODO - store predictions
+    # store predictions
+    maester.store_predictions(args.model_name, last_date, informer.predictions_file_path)
+
 
 elif args.cmd == 'maester':
 
