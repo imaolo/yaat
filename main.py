@@ -1,7 +1,8 @@
 from yaat.maester import Maester
 from dataclasses import asdict
 from pprint import pprint
-import argparse
+from yaat.informer import Informer, InformerArgs
+import argparse, io, torch
 
 # main parser
 main_parser = argparse.ArgumentParser(description='[YAAT] Yet Another Automated Trader')
@@ -90,12 +91,11 @@ maester = Maester(connstr=args.connstr, dbdir=args.dbdir)
 if args.cmd == 'train':
     # TODO - deploy on gpu instance if specified'
 
-    from yaat.informer import Informer, InformerArgs
-
     # get the dataset
     print(f"retrieving the dataset for {args.tickers}")
     dataset_size, dataset_path = maester.get_dataset(args.tickers)
     print("dataset size: ", dataset_size)
+    print("dataset path: ", dataset_path)
 
     # get the args (remove those not in InformerArgs)
     train_arg_names = [action.dest for action in train_parser._actions]
@@ -121,9 +121,39 @@ if args.cmd == 'train':
     # store the test's results
     maester.set_informer_loss(informer)
 
-elif args.cmd == 'predict': pass
+elif args.cmd == 'predict':
 
-    # TODO
+    # get the informer document
+    model_doc = maester.informer_weights.find_one({'name': args.model_name})
+    if model_doc is None: raise RuntimeError(f"model name {args.model_name} dne")
+
+    # get the prediction data
+    last_date, dataset_path = maester.get_prediction_data(model_doc)
+
+    # get the args
+    train_arg_names = [action.dest for action in train_parser._actions]
+    train_args = {k: v for k, v in model_doc.items() if k in train_arg_names and k not in ['tickers', 'name']}
+    informer_args = InformerArgs(**(train_args | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)}))
+    informer_args_dict = asdict(informer_args)
+
+    # create the model
+    informer = Informer(informer_args)
+
+    # get the weights file
+    weights_file = maester.fs.get(model_doc['weights_file_id'])
+
+    # get the bytes
+    state_dict_bytes = weights_file.read()
+
+    # load the bytes into the model
+    with io.BytesIO(state_dict_bytes) as bytes_io:
+        state_dict_deser = torch.load(bytes_io)
+    informer.exp_model.model.load_state_dict(state_dict_deser)
+
+    # do prediction
+    informer.predict()
+
+    # TODO - store predictions
 
 elif args.cmd == 'maester':
 
