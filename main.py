@@ -129,6 +129,8 @@ elif args.cmd == 'predict':
 
     # get the prediction data
     last_date, dataset_path = maester.get_prediction_data(model_doc)
+    print("last prediction data date: ", last_date)
+    print("prediction data path: ", dataset_path)
 
     # get the args
     train_arg_names = [action.dest for action in train_parser._actions]
