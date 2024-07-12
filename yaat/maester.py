@@ -9,6 +9,9 @@ from yaat.util import killproc
 from bson.timestamp import Timestamp
 from dataclasses import asdict
 from functools import reduce
+from polygon import RESTClient
+from pprint import pprint
+from datetime import datetime, timedelta
 import atexit, functools, gridfs, io, torch, tempfile, numpy as np, pymongo.errors as mongoerrs, pandas as pd
 
 if TYPE_CHECKING:
@@ -106,6 +109,10 @@ class Maester:
         # file store
 
         self.fs = gridfs.GridFS(self.db)
+
+        # polygon - fuqZHZzJdzJpYq2kMRxZTI42N1nPlxKj
+
+        self.polygon = RESTClient(api_key='fuqZHZzJdzJpYq2kMRxZTI42N1nPlxKj')
 
     # database config
 
@@ -211,6 +218,49 @@ class Maester:
         # return size and filepath
         return len(result_df), Path(temp_file_path)
 
+    def get_prediction_data(self, informer_doc: Dict) -> Tuple[str, Path]:
+        # create the ticker dataframes
+        curr_date = datetime.today()
+        dfs = {}
+        for tick in informer_doc['tickers']:
+            # grab the data
+            df = pd.DataFrame(map(asdict, self.polygon.get_aggs('AAPL', 1, 'minute', curr_date.strftime('%Y-%m-%d'), curr_date.strftime('%Y-%m-%d'), adjusted=True)))
+            while (len(df)) < informer_doc['seq_len']*2: # *2 incase later processing trims it down
+                curr_date = curr_date - timedelta(days=1)
+                new_df = pd.DataFrame(map(asdict, self.polygon.get_aggs('AAPL', 1, 'minute', curr_date.strftime('%Y-%m-%d'), curr_date.strftime('%Y-%m-%d'), adjusted=True)))
+                df = pd.concat([df, new_df])
+
+            # drop unneeded
+            df.drop(['vwap', 'otc'], axis=1, inplace=True)
+
+            # rename the non-dates
+            df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
+                               'high': f'{tick}_high', 'low': f'{tick}_low', 'transactions': f'{tick}_transactions'},
+                               inplace=True)
+
+            # store df in dictionary
+            dfs[tick] = df
+
+        # join
+        result_df = reduce(lambda left, right: pd.merge(left, right, on='timestamp', how='outer'), dfs.values())
+
+        # sort
+        result_df.sort_values(by='timestamp', ascending=True, inplace=True)
+
+        # convert timestamp to date
+        result_df['timestamp'] = pd.to_datetime(result_df['timestamp'], unit='ms')
+        result_df['date'] = result_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        result_df.drop('timestamp', axis=1, inplace=True)
+
+        # clean nulls
+        result_df.dropna(inplace=True)
+
+        # save to file
+        temp_file_path = tempfile.NamedTemporaryFile(delete=False).name + '.csv'
+        result_df.to_csv(temp_file_path)
+
+        # return size and filepath
+        return result_df.tail(1)['date'], Path(temp_file_path)
 
 
         
