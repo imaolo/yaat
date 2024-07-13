@@ -202,3 +202,7 @@ elif args.cmd == 'maester':
             res = maester.informer_weights.delete_one({'name': mod})
             if res.deleted_count > 0: print(f"deleted model {mod}")
             else: print(f"model {mod} dne")
+
+
+
+# TODO - train
