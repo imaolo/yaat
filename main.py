@@ -3,7 +3,7 @@ from dataclasses import asdict
 from pprint import pprint
 from datetime import datetime
 from yaat.informer import Informer, InformerArgs
-import argparse, io, torch
+import argparse, io, torch, pandas as pd
 
 # main parser
 main_parser = argparse.ArgumentParser(description='[YAAT] Yet Another Automated Trader')
@@ -51,9 +51,6 @@ train_parser.add_argument('--label_len', type=int, default=48, help='start token
 train_parser.add_argument('--pred_len', type=int, default=24, help='prediction sequence length')
 # Informer decoder input: concat[start token series(label_len), zero padding series(pred_len)]
 
-train_parser.add_argument('--enc_in', type=int, default=7, help='encoder input size')
-train_parser.add_argument('--dec_in', type=int, default=7, help='decoder input size')
-train_parser.add_argument('--c_out', type=int, default=7, help='output size')
 train_parser.add_argument('--d_model', type=int, default=512, help='dimension of model')
 train_parser.add_argument('--n_heads', type=int, default=8, help='num of heads')
 train_parser.add_argument('--e_layers', type=int, default=2, help='num of encoder layers')
@@ -93,11 +90,17 @@ maester = Maester(connstr=args.connstr, dbdir=args.dbdir)
 if args.cmd == 'train':
     # TODO - deploy on gpu instance if specified'
 
+    assert args.features != 'M', 'unsupported'
+
     # get the dataset
     print(f"retrieving the dataset for {args.tickers}")
     dataset_size, dataset_path = maester.get_dataset(args.tickers)
     print("dataset size: ", dataset_size)
     print("dataset path: ", dataset_path)
+
+    # set model parameters that are dependenent on the dataset
+    args.enc_in = args.dec_in = len(pd.read_csv(dataset_path).columns)-1
+    args.cout = 1
 
     # get the args (remove those not in InformerArgs)
     train_arg_names = [action.dest for action in train_parser._actions]
