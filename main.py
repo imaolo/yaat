@@ -34,6 +34,9 @@ predict_parser.add_argument('--start_date', type=str, default=datetime.now().str
 
 # train command arguments
 
+
+train_parser.add_argument('--just_open', action='store_true', default=False)
+
 train_parser.add_argument('--tickers', type=str, required=True, nargs='+', help='ticker symbols to train on')
 
 train_parser.add_argument('--name', type=str, required=True, help='name of this model, for human readability')
@@ -98,13 +101,18 @@ if args.cmd == 'train':
     print("dataset size: ", dataset_size)
     print("dataset path: ", dataset_path)
 
+    if args.just_open:
+        df = pd.read_csv(dataset_path)
+        df.drop([col for col in df.columns if '_open' not in col and col == 'date'], axis=1)
+        df.to_csv(dataset_path)
+
     # set model parameters that are dependenent on the dataset
     args.enc_in = args.dec_in = len(pd.read_csv(dataset_path).columns)-1
     args.cout = 1
 
     # get the args (remove those not in InformerArgs)
     train_arg_names = [action.dest for action in train_parser._actions] + ['enc_in', 'dec_in' , 'c_out']
-    train_args = {k: v for k, v in vars(args).items() if k in train_arg_names and k not in ['tickers', 'name']}
+    train_args = {k: v for k, v in vars(args).items() if k in train_arg_names and k not in ['tickers', 'name', 'just_open']}
     informer_args = InformerArgs(**(train_args | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)}))
     informer_args_dict = asdict(informer_args)
 
