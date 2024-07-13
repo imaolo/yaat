@@ -105,6 +105,7 @@ if args.cmd == 'train':
         df = pd.read_csv(dataset_path)
         df.drop([col for col in df.columns if '_open' not in col and col != 'date'], axis=1)
         df.to_csv(dataset_path)
+        print(df.columns)
 
     # set model parameters that are dependenent on the dataset
     args.enc_in = args.dec_in = len(pd.read_csv(dataset_path).columns)-1
