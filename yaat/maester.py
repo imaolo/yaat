@@ -92,12 +92,6 @@ class Maester:
         self.dbc = self.conndb(self.connstr)
         self.db = self.dbc[self.db_name]
 
-        # drop old schemas
-
-        if (cn:='candles1min') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
-        if (cn:='informer_weights') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
-        if (cn:='predictions') in self.db.list_collection_names(): self.db[cn].database.command('collMod', self.db[cn].name, validator={})
-
         # create schemas
 
         def create_collection(name, schema) -> Collection:
