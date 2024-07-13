@@ -103,7 +103,7 @@ if args.cmd == 'train':
     args.cout = 1
 
     # get the args (remove those not in InformerArgs)
-    train_arg_names = [action.dest for action in train_parser._actions]
+    train_arg_names = [action.dest for action in train_parser._actions] + ['enc_in', 'dec_in' , 'c_out']
     train_args = {k: v for k, v in vars(args).items() if k in train_arg_names and k not in ['tickers', 'name']}
     informer_args = InformerArgs(**(train_args | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)}))
     informer_args_dict = asdict(informer_args)
