@@ -35,7 +35,7 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'mse', 'name'],
+                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'mse', 'name', 'num_params'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
                         | {'weights_file_id': {'bsonType': ['null', 'objectId']}}
                         | {'tickers': {'bsonType': 'array'}}
@@ -43,6 +43,7 @@ class Maester:
                         | {'timestamp': {'bsonType': 'timestamp'}}
                         | {'mse': {'bsonType': ['double', 'null']}}
                         | {'name': {'bsonType': 'string'}}
+                        | {'num_params': {'bsonType': 'int'}}
     }
 
     candles1min_schema = {
@@ -154,7 +155,8 @@ class Maester:
             | {'weights_file_id': None}
             | {'tickers': tickers}
             | {'mse': None}
-            | {'name': name})
+            | {'name': name}
+            | {'num_params': informer.num_params})
 
     def load_informer(self, informer: Informer):
         # get the weights document
