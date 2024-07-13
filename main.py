@@ -103,7 +103,7 @@ if args.cmd == 'train':
 
     if args.just_open:
         df = pd.read_csv(dataset_path)
-        df.drop([col for col in df.columns if '_open' not in col and col != 'date'], axis=1)
+        df.drop([col for col in df.columns if '_open' not in col and col != 'date'], axis=1, inplace=True)
         df.to_csv(dataset_path)
         print(df.columns)
 
