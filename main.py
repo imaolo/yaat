@@ -29,6 +29,7 @@ maester_parser.add_argument('--delete_models', nargs='+', type=str, default=None
 maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, help='list the top N most occuring tickers')
 
 # predict command arguments
+predict_parser.add_argument('--name', type=str, required=True)
 predict_parser.add_argument('--model_name', type=str, required=True)
 predict_parser.add_argument('--start_date', type=str, default=datetime.now().strftime('%Y-%m-%d'))
 
@@ -172,7 +173,7 @@ elif args.cmd == 'predict':
     informer.predict()
 
     # store predictions
-    maester.store_predictions(args.model_name, last_date, informer.predictions_file_path)
+    maester.store_predictions(args.name, args.model_name, last_date, informer.predictions_file_path)
 
 
 elif args.cmd == 'maester':
@@ -215,5 +216,42 @@ elif args.cmd == 'maester':
             else: print(f"model {mod} dne")
 
 
+# # graveyard
+#     elif args.plot_predictions:
 
+#         # TODO - compare predictions to actual data
+#         df = pd.read_csv(pred_dataset_path)
+#         df['timestamp'] = pd.to_datetime(df['date'], format='%Y-%m-%d %H:%M:%S')
+
+#         print(df['timestamp'].max())
+
+#         preds = np.load(informer.predictions_file_path).squeeze()
+
+#         last_date_actual, actual_dataset_path = maester.get_prediction_data('2024-07-12', model_doc)
+
+#         actual_df = pd.read_csv(actual_dataset_path)
+#         actual_df['timestamp'] = pd.to_datetime(actual_df['date'], format='%Y-%m-%d %H:%M:%S')
+
+#         print(actual_df['timestamp'].min())
+
+#         cols2drop = [col for col in actual_df.columns if '_open' not in col]
+#         print(cols2drop)
+#         actual_df = actual_df.drop([col for col in actual_df.columns if '_open' not in col], axis=1).head(model_doc['pred_len'])
+
+#         actual_df['preds'] = preds
+
+#         print(actual_df)
+
+#         import matplotlib.pyplot as plt
+
+#         # Plotting
+#         plt.figure(figsize=(10, 6))
+#         plt.plot(actual_df.index, actual_df['SPY_open'], label='SPY_open', marker='o')
+#         plt.plot(actual_df.index, actual_df['preds'], label='preds', marker='x')
+#         plt.xlabel('Index')
+#         plt.ylabel('Value')
+#         plt.title('SPY_open and preds')
+#         plt.legend()
+#         plt.grid(True)
+#         plt.show()
 # TODO - train

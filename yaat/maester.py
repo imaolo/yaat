@@ -62,8 +62,9 @@ class Maester:
 
     predictions_schema = {
         'title': 'predictions',
-        'required': ['model_name', 'last_date', 'predictions', 'timestamp'],
+        'required': ['name', 'model_name', 'last_date', 'predictions', 'timestamp'],
         'properties': {
+            'name': {'bsonType': 'string'},
             'model_name': {'bsonType': 'string'},
             'last_date': {'bsonType': 'date'},
             'predictions': {'bsonType': 'array'},
@@ -113,6 +114,8 @@ class Maester:
         self.candles1min.create_index(idx:={'date':1})
 
         self.informer_weights.create_index(idx:={'name':1}, unique=True)
+
+        self.predictions.create_index(idx:={'name':1}, unique=True)
 
         # file store
 
@@ -272,12 +275,13 @@ class Maester:
         return result_df.tail(1)['date'].values[0], Path(temp_file_path)
     
 
-    def store_predictions(self, model_name:str, pred_date:str, pred_fp:Path) -> datetime:
+    def store_predictions(self, name:str, model_name:str, pred_date:str, pred_fp:Path) -> datetime:
 
         preds = np.load(pred_fp)
         timestamp = datetime.now()
 
         self.predictions.insert_one({
+            'name': name,
             'model_name': model_name,
             'last_date': datetime.strptime(pred_date, '%Y-%m-%d %H:%M:%S'),
             'predictions': preds.tolist(),
