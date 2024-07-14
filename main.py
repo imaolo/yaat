@@ -126,7 +126,12 @@ if args.cmd == 'train':
     maester.insert_informer(args.name, args.tickers, informer)
 
     # train the model
-    print("training model"); informer.exp_model.train(informer.settings); print("training complete")
+    print("training model"); 
+    for update in informer.exp_model.train(informer.settings):
+        maester.informer_weights.update_one({'name': args.name}, {'$set': update})
+        # check point
+        if 'test_loss' in update.keys(): maester.set_informer_weights(informer)
+    print("training complete")
 
     # store the new weights
     maester.set_informer_weights(informer)
