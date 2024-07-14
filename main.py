@@ -136,12 +136,6 @@ if args.cmd == 'train':
     # store the new weights
     maester.set_informer_weights(informer)
 
-    # test the model
-    print("testing model"); informer.exp_model.test(informer.settings); print("testing complete")
-
-    # store the test's results
-    maester.set_informer_loss(informer)
-
 elif args.cmd == 'predict':
 
     # get the informer document
