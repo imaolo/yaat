@@ -259,4 +259,3 @@ elif args.cmd == 'plot_prediction':
     plt.legend()
     plt.grid(True)
     plt.show()
-# TODO - train
