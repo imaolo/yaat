@@ -275,8 +275,6 @@ class Maester:
     def store_predictions(self, model_name:str, pred_date:str, pred_fp:Path) -> datetime:
 
         preds = np.load(pred_fp)
-        print(preds.shape)
-        print(preds[0][0][0])
         timestamp = datetime.now()
 
         self.predictions.insert_one({
