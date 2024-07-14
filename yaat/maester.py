@@ -34,15 +34,19 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'mse', 'name', 'num_params'],
+                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'name', 'num_params', 'curr_epoch', 'train_loss', 'vali_loss', 'test_loss', 'left_time'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
                         | {'weights_file_id': {'bsonType': ['null', 'objectId']}}
                         | {'tickers': {'bsonType': 'array'}}
                         | {'settings': {'bsonType': 'string'}}
                         | {'timestamp': {'bsonType': 'timestamp'}}
-                        | {'mse': {'bsonType': ['double', 'null']}}
                         | {'name': {'bsonType': 'string'}}
                         | {'num_params': {'bsonType': 'int'}}
+                        | {'curr_epoch': {'bsonType': 'int'}}
+                        | {'train_loss': {'bsonType': ['double', 'null']}}
+                        | {'vali_loss': {'bsonType': ['double', 'null']}}
+                        | {'test_loss': {'bsonType': ['double', 'null']}}
+                        | {'left_time': {'bsonType': ['double', 'null']}}
     }
 
     candles1min_schema = {
@@ -156,7 +160,11 @@ class Maester:
             | {'timestamp': Timestamp(int(informer.timestamp), 1)}
             | {'weights_file_id': None}
             | {'tickers': tickers}
-            | {'mse': None}
+            | {'train_loss': None}
+            | {'vali_loss': None}
+            | {'test_loss': None}
+            | {'curr_epoch': 0}
+            | {'left_time': None}
             | {'name': name}
             | {'num_params': informer.num_params})
 
