@@ -62,9 +62,3 @@ class Informer:
 
     @property
     def num_params(self) -> int: return sum([p.numel() for p in self.exp_model.model.parameters() if p.requires_grad])
-
-    def train(self) -> Path: self.exp_model.train(self.settings)
-
-    def test(self) -> Path: self.exp_model.test(self.settings)
-
-    def predict(self) -> Path: self.exp_model.predict(self.settings)

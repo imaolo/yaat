@@ -131,13 +131,13 @@ if args.cmd == 'train':
     maester.insert_informer(args.name, args.tickers, informer)
 
     # train the model
-    print("training model"); informer.train(); print("training complete")
+    print("training model"); informer.exp_model.train(informer.settings); print("training complete")
 
     # store the new weights
     maester.set_informer_weights(informer)
 
     # test the model
-    print("testing model"); informer.test(); print("testing complete")
+    print("testing model"); informer.exp_model.test(informer.settings); print("testing complete")
 
     # store the test's results
     maester.set_informer_loss(informer)
@@ -174,7 +174,7 @@ elif args.cmd == 'predict':
     informer.exp_model.model.load_state_dict(state_dict_deser)
 
     # do prediction
-    informer.predict()
+    informer.exp_model.predict(informer.settings)
 
     # store predictions
     maester.store_predictions(args.name, args.model_name, last_date, informer.predictions_file_path)
