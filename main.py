@@ -109,7 +109,7 @@ if args.cmd == 'train':
 
     # set model parameters that are dependenent on the dataset
     args.enc_in = args.dec_in = len(pd.read_csv(dataset_path).columns)-1
-    args.cout = 1
+    args.c_out = 1
 
     # get the args (remove those not in InformerArgs)
     train_arg_names = [action.dest for action in train_parser._actions] + ['enc_in', 'dec_in' , 'c_out']
