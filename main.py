@@ -117,12 +117,7 @@ if args.cmd == 'train':
     args.c_out = 1
 
     # get the args (remove those not in InformerArgs)
-    # TODO - this little discrpenancy between args and informer_args (++ ['enc_in', 'dec_in' , 'c_out']) has to got to go
-    # it cause a bug with the prediction command, the code is becoming fragmented...
-    train_arg_names = [action.dest for action in train_parser._actions] + ['enc_in', 'dec_in' , 'c_out']
-    train_args = {k: v for k, v in vars(args).items() if k in train_arg_names and k not in ['tickers', 'name', 'just_open']}
-    informer_args = InformerArgs(**(train_args | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)}))
-    informer_args_dict = asdict(informer_args)
+    informer_args = InformerArgs.from_dict(vars(args) | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)})
 
     # create the model
     informer = Informer(informer_args)
@@ -154,10 +149,7 @@ elif args.cmd == 'predict':
     print("prediction data path: ", dataset_path)
 
     # get the args
-    train_arg_names = [action.dest for action in train_parser._actions] + ['enc_in', 'dec_in' , 'c_out']
-    train_args = {k: v for k, v in model_doc.items() if k in train_arg_names and k not in ['tickers', 'name']}
-    informer_args = InformerArgs(**(train_args | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)}))
-    informer_args_dict = asdict(informer_args)
+    informer_args = InformerArgs.from_dict(model_doc | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)})
 
     # create the model
     informer = Informer(informer_args)
