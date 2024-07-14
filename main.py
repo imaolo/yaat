@@ -116,7 +116,7 @@ if args.cmd == 'train':
     args.enc_in = args.dec_in = len(pd.read_csv(dataset_path).columns)-1
     args.c_out = 1
 
-    # get the args (remove those not in InformerArgs)
+    # get the args
     informer_args = InformerArgs.from_dict(vars(args) | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)})
 
     # create the model
