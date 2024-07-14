@@ -190,12 +190,6 @@ class Maester:
         # set the new weights file id
         self.informer_weights.update_one(self.get_informer_query(informer), {'$set': {'weights_file_id': weights_file_id}})
 
-    def set_informer_loss(self, informer: Informer):
-        # get the mse loss
-        mse = float(np.load(informer.results_directory_path / 'metrics.npy')[1])
-
-        # set the mse loss
-        self.informer_weights.update_one(self.get_informer_query(informer), {'$set': {'mse': mse}})
 
     # database helpers
 
