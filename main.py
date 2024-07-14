@@ -1,9 +1,9 @@
 from yaat.maester import Maester
 from dataclasses import asdict
 from pprint import pprint
-from datetime import datetime
+from datetime import datetime, timedelta
 from yaat.informer import Informer, InformerArgs
-import argparse, io, torch, pandas as pd
+import argparse, io, torch, pandas as pd, numpy as np, matplotlib.pyplot as plt
 
 # main parser
 main_parser = argparse.ArgumentParser(description='[YAAT] Yet Another Automated Trader')
@@ -17,6 +17,7 @@ main_subparser = main_parser.add_subparsers(dest='cmd', required=True, help='yaa
 maester_parser = main_subparser.add_parser(n:='maester', help=f"{n} command help")
 train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
 predict_parser = main_subparser.add_parser(n:='predict', help=f"{n} command help")
+plot_prediction_parser = main_subparser.add_parser(n:='plot_prediction', help=f"{n} command help")
 
 # maester command arguments
 
@@ -32,6 +33,9 @@ maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, 
 predict_parser.add_argument('--name', type=str, required=True)
 predict_parser.add_argument('--model_name', type=str, required=True)
 predict_parser.add_argument('--start_date', type=str, default=datetime.now().strftime('%Y-%m-%d'))
+
+# plot prediction command arguments
+plot_prediction_parser.add_argument('--name', type=str, required=True)
 
 # train command arguments
 
@@ -215,43 +219,44 @@ elif args.cmd == 'maester':
             if res.deleted_count > 0: print(f"deleted model {mod}")
             else: print(f"model {mod} dne")
 
+elif args.cmd == 'plot_prediction':
 
-# # graveyard
-#     elif args.plot_predictions:
+    # get prediction doc
+    pred_doc = list(maester.predictions.find({'name': args.name}))
+    assert len(pred_doc) == 1,f"only one prediction document allowed for {args.name}, {len(pred_doc)} found"
+    pred_doc = pred_doc[0]
+    
+    # get model doc
+    model_name = pred_doc['model_name']
+    model_doc = list(maester.informer_weights.find({'name': model_name}))
+    assert len(model_doc) == 1,f"only one model document allowed for {model_name}, {len(model_doc)} found"
+    model_doc = model_doc[0]
 
-#         # TODO - compare predictions to actual data
-#         df = pd.read_csv(pred_dataset_path)
-#         df['timestamp'] = pd.to_datetime(df['date'], format='%Y-%m-%d %H:%M:%S')
+    # get the prediction data
+    preds = np.array(pred_doc['predictions']).squeeze()
 
-#         print(df['timestamp'].max())
+    start_pred_date = pred_doc['last_date'] + timedelta(days=1)
+    start_pred_date = start_pred_date.strftime('%Y-%m-%d')
 
-#         preds = np.load(informer.predictions_file_path).squeeze()
+    last_date_actual, actual_dataset_path = maester.get_prediction_data(start_pred_date, model_doc)
 
-#         last_date_actual, actual_dataset_path = maester.get_prediction_data('2024-07-12', model_doc)
+    actual_df = pd.read_csv(actual_dataset_path)
+    actual_df['timestamp'] = pd.to_datetime(actual_df['date'], format='%Y-%m-%d %H:%M:%S')
 
-#         actual_df = pd.read_csv(actual_dataset_path)
-#         actual_df['timestamp'] = pd.to_datetime(actual_df['date'], format='%Y-%m-%d %H:%M:%S')
+    print(actual_df['timestamp'].min())
 
-#         print(actual_df['timestamp'].min())
+    actual_df = actual_df.drop([col for col in actual_df.columns if '_open' not in col], axis=1).head(model_doc['pred_len'])
 
-#         cols2drop = [col for col in actual_df.columns if '_open' not in col]
-#         print(cols2drop)
-#         actual_df = actual_df.drop([col for col in actual_df.columns if '_open' not in col], axis=1).head(model_doc['pred_len'])
+    actual_df['preds'] = preds
 
-#         actual_df['preds'] = preds
-
-#         print(actual_df)
-
-#         import matplotlib.pyplot as plt
-
-#         # Plotting
-#         plt.figure(figsize=(10, 6))
-#         plt.plot(actual_df.index, actual_df['SPY_open'], label='SPY_open', marker='o')
-#         plt.plot(actual_df.index, actual_df['preds'], label='preds', marker='x')
-#         plt.xlabel('Index')
-#         plt.ylabel('Value')
-#         plt.title('SPY_open and preds')
-#         plt.legend()
-#         plt.grid(True)
-#         plt.show()
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    plt.plot(actual_df.index, actual_df['SPY_open'], label='SPY_open', marker='o')
+    plt.plot(actual_df.index, actual_df['preds'], label='preds', marker='x')
+    plt.xlabel('Index')
+    plt.ylabel('Value')
+    plt.title('SPY_open and preds')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 # TODO - train
