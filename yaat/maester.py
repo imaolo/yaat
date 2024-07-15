@@ -182,11 +182,6 @@ class Maester:
 
     def get_informer_query(self, informer:Informer):
         return {'settings': informer.settings, 'timestamp': Timestamp(int(informer.timestamp), 1)}
-    
-    def get_weights_doc(self, informer: Informer) -> Dict:
-        weights_doc = list(self.informer_weights.find(self.get_informer_query(informer)))
-        assert len(weights_doc) == 1, f"found {len(weights_doc)} informer weight documents"
-        return weights_doc[0]
 
 
     # database properties
