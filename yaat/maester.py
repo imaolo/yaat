@@ -152,7 +152,7 @@ class Maester:
         if hasattr(self, 'mongo_proc') and self.mongo_proc is not None and killproc is not None:
             killproc(self.mongo_proc)
 
-    # database ops
+    # database operations
 
     def insert_informer(self, name:str, tickers:List[str], informer: Informer):
         self.informer_weights.insert_one(asdict(informer.og_args)
@@ -177,14 +177,6 @@ class Maester:
         # set the new weights file id
         self.informer_weights.update_one({'settings': informer.settings, 'timestamp': Timestamp(int(informer.timestamp), 1)},
                                          {'$set': {'weights_file_id': weights_file_id}})
-
-    # database properties
-
-    @property
-    def data_collections(self) -> Set[str]:
-        return set(self.db.list_collection_names()) - set(['informer_weights', 'fs.chunks', 'fs.files'])
-
-    # misc
 
     def get_dataset(self, tickers:List[str]) -> Tuple[int, Path]:
         # prepend column names with ticker and drop the ticker column
@@ -251,7 +243,6 @@ class Maester:
 
         # return size and filepath
         return result_df.tail(1)['date'].values[0], Path(temp_file_path)
-    
 
     def store_predictions(self, name:str, model_name:str, pred_date:str, pred_fp:Path) -> datetime:
 
@@ -268,5 +259,8 @@ class Maester:
 
         return timestamp
 
+    # database properties
 
-        
+    @property
+    def data_collections(self) -> Set[str]:
+        return set(self.db.list_collection_names()) - set(['informer_weights', 'fs.chunks', 'fs.files'])
