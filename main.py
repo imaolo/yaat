@@ -118,8 +118,15 @@ if args.cmd == 'train':
     maester.insert_informer(args.name, args.tickers, informer, dataset_fields)
 
     # train the model
-    print("training model"); 
-    for update in informer.exp_model.train(informer.settings):
+    print("training model")
+    for idx, update in enumerate(informer.exp_model.train(informer.settings)):
+        # store training set mean and std
+        if idx == 0:
+            maester.informer_weights.update_one({'name': args.name}, {'$set': {
+                'std': list(informer.exp_model.train_data.scaler.std),
+                'mean': list(informer.exp_model.train_data.scaler.mean)
+            }})
+        # update stats
         maester.informer_weights.update_one({'name': args.name}, {'$set': update})
         # check point
         if 'test_loss' in update.keys(): maester.set_informer_weights(informer)
@@ -127,12 +134,6 @@ if args.cmd == 'train':
 
     # store the new weights
     maester.set_informer_weights(informer)
-
-    # store mean and std of training set
-    maester.informer_weights.update_one({'name': args.name}, {'$set': {
-        'std': list(informer.exp_model.train_data.scaler.std),
-        'mean': list(informer.exp_model.train_data.scaler.mean)
-    }})
 
 elif args.cmd == 'predict':
 
