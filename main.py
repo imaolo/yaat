@@ -247,3 +247,4 @@ elif args.cmd == 'plot_prediction':
 # def parse_args(args=None):
 #     # Use main_parser defined at the top level of this module
 #     return main_parser.parse_args(args)
+# TODO - drop old model weights instead of just adding them each time
