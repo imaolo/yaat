@@ -247,5 +247,6 @@ elif args.cmd == 'plot_prediction':
     plt.grid(True)
     plt.show()
 
+# TODO - add a fields argument to the train command and informer weights collection
 # TODO - scale down the model and try a bunch of combinations to see what works best at predicting
 # TODO - persist the scalar, use the same scalar for training, validation, testing, and predicting
