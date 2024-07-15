@@ -175,14 +175,8 @@ class Maester:
         weights_file_id = self.fs.put(informer.byte_weights)
 
         # set the new weights file id
-        self.informer_weights.update_one(self.get_informer_query(informer), {'$set': {'weights_file_id': weights_file_id}})
-
-
-    # database helpers
-
-    def get_informer_query(self, informer:Informer):
-        return {'settings': informer.settings, 'timestamp': Timestamp(int(informer.timestamp), 1)}
-
+        self.informer_weights.update_one({'settings': informer.settings, 'timestamp': Timestamp(int(informer.timestamp), 1)},
+                                         {'$set': {'weights_file_id': weights_file_id}})
 
     # database properties
 
