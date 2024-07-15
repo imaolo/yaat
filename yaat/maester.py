@@ -168,21 +168,6 @@ class Maester:
             | {'name': name}
             | {'num_params': informer.num_params})
 
-    def load_informer(self, informer: Informer):
-        # get the weights document
-        weights_doc = self.get_weights_doc(informer)
-
-        # get the weights file
-        weights_file = self.fs.get(weights_doc['weights_file_id'])
-
-        # get the bytes
-        state_dict_bytes = weights_file.read()
-
-        # load the bytes into the model
-        with io.BytesIO(state_dict_bytes) as bytes_io:
-            state_dict_deser = torch.load(bytes_io)
-        informer.exp_model.model.load_state_dict(state_dict_deser)
-
     def set_informer_weights(self, informer:Informer):
         # upload weights file
         weights_file_id = self.fs.put(informer.byte_weights)
