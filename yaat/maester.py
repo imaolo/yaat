@@ -169,6 +169,8 @@ class Maester:
             | {'num_params': informer.num_params})
 
     def set_informer_weights(self, informer:Informer):
+        # TODO - should delete the old file
+         
         # upload weights file
         weights_file_id = self.fs.put(informer.byte_weights)
 
