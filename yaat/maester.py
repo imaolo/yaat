@@ -258,9 +258,3 @@ class Maester:
         })
 
         return timestamp
-
-    # database properties
-
-    @property
-    def data_collections(self) -> Set[str]:
-        return set(self.db.list_collection_names()) - set(['informer_weights', 'fs.chunks', 'fs.files'])
