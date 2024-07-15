@@ -36,7 +36,8 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'name', 'num_params', 'curr_epoch', 'train_loss', 'vali_loss', 'test_loss', 'left_time'],
+                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'name', 'num_params',
+                           'curr_epoch', 'train_loss', 'vali_loss', 'test_loss', 'left_time', 'fields'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
                         | {'weights_file_id': {'bsonType': ['null', 'objectId']}}
                         | {'tickers': {'bsonType': 'array'}}
@@ -49,6 +50,7 @@ class Maester:
                         | {'vali_loss': {'bsonType': ['double', 'null']}}
                         | {'test_loss': {'bsonType': ['double', 'null']}}
                         | {'left_time': {'bsonType': ['double', 'null']}}
+                        | {'fields': {'bsonType': 'array'}}
     }
 
     candles1min_schema = {
@@ -156,7 +158,7 @@ class Maester:
 
     # database operations
 
-    def insert_informer(self, name:str, tickers:List[str], informer: Informer):
+    def insert_informer(self, name:str, tickers:List[str], informer: Informer, fields: Set[str]):
         self.informer_weights.insert_one(asdict(informer.og_args)
             | {'settings' : informer.settings}
             | {'timestamp': Timestamp(int(informer.timestamp), 1)}
@@ -168,7 +170,8 @@ class Maester:
             | {'curr_epoch': 0}
             | {'left_time': None}
             | {'name': name}
-            | {'num_params': informer.num_params})
+            | {'num_params': informer.num_params}
+            | {'fields': list(fields)})
 
     def set_informer_weights(self, informer:Informer):
         # TODO - should delete the old file
@@ -180,14 +183,20 @@ class Maester:
         self.informer_weights.update_one({'settings': informer.settings, 'timestamp': Timestamp(int(informer.timestamp), 1)},
                                          {'$set': {'weights_file_id': weights_file_id}})
 
-    def get_dataset(self, tickers:List[str]) -> Tuple[int, Path]:
+    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]) -> Tuple[int, Path, Set[str]]:
         # prepend column names with ticker and drop the ticker column
         dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
         for tick, df in dfs.items():
             df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
                                'high': f'{tick}_high', 'low': f'{tick}_low', 'transactions': f'{tick}_transactions'},
                                inplace=True)
+            
+            # the ticker in the column name now
             df.drop('ticker', axis=1, inplace=True)
+
+            # drop more fields
+            if fields is not None:
+                df.drop([col for col in df.columns if not any(field in col for field in fields) and col != 'date'], axis=1, inplace=True)
 
         # merge the ticker dataframes
         result_df = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), dfs.values())
@@ -199,8 +208,11 @@ class Maester:
         temp_file_path = tempfile.NamedTemporaryFile(delete=False).name + '.csv'
         result_df.to_csv(temp_file_path)
 
-        # return size and filepath
-        return len(result_df), Path(temp_file_path)
+        # get the fields
+        fields = set(map(lambda x: x.split('_')[1], set(result_df.columns) - {'date'}))
+
+        # return size, filepath, and fields
+        return len(result_df), Path(temp_file_path), fields
 
     def get_prediction_data(self, start_date: str, informer_doc: Dict) -> Tuple[str, Path]:
         # create the ticker dataframes
@@ -235,6 +247,9 @@ class Maester:
         result_df['timestamp'] = pd.to_datetime(result_df['timestamp'], unit='ms')
         result_df['date'] = result_df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
         result_df.drop('timestamp', axis=1, inplace=True)
+
+        # drop columns not in fields
+        result_df.drop([col for col in result_df.columns if not any(field in col for field in informer_doc['fields']) and col != 'date'], axis=1, inplace=True)
 
         # clean nulls
         result_df.dropna(inplace=True)
