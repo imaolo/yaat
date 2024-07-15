@@ -23,7 +23,8 @@ pybson_tmap = {
     int: 'int',
     bool: 'bool',
     float: 'double',
-    Optional[str]: ['string', 'null']
+    Optional[str]: ['string', 'null'],
+    Optional[np.array]: ['array', 'null']
 }
 
 class Maester:

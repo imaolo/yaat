@@ -128,6 +128,12 @@ if args.cmd == 'train':
     # store the new weights
     maester.set_informer_weights(informer)
 
+    # store mean and std of training set
+    maester.informer_weights.update_one({'name': args.name}, {'$set': {
+        'std': list(informer.exp_model.train_data.scaler.std),
+        'mean': list(informer.exp_model.train_data.scaler.mean)
+    }})
+
 elif args.cmd == 'predict':
 
     # get the informer document
@@ -140,7 +146,11 @@ elif args.cmd == 'predict':
     print("prediction data path: ", dataset_path)
 
     # get the args
-    informer_args = InformerArgs.from_dict(model_doc | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)})
+    informer_args = InformerArgs.from_dict(model_doc
+                                            |   {'root_path': str(dataset_path.parent)}
+                                            |   {'data_path': str(dataset_path.name)}
+                                            |   {'std': np.array(model_doc['std'])}
+                                            |   {'mean': np.array(model_doc['mean'])})
 
     # create the model
     informer = Informer(informer_args)
