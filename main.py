@@ -247,6 +247,5 @@ elif args.cmd == 'plot_prediction':
     plt.grid(True)
     plt.show()
 
-# TODO - yield informer.train() so we can get weights and losses more frequently
 # TODO - scale down the model and try a bunch of combinations to see what works best at predicting
 # TODO - persist the scalar, use the same scalar for training, validation, testing, and predicting
