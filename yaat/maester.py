@@ -31,6 +31,8 @@ class Maester:
     def_dbdir = Path('yaatdb_local')
     db_name: str = 'yaatdb'
 
+    # schemas
+
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
