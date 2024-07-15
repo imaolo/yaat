@@ -39,8 +39,6 @@ plot_prediction_parser.add_argument('--name', type=str, required=True)
 # train command arguments
 
 
-train_parser.add_argument('--just_open', action='store_true', default=False)
-
 train_parser.add_argument('--fields', type=str, default=None, nargs='+', help='ticker fields to train on')
 train_parser.add_argument('--tickers', type=str, required=True, nargs='+', help='ticker symbols to train on')
 
@@ -105,12 +103,6 @@ if args.cmd == 'train':
     dataset_size, dataset_path, dataset_fields = maester.get_dataset(args.tickers, args.fields)
     print("dataset size: ", dataset_size)
     print("dataset path: ", dataset_path)
-
-    if args.just_open:
-        df = pd.read_csv(dataset_path)
-        df.drop([col for col in df.columns if '_open' not in col and col != 'date'], axis=1, inplace=True)
-        df.to_csv(dataset_path)
-        print(df.columns)
 
     # set model parameters that are dependenent on the dataset
     args.enc_in = args.dec_in = len(pd.read_csv(dataset_path).columns)-1
