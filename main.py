@@ -14,19 +14,9 @@ main_parser.add_argument('--connstr', type=str, default=None, help='database con
 
 # sub - commands
 main_subparser = main_parser.add_subparsers(dest='cmd', required=True, help='yaat command help')
-maester_parser = main_subparser.add_parser(n:='maester', help=f"{n} command help")
 train_parser = main_subparser.add_parser(n:='train', help=f"{n} command help")
 predict_parser = main_subparser.add_parser(n:='predict', help=f"{n} command help")
 plot_prediction_parser = main_subparser.add_parser(n:='plot_prediction', help=f"{n} command help")
-
-# maester command arguments
-
-maester_parser.add_argument('--describe_tickers', nargs='+', type=str, default=None)
-maester_parser.add_argument('--coll', type=str, default='candles1min', help='which collection to look in (doesnt apply to all flags)')
-maester_parser.add_argument('--list_tickers', action='store_true', default=False, help='list unique tickers')
-maester_parser.add_argument('--list_models', action='store_true', default=False, help='list data collections')
-maester_parser.add_argument('--delete_models', nargs='+', type=str, default=None)
-maester_parser.add_argument('--list_tickers_by_counts', type=int, default=None, help='list the top N most occuring tickers')
 
 # predict command arguments
 predict_parser.add_argument('--name', type=str, required=True)
@@ -173,43 +163,6 @@ elif args.cmd == 'predict':
 
     # store predictions
     maester.store_predictions(args.name, args.model_name, last_date, informer.predictions_file_path)
-
-
-elif args.cmd == 'maester':
-
-    if args.describe_tickers is not None:
-        # TODO - print count, start_date, and end_date
-        for tick in args.describe_tickers:
-            print(tick, maester.db[args.coll].count_documents({'ticker': tick}))
-
-    if args.list_tickers:
-        pprint(list(maester.db[args.coll].distinct('ticker')), compact=True)
-
-    if args.list_tickers_by_counts is not None:
-        ticker_counts = list(maester.db[args.coll].aggregate([
-            {'$group': {
-                '_id': '$ticker',
-                'count': {'$sum': 1},
-            }},
-            {'$sort': {'count': -1}},
-            {'$project': {
-                'ticker': '$_id',
-                'count': 1,
-                '_id': 0
-            }},
-            {'$limit': args.list_tickers_by_counts}
-        ]))
-        pprint(ticker_counts)
-
-    if args.list_models:
-        model_docs = list(maester.informer_weights.find({}, {'name': 1, 'mse': 1, 'tickers': 1, 'timestamp': 1, 'weights_file_id': 1, '_id': 0}).sort('mse', 1))
-        pprint(model_docs)
-
-    if args.delete_models is not None:
-        for mod in args.delete_models:
-            res = maester.informer_weights.delete_one({'name': mod})
-            if res.deleted_count > 0: print(f"deleted model {mod}")
-            else: print(f"model {mod} dne")
 
 elif args.cmd == 'plot_prediction':
 
