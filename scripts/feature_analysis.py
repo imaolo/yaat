@@ -13,7 +13,7 @@ m = Maester('mongodb://Earl:pink-Flamingo1317@52.91.137.11/')
 
 # get the dataset
 print("getting the dataset")
-dataset_size, dataset_path = m.get_dataset(['SQQQ', 'TQQQ', 'QQQ', 'SPY', 'NIO', 'TSLA', 'AAPL', 'UVXY', 'AMD', 'SOXL', 'IWM', 'NVDA', 'AMC', 'SOXS', 'BABA', 'CCL', 'F', 'AAL', 'MSFT', 'TNA', 'SPXU', 'SPXL', 'SPXS', 'PLUG'])
+dataset_size, dataset_path, _ = m.get_dataset(['SQQQ', 'TQQQ', 'QQQ', 'SPY', 'NIO', 'TSLA', 'AAPL', 'UVXY', 'AMD', 'SOXL', 'IWM', 'NVDA', 'AMC', 'SOXS', 'BABA', 'CCL', 'F', 'AAL', 'MSFT', 'TNA', 'SPXU', 'SPXL', 'SPXS', 'PLUG'])
 
 # Initialize the StandardScaler
 scaler = StandardScaler()
