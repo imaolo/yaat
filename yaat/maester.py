@@ -187,7 +187,7 @@ class Maester:
         # set the new weights file id
         self.informer_weights.update_one(query, {'$set': {'weights_file_id': weights_file_id}})
 
-    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]) -> Tuple[int, Path, Set[str]]:
+    def get_dataset(self, tickers:List[str], fields:Optional[List[str]], max:Optional[int]=None) -> Tuple[int, Path, Set[str]]:
         # prepend column names with ticker and drop the ticker column
         dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
         for tick, df in dfs.items():
@@ -207,6 +207,10 @@ class Maester:
 
         # clean nulls
         result_df.dropna(inplace=True)
+
+        # enforce max
+        if max is not None:
+            result_df = result_df.tail(max)
 
         # save to file
         temp_file_path = tempfile.NamedTemporaryFile(delete=False).name + '.csv'
