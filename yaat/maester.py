@@ -12,6 +12,7 @@ from functools import reduce
 from polygon import RESTClient
 from pprint import pprint
 from datetime import datetime, timedelta
+from bson import Int64
 import atexit, functools, gridfs, io, torch, tempfile, numpy as np, pymongo.errors as mongoerrs, pandas as pd
 
 if TYPE_CHECKING:
@@ -45,7 +46,7 @@ class Maester:
                         | {'settings': {'bsonType': 'string'}}
                         | {'timestamp': {'bsonType': 'timestamp'}}
                         | {'name': {'bsonType': 'string'}}
-                        | {'num_params': {'bsonType': 'int'}}
+                        | {'num_params': {'bsonType': 'long'}}
                         | {'curr_epoch': {'bsonType': 'int'}}
                         | {'train_loss': {'bsonType': ['double', 'null']}}
                         | {'vali_loss': {'bsonType': ['double', 'null']}}
@@ -171,7 +172,7 @@ class Maester:
             | {'curr_epoch': 0}
             | {'left_time': None}
             | {'name': name}
-            | {'num_params': informer.num_params}
+            | {'num_params': Int64(informer.num_params)}
             | {'fields': list(fields)})
 
     def set_informer_weights(self, informer:Informer):
