@@ -193,6 +193,7 @@ elif args.cmd == 'plot_prediction':
     actual_df = actual_df.drop([col for col in actual_df.columns if '_open' not in col], axis=1).head(model_doc['pred_len'])
 
     actual_df['preds'] = preds
+    # actual_df['preds'] = actual_df['preds'].rolling(window=5).mean()
 
     # Plotting
     plt.figure(figsize=(10, 6))
