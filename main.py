@@ -209,6 +209,3 @@ elif args.cmd == 'plot_prediction':
 # TODO - when retrieving datasets, filter fields on server, not client
 # TODO - better alpha dataset support
 # TODO - predictions are more than just the end of the day
-# TODO - in informer, scale for each training context
-# - with big data, I think the std is too large and it is confusing the model
-# - each batch should be scaled itself - the contexts are not that large so it shouldnt matter
