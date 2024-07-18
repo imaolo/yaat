@@ -38,7 +38,7 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'name', 'num_params',
+                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'name', 'num_params', 'alpha_dataset'
                            'curr_epoch', 'train_loss', 'vali_loss', 'test_loss', 'left_time', 'fields'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
                         | {'weights_file_id': {'bsonType': ['null', 'objectId']}}
@@ -53,6 +53,7 @@ class Maester:
                         | {'test_loss': {'bsonType': ['double', 'null']}}
                         | {'left_time': {'bsonType': ['double', 'null']}}
                         | {'fields': {'bsonType': 'array'}}
+                        | {'alpa_dataset': {'bsonType': 'bool'}}
     }
 
     candles1min_schema = {
@@ -141,6 +142,8 @@ class Maester:
 
         self.predictions.create_index(idx:={'name':1}, unique=True)
 
+        self.spy_1min_ohclv.create_index(idx:={'name':1}, unique=True)
+
         # file store
 
         self.fs = gridfs.GridFS(self.db)
@@ -174,7 +177,7 @@ class Maester:
 
     # database operations
 
-    def insert_informer(self, name:str, tickers:List[str], informer: Informer, fields: Set[str]):
+    def insert_informer(self, name:str, tickers:List[str], informer: Informer, fields: Set[str], alpha_dataset:bool=False):
         self.informer_weights.insert_one(asdict(informer.og_args)
             | {'settings' : informer.settings}
             | {'timestamp': Timestamp(int(informer.timestamp), 1)}
@@ -187,7 +190,8 @@ class Maester:
             | {'left_time': None}
             | {'name': name}
             | {'num_params': Int64(informer.num_params)}
-            | {'fields': list(fields)})
+            | {'fields': list(fields)}
+            | {'alpha_dataset': alpha_dataset})
 
     def set_informer_weights(self, informer:Informer):
         query = {'settings': informer.settings, 'timestamp': Timestamp(int(informer.timestamp), 1)}
@@ -202,16 +206,25 @@ class Maester:
         # set the new weights file id
         self.informer_weights.update_one(query, {'$set': {'weights_file_id': weights_file_id}})
 
-    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None, max:Optional[int]=None) -> Tuple[int, Path, Set[str]]:
+    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None, max:Optional[int]=None, alpha_dataset:bool=False) -> Tuple[int, Path, Set[str]]:
         # prepend column names with ticker and drop the ticker column
-        dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
+        if not alpha_dataset:
+            dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
+        else:
+            dfs = {'SPY': pd.DataFrame(list(self.spy_1min_ohclv.find({}, {'_id': 0}).sort('date', 1)))}
         for tick, df in dfs.items():
-            df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
-                               'high': f'{tick}_high', 'low': f'{tick}_low', 'transactions': f'{tick}_transactions'},
-                               inplace=True)
-            
+            if not alpha_dataset:
+                df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
+                                'high': f'{tick}_high', 'low': f'{tick}_low', 'transactions': f'{tick}_transactions'},
+                                inplace=True)
+            else:
+                df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
+                                'high': f'{tick}_high', 'low': f'{tick}_low'},
+                                inplace=True)
+
+
             # the ticker in the column name now
-            df.drop('ticker', axis=1, inplace=True)
+            if not alpha_dataset: df.drop('ticker', axis=1, inplace=True)
 
             # drop more fields
             if fields is not None:

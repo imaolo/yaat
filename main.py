@@ -29,6 +29,7 @@ plot_prediction_parser.add_argument('--name', type=str, required=True)
 # train command arguments
 
 
+train_parser.add_argument('--alpha_datsaset', action='store_true', default=False)
 train_parser.add_argument('--max_data', type=int, default=None, help='max datapoints to train')
 train_parser.add_argument('--fields', type=str, default=None, nargs='+', help='ticker fields to train on')
 train_parser.add_argument('--tickers', type=str, required=True, nargs='+', help='ticker symbols to train on')
@@ -91,7 +92,7 @@ if args.cmd == 'train':
 
     # get the dataset
     print(f"retrieving the dataset for {args.tickers}")
-    dataset_size, dataset_path, dataset_fields = maester.get_dataset(args.tickers, args.fields, args.max_data)
+    dataset_size, dataset_path, dataset_fields = maester.get_dataset(args.tickers, args.fields, args.max_data, args.alpha_dataset)
     print("dataset size: ", dataset_size)
     print("dataset path: ", dataset_path)
 
