@@ -142,7 +142,8 @@ class Maester:
 
         self.predictions.create_index(idx:={'name':1}, unique=True)
 
-        self.spy_1min_ohclv.create_index(idx:={'date':1}, unique=True)
+        # TODO
+        # self.spy_1min_ohclv.create_index(idx:={'date':1}, unique=True)
 
         # file store
 
