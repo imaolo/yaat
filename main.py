@@ -213,3 +213,5 @@ elif args.cmd == 'plot_prediction':
 #     # Use main_parser defined at the top level of this module
 #     return main_parser.parse_args(args)
 # TODO - when retrieving datasets, filter fields on server, not client
+# TODO - better alpha dataset support
+# TODO - predictions are more than just the end of the day
