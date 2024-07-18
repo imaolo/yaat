@@ -12,7 +12,7 @@ class InformerArgs:
     padding: int = 0; distil: bool = True; dropout: float = 0.05; attn: str = 'prob'; embed: str = 'timeF'; activation: str = 'gelu'; output_attention: bool = False
     mix: bool = True; cols: Optional[str] = None; num_workers: int = 0; train_epochs: int = 5; batch_size: int = 32; patience: int = 3; learning_rate: float = 0.0001
     des: str = 'test'; loss: str = 'mse'; lradj: str = 'type1'; use_amp: bool = False; inverse: bool = False; use_gpu: bool = False; gpu: int = 0
-    use_multi_gpu: bool = False; devices: str = '0,1,2,3'; std: Optional[np.array] = None; mean: Optional[np.array] = None
+    use_multi_gpu: bool = False; devices: str = '0,1,2,3'; std: Optional[np.array] = None; mean: Optional[np.array] = None; batch_scale:bool=False
 
     @classmethod
     def from_dict(cls, args: Dict[str, Any]) -> 'InformerArgs':
