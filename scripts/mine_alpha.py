@@ -3,8 +3,6 @@ from datetime import timedelta, datetime
 from yaat.maester import Maester
 
 maester = Maester(connstr='mongodb://Earl:pink-Flamingo1317@52.91.137.11/')
-# maester = Maester()
-spy_1min_ohclv = maester.db['spy_1min_ohclv']
 
 alpha_url = 'https://www.alphavantage.co/query?'
 alpha_key = '3KZFIF8WVK43Q92B'
@@ -52,7 +50,11 @@ for date in tqdm.tqdm(dates):
 
     # insert
     print("inserting date: ", date)
-    maester.spy_1min_ohclv.insert_many(tickers.to_dict('records'))
+    try: maester.spy_1min_ohclv.insert_many(tickers.to_dict('records'))
+    except Exception as e:
+        print("---- Exception encountered ----")
+        print(e) 
+
     
 
 # get oldest date
