@@ -6,6 +6,9 @@ import numpy as np
 from sklearn.preprocessing import StandardScaler
 from sklearn.feature_selection import mutual_info_regression
 
+pd.set_option('display.max_rows', None) 
+pd.set_option('display.max_columns', None)
+
 m = Maester('mongodb://Earl:pink-Flamingo1317@52.91.137.11/')
 #m = Maester('localhost:27017')
 
@@ -77,6 +80,11 @@ top_k = sorted(mi_flat_list, key=lambda x: x[0], reverse=True)[:k]
 
 # Return a DataFrame for nicer output
 topk = pd.DataFrame(top_k, columns=['MI Value', 'Row', 'Column'])
+
+
+topk = topk[topk['MI Value'] != 0.00]
+
+print(topk.head(k))
 
 combined = pd.concat([topk['Row'], topk['Column']])
 most_common = combined.value_counts()
