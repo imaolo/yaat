@@ -107,7 +107,7 @@ if args.cmd == 'train':
     informer = Informer(informer_args)
 
     # store the model
-    maester.insert_informer(args.name, args.tickers, informer, dataset_fields)
+    maester.insert_informer(args.name, args.tickers, informer, dataset_fields, args.alpha_dataset)
 
     # train the model
     print("training model")

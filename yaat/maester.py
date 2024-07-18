@@ -38,7 +38,7 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'name', 'num_params', 'alpha_dataset'
+                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'name', 'num_params', 'alpha_dataset',
                            'curr_epoch', 'train_loss', 'vali_loss', 'test_loss', 'left_time', 'fields'],
         'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
                         | {'weights_file_id': {'bsonType': ['null', 'objectId']}}
@@ -142,7 +142,7 @@ class Maester:
 
         self.predictions.create_index(idx:={'name':1}, unique=True)
 
-        self.spy_1min_ohclv.create_index(idx:={'name':1}, unique=True)
+        self.spy_1min_ohclv.create_index(idx:={'date':1}, unique=True)
 
         # file store
 
