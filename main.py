@@ -28,7 +28,7 @@ plot_prediction_parser.add_argument('--name', type=str, required=True)
 
 # train command arguments
 
-
+train_parser.add_argument('--batch_scale', action='store_true', default=False)
 train_parser.add_argument('--alpha_dataset', action='store_true', default=False)
 train_parser.add_argument('--max_data', type=int, default=None, help='max datapoints to train')
 train_parser.add_argument('--fields', type=str, default=None, nargs='+', help='ticker fields to train on')
@@ -112,12 +112,6 @@ if args.cmd == 'train':
     # train the model
     print("training model")
     for idx, update in enumerate(informer.exp_model.train(informer.settings)):
-        # store training set mean and std
-        if idx == 0:
-            maester.informer_weights.update_one({'name': args.name}, {'$set': {
-                'std': list(informer.exp_model.train_data.scaler.std),
-                'mean': list(informer.exp_model.train_data.scaler.mean)
-            }})
         # update stats
         maester.informer_weights.update_one({'name': args.name}, {'$set': update})
         # check point
