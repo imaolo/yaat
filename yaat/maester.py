@@ -70,6 +70,19 @@ class Maester:
         }
     }
 
+    spy_1min_ohclv_schema = {
+        'title': 'SPY candles every 1 minute from alphavantage',
+        'required': ['open', 'high', 'low', 'close', 'volume', 'date'],
+        'properties': {
+            'open': {'bsonType': 'double'},
+            'high': {'bsonType': 'double'},
+            'low': {'bsonType': 'double'},
+            'close': {'bsonType': 'double'},
+            'volume': {'bsonType': 'int'},
+            'date': {'bsonType': 'date'},
+        }
+    }
+
     predictions_schema = {
         'title': 'predictions',
         'required': ['name', 'model_name', 'last_date', 'predictions', 'timestamp'],
@@ -116,6 +129,7 @@ class Maester:
         self.informer_weights = create_collection('informer_weights', self.informer_weights_schema)
         self.candles1min = create_collection('candles1min', self.candles1min_schema)
         self.predictions = create_collection('predictions', self.predictions_schema)
+        self.spy_1min_ohclv = create_collection('spy_1min_ohclv', self.spy_1min_ohclv_schema)
 
         # create indexes
 
