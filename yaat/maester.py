@@ -243,10 +243,10 @@ class Maester:
         dfs = {}
         for tick in informer_doc['tickers']:
             # grab the data
-            df = pd.DataFrame(map(asdict, self.polygon.get_aggs('AAPL', 1, 'minute', curr_date.strftime('%Y-%m-%d'), curr_date.strftime('%Y-%m-%d'), adjusted=True)))
+            df = pd.DataFrame(map(asdict, self.polygon.get_aggs(tick, 1, 'minute', curr_date.strftime('%Y-%m-%d'), curr_date.strftime('%Y-%m-%d'), adjusted=True)))
             while (len(df)) < informer_doc['seq_len']*2: # *2 incase later processing trims it down
                 curr_date = curr_date - timedelta(days=1)
-                new_df = pd.DataFrame(map(asdict, self.polygon.get_aggs('AAPL', 1, 'minute', curr_date.strftime('%Y-%m-%d'), curr_date.strftime('%Y-%m-%d'), adjusted=True)))
+                new_df = pd.DataFrame(map(asdict, self.polygon.get_aggs(tick, 1, 'minute', curr_date.strftime('%Y-%m-%d'), curr_date.strftime('%Y-%m-%d'), adjusted=True)))
                 df = pd.concat([df, new_df])
 
             # drop unneeded
