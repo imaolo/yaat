@@ -209,3 +209,4 @@ elif args.cmd == 'plot_prediction':
 # TODO - when retrieving datasets, filter fields on server, not client
 # TODO - better alpha dataset support
 # TODO - predictions are more than just the end of the day
+# TODO - get better schema update mechanism because I just frigged at 6 hour epoch
