@@ -138,12 +138,12 @@ elif args.cmd == 'predict':
     print("last prediction data date: ", last_date)
     print("prediction data path: ", dataset_path)
 
-    # get the args
+    # get the args - TODO - get ride of mean and std for real
     informer_args = InformerArgs.from_dict(model_doc
                                             |   {'root_path': str(dataset_path.parent)}
                                             |   {'data_path': str(dataset_path.name)}
-                                            |   {'std': np.array(model_doc['std'])}
-                                            |   {'mean': np.array(model_doc['mean'])})
+                                            |   {'std': None}
+                                            |   {'mean': None})
 
     # create the model
     informer = Informer(informer_args)
