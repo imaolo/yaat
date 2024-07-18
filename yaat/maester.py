@@ -44,7 +44,7 @@ class Maester:
                         | {'weights_file_id': {'bsonType': ['null', 'objectId']}}
                         | {'tickers': {'bsonType': 'array'}}
                         | {'settings': {'bsonType': 'string'}}
-                        | {'timestamp': {'bsonType': 'timestamp'}}
+                        | {'timestamp': {'bsonType': 'timestamp'}} # TODO - all timestamps should be date 
                         | {'name': {'bsonType': 'string'}}
                         | {'num_params': {'bsonType': 'long'}}
                         | {'curr_epoch': {'bsonType': 'int'}}
