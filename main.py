@@ -10,7 +10,7 @@ main_parser = argparse.ArgumentParser(description='[YAAT] Yet Another Automated 
 
 # main arguments
 main_parser.add_argument('--dbdir', type=str, default=None, help='which directory to start local db')
-main_parser.add_argument('--connstr', type=str, default=None, help='database connection string')
+main_parser.add_argument('--connstr', type=str, default='mongodb://Earl:pink-Flamingo1317@52.91.137.11/', help='database connection string')
 
 # sub - commands
 main_subparser = main_parser.add_subparsers(dest='cmd', required=True, help='yaat command help')
