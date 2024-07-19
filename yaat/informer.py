@@ -2,7 +2,7 @@ from typing import Optional, List, Dict, Any
 from dataclasses import dataclass, fields
 from exp.exp_informer import Exp_Informer
 from pathlib import Path
-import torch, io, copy, time, numpy as np
+import torch, io, copy, time, numpy as np, pandas as pd
 
 @dataclass
 class InformerArgs:
@@ -13,16 +13,12 @@ class InformerArgs:
     # defaults
     model: str = 'informer'
     data: str = 'custom'
-    features: str = 'MS'
     target: str = 'open'
     freq: str = 'h'
     checkpoints: str = './checkpoints/'
     seq_len: int = 96
     label_len: int = 48
     pred_len: int = 24
-    enc_in: int = 6
-    dec_in: int = 6
-    c_out: int = 6
     d_model: int = 512
     n_heads: int = 8
     e_layers: int = 2
@@ -83,6 +79,14 @@ class Informer:
         self.args.s_layers = [int(s_l) for s_l in self.args.s_layers.replace(' ','').split(',')]
         self.args.detail_freq = self.args.freq
         self.args.freq = self.args.freq[-1:]
+
+        # these args depend on the input data
+        cols = pd.read_csv((Path(args.root_path) / args.data_path).resolve(), nrows=0).columns
+        self.args.enc_in = self.args.dec_in = len(cols)-1
+
+        # should never change but are required
+        self.args.c_out = 1
+        self.args.features = 'MS'
 
         self.settings = '{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_at{}_fc{}_eb{}_dt{}_mx{}_{}_ts{}'.format(
             self.args.model, self.args.data, self.args.features, self.args.seq_len, self.args.label_len, self.args.pred_len,
