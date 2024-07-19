@@ -6,10 +6,13 @@ import torch, io, copy, time, numpy as np
 
 @dataclass
 class InformerArgs:
+    # required
+    root_path: str
+    data_path: str
+
+    # defaults
     model: str = 'informer'
     data: str = 'custom'
-    root_path: str = '..'
-    data_path: str = 'spy.csv'
     features: str = 'MS'
     target: str = 'open'
     freq: str = 'h'
