@@ -21,6 +21,6 @@ class TestInformer(unittest.TestCase):
         # test succesfull with named
         InformerArgs(root_path='root_path_arg', data_path='data_path_arg')
 
-    # def test_informer(self):
-    #     self.informer.exp_model.train(self.informer.settings)
-    #     self.informer.exp_model.predict(self.informer.settings)
+    def test_informer(self):
+        self.informer.exp_model.train(self.informer.settings)
+        self.informer.exp_model.predict(self.informer.settings)
