@@ -212,3 +212,7 @@ elif args.cmd == 'plot_prediction':
 # TODO - better alpha dataset support
 # TODO - predictions are more than just the end of the day
 # TODO - get better schema update mechanism because I just frigged at 6 hour epoch
+# TODO - true batch scaling, not instance scaling
+# TODO - hotfix for predicting when batch scaled (self.scaler is never fitted)
+# TODO - use alphavantage, that inclues collections per ticker rather than just one collection.
+# make a db just for candles
