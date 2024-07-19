@@ -83,6 +83,7 @@ train_parser.add_argument('--devices', type=str, default='0,1,2,3',help='device 
 
 args = main_parser.parse_args()
 
+if args.connstr == 'None': args.connstr = None
 maester = Maester(connstr=args.connstr, dbdir=args.dbdir)
 
 if args.cmd == 'train':
