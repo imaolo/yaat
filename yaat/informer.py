@@ -48,8 +48,6 @@ class InformerArgs:
     gpu: int = 0
     use_multi_gpu: bool = False
     devices: str = '0,1,2,3'
-    std: Optional[np.array] = None
-    mean: Optional[np.array] = None
     batch_scale:bool = False
 
     @classmethod
