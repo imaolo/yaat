@@ -12,7 +12,6 @@ class InformerArgs:
 
     # defaults
     model: str = 'informer'
-    data: str = 'custom'
     target: str = 'open'
     freq: str = 'h'
     checkpoints: str = './checkpoints/'
@@ -87,6 +86,7 @@ class Informer:
         # should never change but are required
         self.args.c_out = 1
         self.args.features = 'MS'
+        self.args.data = 'custom'
 
         self.settings = '{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_at{}_fc{}_eb{}_dt{}_mx{}_{}_ts{}'.format(
             self.args.model, self.args.data, self.args.features, self.args.seq_len, self.args.label_len, self.args.pred_len,
