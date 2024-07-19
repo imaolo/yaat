@@ -217,4 +217,5 @@ elif args.cmd == 'plot_prediction':
 # TODO - use alphavantage, that inclues collections per ticker rather than just one collection.
 # make a db just for candles
 # TODO - combine get_dataset and get_prediction_dataset
-# TODO - change "batch_scale" argument name to "sample_scale"
+# TODO - change "batch_scale" argument name to "sample_scale
+# TODO - handle live jobs better, record them in the database
