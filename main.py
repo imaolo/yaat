@@ -111,6 +111,7 @@ if args.cmd == 'train':
 
     # train the model
     print("training model")
+    print(args)
     for idx, update in enumerate(informer.exp_model.train(informer.settings)):
         # update stats
         maester.informer_weights.update_one({'name': args.name}, {'$set': update})
