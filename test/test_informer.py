@@ -1,8 +1,6 @@
-from yaat.informer import Informer
+from yaat.informer import Informer, InformerArgs
 import unittest
 
 class TestInformer(unittest.TestCase):
-    def setUp(self): self.informer = Informer()
 
-    @unittest.skip("in progress")
     def test_void(self): pass
