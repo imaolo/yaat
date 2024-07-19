@@ -220,4 +220,4 @@ elif args.cmd == 'plot_prediction':
 # TODO - change "batch_scale" argument name to "sample_scale
 # TODO - handle live jobs better, record them in the database
 # TODO - create dataclasses for each of the collection, use the pymmap to read them in
-# TODO - clean things up!!
+# TODO - clean things up!! (overload informer_args for the informer doc)
