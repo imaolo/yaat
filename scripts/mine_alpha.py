@@ -2,6 +2,8 @@ import requests, time, tqdm, pandas as pd
 from datetime import timedelta, datetime
 from yaat.maester import Maester
 
+tick = 'SPY'
+
 maester = Maester(connstr='mongodb://Earl:pink-Flamingo1317@52.91.137.11/')
 
 alpha_url = 'https://www.alphavantage.co/query?'
@@ -24,7 +26,7 @@ def call_alpha(**kwargs):
         if "higher API call volume" not in data['Information']: raise RuntimeError(data)
     raise RuntimeError(data)
 
-def call_alpha_date(date): return call_alpha(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='true', interval=f'{1}min', symbol='SPY', month=f"{date.year}-{date.month:02}")
+def call_alpha_date(date): return call_alpha(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='true', interval=f'{1}min', symbol=tick, month=f"{date.year}-{date.month:02}")
 
 # insert
 dates = list(pd.date_range(start=datetime(2000, month=1, day=1), end=datetime.now(), freq='MS'))
