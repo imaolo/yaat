@@ -216,3 +216,4 @@ elif args.cmd == 'plot_prediction':
 # TODO - hotfix for predicting when batch scaled (self.scaler is never fitted)
 # TODO - use alphavantage, that inclues collections per ticker rather than just one collection.
 # make a db just for candles
+# TODO - combine get_dataset and get_prediction_dataset
