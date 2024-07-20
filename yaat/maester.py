@@ -210,27 +210,16 @@ class Maester:
 
         return weights_file_id
 
-    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None, max:Optional[int]=None, alpha_dataset:bool=False) -> Tuple[int, Path, Set[str]]:
-        # prepend column names with ticker and drop the ticker column
-        if not alpha_dataset:
-            dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
-        else:
-            dfs = {'SPY': pd.DataFrame(list(self.spy_1min_ohclv.find({}, {'_id': 0}).sort('date', 1)))}
+    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None) -> pd.DataFrame:
+        # get the dataframes
+        dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
+
+        # process the columns
         for tick, df in dfs.items():
-            if not alpha_dataset:
-                df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
-                                'high': f'{tick}_high', 'low': f'{tick}_low', 'transactions': f'{tick}_transactions'},
-                                inplace=True)
-            else:
-                df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
-                                'high': f'{tick}_high', 'low': f'{tick}_low'},
-                                inplace=True)
+            # prepend ticker name to field
+            df.rename(columns={col: f"{tick}_{col}" for col in df.columns if col != 'date'}, inplace=True)
 
-
-            # the ticker in the column name now
-            if not alpha_dataset: df.drop('ticker', axis=1, inplace=True)
-
-            # drop more fields
+            # drop fields not specified
             if fields is not None:
                 df.drop([col for col in df.columns if not any(field in col for field in fields) and col != 'date'], axis=1, inplace=True)
 
@@ -240,19 +229,57 @@ class Maester:
         # clean nulls
         result_df.dropna(inplace=True)
 
-        # enforce max
-        if max is not None:
-            result_df = result_df.tail(max)
-
         # save to file
         temp_file_path = tempfile.NamedTemporaryFile(delete=False).name + '.csv'
         result_df.to_csv(temp_file_path)
 
-        # get the fields
-        fields = set(map(lambda x: x.split('_')[1], set(result_df.columns) - {'date'}))
-
         # return size, filepath, and fields
-        return len(result_df), Path(temp_file_path), fields
+        return result_df
+
+
+    # def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None, max:Optional[int]=None, alpha_dataset:bool=False) -> Tuple[int, Path, Set[str]]:
+    #     # prepend column names with ticker and drop the ticker column
+    #     if not alpha_dataset:
+    #         dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
+    #     else:
+    #         dfs = {'SPY': pd.DataFrame(list(self.spy_1min_ohclv.find({}, {'_id': 0}).sort('date', 1)))}
+    #     for tick, df in dfs.items():
+    #         if not alpha_dataset:
+    #             df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
+    #                             'high': f'{tick}_high', 'low': f'{tick}_low', 'transactions': f'{tick}_transactions'},
+    #                             inplace=True)
+    #         else:
+    #             df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
+    #                             'high': f'{tick}_high', 'low': f'{tick}_low'},
+    #                             inplace=True)
+
+
+    #         # the ticker in the column name now
+    #         if not alpha_dataset: df.drop('ticker', axis=1, inplace=True)
+
+    #         # drop more fields
+    #         if fields is not None:
+    #             df.drop([col for col in df.columns if not any(field in col for field in fields) and col != 'date'], axis=1, inplace=True)
+
+    #     # merge the ticker dataframes
+    #     result_df = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), dfs.values())
+
+    #     # clean nulls
+    #     result_df.dropna(inplace=True)
+
+    #     # enforce max
+    #     if max is not None:
+    #         result_df = result_df.tail(max)
+
+    #     # save to file
+    #     temp_file_path = tempfile.NamedTemporaryFile(delete=False).name + '.csv'
+    #     result_df.to_csv(temp_file_path)
+
+    #     # get the fields
+    #     fields = set(map(lambda x: x.split('_')[1], set(result_df.columns) - {'date'}))
+
+    #     # return size, filepath, and fields
+    #     return len(result_df), Path(temp_file_path), fields
 
     def get_prediction_data(self, start_date: str, informer_doc: Dict) -> Tuple[str, Path]:
         # create the ticker dataframes

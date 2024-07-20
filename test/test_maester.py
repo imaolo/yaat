@@ -83,3 +83,15 @@ class TestMaester(unittest.TestCase):
 
         # compare weights
         torch.testing.assert_close(informer.exp_model.model.projection.weight, informer2.exp_model.model.projection.weight)
+
+    def test_get_dataset(self):
+        df = self.maester.get_dataset(['SPY'])
+
+        ticks = set(col.split('_')[0] for col in df.columns if col != 'date') - {'date'}
+        self.assertEqual(len(ticks), 1, msg=ticks)
+        self.assertEqual(ticks.pop(), 'SPY')
+
+        df = self.maester.get_dataset(['SPY'], ['open'])
+        fields = set(col.split('_')[1] for col in df.columns if col != 'date')
+        self.assertEqual(len(fields), 1, msg=fields)
+        self.assertEqual(fields.pop(), 'open')
