@@ -4,7 +4,7 @@ from exp.exp_informer import Exp_Informer
 from pathlib import Path
 import torch, io, copy, time, numpy as np, pandas as pd
 
-@dataclass
+@dataclass(kw_only=True)
 class InformerArgs:
     # required
     root_path: str
