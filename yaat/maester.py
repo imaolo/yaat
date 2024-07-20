@@ -44,7 +44,7 @@ class InformerDoc(InformerArgs):
     train_loss: Optional[float] = None
     vali_loss: Optional[float] = None
     test_loss: Optional[float] = None
-    time_left: Optional[float] = None
+    left_time: Optional[float] = None
 
 @dataclass
 class PredictionDoc:
