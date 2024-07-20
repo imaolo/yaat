@@ -1,5 +1,5 @@
 from yaat.informer import InformerArgs, Informer
-from yaat.util import killproc
+from yaat.util import killproc, fetchjson
 from typing import Dict, Optional, List
 from dataclasses import fields, field
 from pathlib import Path
@@ -10,7 +10,7 @@ from datetime import datetime
 from bson import Int64, ObjectId
 from dataclasses import dataclass, asdict
 from pymongo.collection import Collection
-import atexit, functools, gridfs, polygon, numpy as np, pymongo.errors as mongoerrs, pandas as pd
+import atexit, functools, gridfs, polygon, time, numpy as np, pymongo.errors as mongoerrs, pandas as pd
 
 pybson_tmap = {
     str: {'bsonType': 'string'},
@@ -272,3 +272,16 @@ class Maester:
         tick_coll.create_index({'date': 1}, unique=True)
 
         # TODO - mine that shit
+
+    def call_alpha(self, **kwargs):
+        # construct the url
+        url = self.alpha_url + ''.join(map(lambda kv: kv[0] + '=' + str(kv[1]) + '&', kwargs.items())) + f'apikey={self.alpha_key}'
+
+        # call it (with rate limit governance)
+        start = time.time()
+        while (time.time() - start) < 62: # if we cant call after a minute there was an issue
+            if 'Information' not in (data:=fetchjson(url)):
+                assert 'Error Message' not in data.keys(), f"{data} \n\n {url}"
+                return data
+            if "higher API call volume" not in data['Information']: raise RuntimeError(data)
+        raise RuntimeError(data)

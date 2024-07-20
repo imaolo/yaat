@@ -115,3 +115,6 @@ class TestMaester(unittest.TestCase):
         ticker='TEST_TICK'
         if ticker in self.maester.db.list_collection_names(): self.maester.db[ticker].drop()
         self.maester.create_tickers_dataset(ticker)
+
+    def test_call_alpha(self):
+        self.maester.call_alpha(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='true', interval=f'1min', symbol='SPY', month=f"2023-1")
