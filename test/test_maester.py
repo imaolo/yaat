@@ -1,5 +1,5 @@
 from yaat.maester import Maester, InformerDoc, PredictionDoc
-from yaat.informer import InformerArgs, Informer
+from yaat.informer import Informer
 from dataclasses import asdict
 from bson import Int64
 from pathlib import Path
