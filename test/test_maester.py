@@ -3,7 +3,7 @@ from yaat.informer import Informer
 from dataclasses import asdict
 from bson import Int64
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 import unittest, os, time, tempfile, torch, copy, pymongo.errors as mongoerr, pandas as pd, numpy as np
 
 class TestMaester(unittest.TestCase):
@@ -103,8 +103,8 @@ class TestMaester(unittest.TestCase):
 
     def test_get_dataset_date_ranges(self):
 
-        start_date = datetime(year=2019, month=7, day=12, hour=10)
-        end_date = datetime(year=2019, month=7, day=12, hour=14)
+        start_date = self.maester.candles1min.find_one(sort=[("date", 1)])['date']
+        end_date = self.maester.candles1min.find_one(sort=[("date", -1)])['date']
 
         df = self.maester.get_dataset(['SPY'], start_date=start_date, end_date=end_date)
 
