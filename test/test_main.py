@@ -13,7 +13,7 @@ class TestMain(unittest.TestCase):
         cls.required_args = {'root_path': cls.df_fp.parent, 'data_path': cls.df_fp.name, 'target': 'A'}
 
     def test_parse_args(self):
-        args = parse_args('train', {'name': 'model_name', 'tickers': 'SPY'})
+        args = parse_args('train', {'name': 'model_name', 'tickers': 'SPY', 'target': 'SPY_open'})
 
         # test what was passed
         self.assertEqual(args.cmd, 'train')
