@@ -50,9 +50,9 @@ class InformerDoc(InformerArgs):
 class PredictionDoc:
     name:str
     model_name:str
-    date: datetime
     pred_date:datetime
     predictions:List[float]
+    date: datetime = field(default_factory=datetime.now)
 
 class Maester:
 
