@@ -1,7 +1,7 @@
 from yaat.main import parse_args
 import unittest
 
-class TestMaester(unittest.TestCase):
+class TestMain(unittest.TestCase):
 
     def test_parse_args(self):
         args = parse_args('train', {'name': 'model_name', 'tickers': 'SPY'})
