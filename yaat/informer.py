@@ -9,10 +9,10 @@ class InformerArgs:
     # required
     root_path: str
     data_path: str
+    target: str
 
     # defaults
     model: str = 'informer'
-    target: str = 'open'
     freq: str = 'h'
     checkpoints: str = './checkpoints/'
     seq_len: int = 96
