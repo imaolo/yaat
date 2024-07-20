@@ -3,55 +3,13 @@ from dataclasses import asdict
 from pprint import pprint
 from datetime import datetime, timedelta
 from yaat.informer import Informer, InformerArgs
-from yaat.main import parse_args
+from yaat.main import parse_args, train
 import argparse, io, torch, pandas as pd, numpy as np, matplotlib.pyplot as plt
 
 args = parse_args()
 
-import sys
-sys.exit()
-
-if args.connstr == 'None': args.connstr = None
-maester = Maester(connstr=args.connstr, dbdir=args.dbdir)
-
-
-
 if args.cmd == 'train':
-    # TODO - deploy on gpu instance if specified'
-
-    assert args.features != 'M', 'unsupported'
-
-    # get the dataset
-    print(f"retrieving the dataset for {args.tickers}")
-    dataset_size, dataset_path, dataset_fields = maester.get_dataset(args.tickers, args.fields, args.max_data, args.alpha_dataset)
-    print("dataset size: ", dataset_size)
-    print("dataset path: ", dataset_path)
-
-    # set model parameters that are dependenent on the dataset
-    args.enc_in = args.dec_in = len(pd.read_csv(dataset_path).columns)-1
-    args.c_out = 1
-
-    # get the args
-    informer_args = InformerArgs.from_dict(vars(args) | {'root_path': str(dataset_path.parent), 'data_path': str(dataset_path.name)})
-
-    # create the model
-    informer = Informer(informer_args)
-
-    # store the model
-    maester.insert_informer(args.name, args.tickers, informer, dataset_fields, args.alpha_dataset)
-
-    # train the model
-    print("training model")
-    print(args)
-    for idx, update in enumerate(informer.exp_model.train(informer.settings)):
-        # update stats
-        maester.informer_weights.update_one({'name': args.name}, {'$set': update})
-        # check point
-        if 'test_loss' in update.keys(): maester.set_informer_weights(informer)
-    print("training complete")
-
-    # store the new weights
-    maester.set_informer_weights(informer)
+    train(args)
 
 elif args.cmd == 'predict':
 
