@@ -59,7 +59,6 @@ class Informer:
     small_scale_args = {'seq_len':4, 'pred_len':4, 'label_len':2, 'd_model':2, 'train_epochs':1, 'n_heads':1, 'd_ff':2}
 
     def __init__(self, args:InformerArgs):
-        # enc_in, dec_in, and c_out must match input feature width, no reason to parameterize here
 
         # cache arguments
         self.og_args = copy.copy(args)
