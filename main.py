@@ -27,7 +27,7 @@ elif args.cmd == 'plot_prediction':
     target_ticker = model_doc.target.split('_')[0]
     target_field = model_doc.target.split('_')[1]
     real_df = maester.get_live_data([target_ticker], [target_field], pred_doc.pred_date, pred_doc.pred_date + timedelta(days=4))
-    real_df = real_df.head(model_doc.seq_len)
+    real_df = real_df.head(model_doc.pred_len)
 
     # place predictions in dataframe
     real_df['preds'] = preds
