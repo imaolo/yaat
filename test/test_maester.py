@@ -110,3 +110,8 @@ class TestMaester(unittest.TestCase):
 
         self.assertEqual(df['date'].max(), end_date)
         self.assertEqual(df['date'].min(), start_date)
+
+    def test_create_ticker_dataset(self):
+        ticker='TEST_TICK'
+        if ticker in self.maester.db.list_collection_names(): self.maester.db[ticker].drop()
+        self.maester.create_tickers_dataset(ticker)

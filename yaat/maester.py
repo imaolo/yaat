@@ -51,12 +51,26 @@ class PredictionDoc:
     predictions:List[float]
     date: datetime = field(default_factory=datetime.now)
 
+@dataclass
+class CandleDoc:
+    open:float
+    close:float
+    high:float
+    low:float
+    volume:float
+
 class Maester:
 
     def_dbdir = Path('yaatdb_local')
     db_name: str = 'yaatdb'
 
     # schemas
+
+    candle_schema = {
+        'title': 'A collection to hold candles for a single ticker',
+        'required': [field.name for field in fields(CandleDoc)],
+        'properties': {field.name: pybson_tmap[field.type] for field in fields(CandleDoc)}
+    } 
 
     informers_schema: Dict = {
         'title': 'Weights for informer models',
@@ -105,19 +119,11 @@ class Maester:
         self.dbc = self.conndb(self.connstr)
         self.db = self.dbc[self.db_name]
 
-        # create schemas
+        # create collections
 
-        def init_collection(name, schema) -> Collection:
-            if name in self.db.list_collection_names():
-                self.db.command('collMod', name, validator={'$jsonSchema': schema})
-            else:
-                self.db.create_collection(name, validator={'$jsonSchema': schema})
-            return self.db[name]
-
-
-        self.informers = init_collection('informers', self.informers_schema)
-        self.candles1min = init_collection('candles1min', self.candles1min_schema)
-        self.predictions = init_collection('predictions', self.predictions_schema)
+        self.informers = self.init_collection('informers', self.informers_schema)
+        self.candles1min = self.init_collection('candles1min', self.candles1min_schema)
+        self.predictions = self.init_collection('predictions', self.predictions_schema)
 
         # create indexes
 
@@ -138,6 +144,13 @@ class Maester:
         self.polygon = polygon.RESTClient(api_key='fuqZHZzJdzJpYq2kMRxZTI42N1nPlxKj')
 
     # database config
+
+    def init_collection(self, name, schema) -> Collection:
+        if name in self.db.list_collection_names():
+            self.db.command('collMod', name, validator={'$jsonSchema': schema})
+        else:
+            self.db.create_collection(name, validator={'$jsonSchema': schema})
+        return self.db[name]
 
     @classmethod
     def conndb(cls, url:Optional[str]=None, timeout:int=5000) -> MongoClient:
@@ -239,3 +252,16 @@ class Maester:
         df.dropna(inplace=True)
 
         return df
+
+    # tickers db
+
+    def create_tickers_dataset(self, ticker:str):
+        assert ticker not in self.db.list_collection_names(), self.db.list_collection_names()
+
+        # create the collection
+        tick_coll = self.init_collection(ticker, self.candle_schema)
+
+        # no duplicate dates
+        tick_coll.create_index({'date': 1}, unique=True)
+
+        # TODO - mine that shit
