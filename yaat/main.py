@@ -27,7 +27,7 @@ plot_prediction_parser.add_argument('--name', type=str, required=True)
 
 # train command arguments
 
-train_parser.add_argument('--batch_scale', action='store_true', default=False)
+train_parser.add_argument('--sample_scale', action='store_true', default=False)
 train_parser.add_argument('--alpha_dataset', action='store_true', default=False)
 train_parser.add_argument('--max_data', type=int, default=None, help='max datapoints to train')
 train_parser.add_argument('--fields', type=str, default=None, nargs='+', help='ticker fields to train on')

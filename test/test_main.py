@@ -32,5 +32,15 @@ class TestMain(unittest.TestCase):
         doc = maester.informers.find_one({'name': args.name})
         self.assertIsNotNone(doc['train_loss'])
 
-        
+    def test_train_sample_scale(self):
+        args = {'name': str(time.time()), 'tickers': 'SPY', 'target': 'SPY_open'} \
+                | dict(map(lambda kv: (kv[0], str(kv[1])), Informer.small_scale_args.items()))
+        args = parse_args('train', args)
+        args.sample_scale=True
+        args.pred_len = 12
+        args.seq_len = 12
+        train(args)
+
+        doc = maester.informers.find_one({'name': args.name})
+        self.assertIsNotNone(doc['train_loss'])
         
