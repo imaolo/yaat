@@ -8,7 +8,7 @@ from subprocess import Popen, DEVNULL
 from functools import reduce
 from datetime import datetime
 from bson import Int64, ObjectId
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 from pymongo.collection import Collection
 import atexit, functools, gridfs, polygon, numpy as np, pymongo.errors as mongoerrs, pandas as pd
 
@@ -204,3 +204,40 @@ class Maester:
         result_df.dropna(inplace=True)
 
         return result_df
+
+    def get_live_data(self, tickers:List[str], fields:List[str], start_date:datetime, end_date:datetime, timespan:str='minute'):
+        # get a dictionary of dataframes
+        dfs = {}
+        for tick in tickers:
+            # grab the ticker data as a dataframe
+            df = pd.DataFrame(map(asdict, self.polygon.get_aggs(tick, 1, timespan, start_date, end_date, adjusted=True)))
+            
+            # drop unneeded
+            df.drop(['vwap', 'otc'], axis=1, inplace=True)
+
+            # rename the non-dates
+            df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
+                               'high': f'{tick}_high', 'low': f'{tick}_low', 'transactions': f'{tick}_transactions'},
+                               inplace=True)
+
+            # store df in dictionary
+            dfs[tick] = df
+
+        # join
+        df = reduce(lambda left, right: pd.merge(left, right, on='timestamp', how='outer'), dfs.values())
+
+        # sort
+        df.sort_values(by='timestamp', ascending=True, inplace=True)
+
+        # convert timestamp to date
+        df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df['date'] = df['timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
+        df.drop('timestamp', axis=1, inplace=True)
+
+        # drop columns not in fields
+        df.drop([col for col in df.columns if not any(field in col for field in fields) and col != 'date'], axis=1, inplace=True)
+
+        # clean nulls
+        df.dropna(inplace=True)
+
+        return df
