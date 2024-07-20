@@ -1,8 +1,8 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from dataclasses import dataclass, fields
 from exp.exp_informer import Exp_Informer
 from pathlib import Path
-import torch, io, copy, time, numpy as np, pandas as pd
+import torch, io, copy, time, pandas as pd
 
 @dataclass(kw_only=True)
 class InformerArgs:
