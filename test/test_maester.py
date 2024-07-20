@@ -1,7 +1,7 @@
 from yaat.maester import Maester, InformerDoc
 from dataclasses import asdict
 from bson import Int64
-import unittest, os, time
+import unittest, os, time, pymongo.errors as mongoerr
 
 class TestMaester(unittest.TestCase):
 
@@ -14,6 +14,9 @@ class TestMaester(unittest.TestCase):
         # mongo uses millisecond precision
         cls.informer_doc.date = cls.informer_doc.date.replace(microsecond=int(cls.informer_doc.date.microsecond / 1000) * 1000)
 
+    def setUp(self):
+        self.informer_doc.name = f"{time.time()}_name"
+
     def test_informer_doc_error(self):
         with self.assertRaises(TypeError):
             InformerDoc(root_path='somepath', data_path='somepath', target='targ')
@@ -23,3 +26,7 @@ class TestMaester(unittest.TestCase):
         retdoc = InformerDoc(**self.m.informer_weights.find_one({'name': self.informer_doc.name}, {'_id': 0}))
         self.assertEqual(retdoc, self.informer_doc)
 
+    def test_informer_doc_insert_error(self):
+        self.informer_doc.tickers = [1]
+        with self.assertRaises(mongoerr.WriteError):
+            self.m.informer_weights.insert_one(asdict(self.informer_doc))
