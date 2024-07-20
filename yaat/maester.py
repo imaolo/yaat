@@ -216,9 +216,7 @@ class Maester:
             df.drop(['vwap', 'otc'], axis=1, inplace=True)
 
             # rename the non-dates
-            df.rename(columns={'volume': f'{tick}_volume', 'open': f'{tick}_open', 'close': f'{tick}_close',
-                               'high': f'{tick}_high', 'low': f'{tick}_low', 'transactions': f'{tick}_transactions'},
-                               inplace=True)
+            df.rename(columns={col:f"{tick}_{col}" for col in df.columns if col!='timestamp'}, inplace=True)
 
             # store df in dictionary
             dfs[tick] = df
