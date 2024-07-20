@@ -215,6 +215,9 @@ class Maester:
 
         # process the columns
         for tick, df in dfs.items():
+            # drop ticker column - NOTE: for now
+            df.drop('ticker', axis=1, inplace=True)
+
             # prepend ticker name to field
             df.rename(columns={col: f"{tick}_{col}" for col in df.columns if col != 'date'}, inplace=True)
 
