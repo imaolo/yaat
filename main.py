@@ -52,3 +52,4 @@ elif args.cmd == 'plot_prediction':
 # make a db just for candles
 # TODO - handle live jobs better, record them in the database
 # TODO - create dataclasses for each of the collection, use the pymmap to read them in
+# TODO - test get_live_data
