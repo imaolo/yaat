@@ -1,5 +1,7 @@
 from yaat.maester import Maester, InformerDoc
-import unittest, os
+from dataclasses import asdict
+from bson import Int64
+import unittest, os, time
 
 class TestMaester(unittest.TestCase):
 
@@ -10,3 +12,8 @@ class TestMaester(unittest.TestCase):
     def test_informer_doc_error(self):
         with self.assertRaises(TypeError):
             InformerDoc(root_path='somepath', data_path='somepath', target='targ')
+
+    def test_informer_doc_insert(self):
+        doc = InformerDoc(root_path='somepath', data_path='somepath', target='targ', tickers=['str'],
+                           settings='settings', name=f"{time.time()}_name", num_params=Int64(1), fields=['field'])
+        self.m.informer_weights.insert_one(asdict(doc))
