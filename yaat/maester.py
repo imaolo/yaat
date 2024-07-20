@@ -224,8 +224,4 @@ class Maester:
         if end_date is not None:
             result_df = result_df[result_df['date'] <= end_date]
 
-        # save to file
-        temp_file_path = tempfile.NamedTemporaryFile(delete=False).name + '.csv'
-        result_df.to_csv(temp_file_path)
-
         return result_df
