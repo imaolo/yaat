@@ -64,6 +64,13 @@ class Maester:
     def_dbdir = Path('yaatdb_local')
     db_name: str = 'yaatdb'
 
+    # api info
+
+    alpha_url = 'https://www.alphavantage.co/query?'
+    alpha_key = '3KZFIF8WVK43Q92B'
+
+    polygon_key = 'fuqZHZzJdzJpYq2kMRxZTI42N1nPlxKj'
+
     # schemas
 
     candle_schema = {
@@ -141,7 +148,7 @@ class Maester:
 
         # data api
 
-        self.polygon = polygon.RESTClient(api_key='fuqZHZzJdzJpYq2kMRxZTI42N1nPlxKj')
+        self.polygon = polygon.RESTClient(api_key=self.polygon_key)
 
     # database config
 
