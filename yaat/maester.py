@@ -10,10 +10,9 @@ from bson.timestamp import Timestamp
 from dataclasses import asdict
 from functools import reduce
 from polygon import RESTClient
-from pprint import pprint
 from datetime import datetime, timedelta
 from bson import Int64
-import atexit, functools, gridfs, io, torch, tempfile, numpy as np, pymongo.errors as mongoerrs, pandas as pd
+import atexit, functools, gridfs, tempfile, numpy as np, pymongo.errors as mongoerrs, pandas as pd
 
 if TYPE_CHECKING:
     from pymongo.collection import Collection
@@ -27,6 +26,8 @@ pybson_tmap = {
     Optional[str]: ['string', 'null'],
     Optional[np.array]: ['array', 'null']
 }
+
+
 
 class Maester:
 
