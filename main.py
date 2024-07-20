@@ -26,15 +26,16 @@ elif args.cmd == 'plot_prediction':
     # get the real data
     target_ticker = model_doc.target.split('_')[0]
     target_field = model_doc.target.split('_')[1]
-    real_df = maester.get_live_data([target_ticker], model_doc.fields, pred_doc.pred_date, pred_doc.pred_date + timedelta(days=1))
+    real_df = maester.get_live_data([target_ticker], [target_field], pred_doc.pred_date, pred_doc.pred_date + timedelta(days=1))
     real_df = real_df.head(model_doc.seq_len)
 
     # place predictions in dataframe
     real_df['preds'] = preds
 
     # Plotting
+    target_field_full = f"{target_ticker}_{target_field}"
     plt.figure(figsize=(10, 6))
-    plt.plot(real_df.index, real_df['SPY_open'], label='SPY_open', marker='o')
+    plt.plot(real_df.index, real_df[target_field_full], label=target_field_full, marker='o')
     plt.plot(real_df.index, real_df['preds'], label='preds', marker='x')
     plt.xlabel('Index')
     plt.ylabel('Value')
