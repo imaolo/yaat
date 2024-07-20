@@ -200,7 +200,7 @@ class Maester:
     def set_informer_weights(self, name: str, informer:Informer) -> ObjectId:
         # delete the old file
         model_doc = self.informers.find_one(q:={'name': name})
-        if model_doc is not None: self.fs.delete(model_doc['weights_file_id'])
+        if model_doc['weights_file_id'] is not None: self.fs.delete(model_doc['weights_file_id'])
          
         # upload weights file
         weights_file_id = self.fs.put(informer.byte_weights)
