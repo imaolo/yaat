@@ -9,9 +9,18 @@ class TestInformer(unittest.TestCase):
         cls.df = pd.DataFrame(np.random.randn(400, 3), columns=['A', 'B', 'date'])
         cls.df_fp = Path(tempfile.NamedTemporaryFile(suffix='.csv').name)
         cls.df.to_csv(cls.df_fp)
-        cls.informer_args = InformerArgs(cls.df_fp.parent, cls.df_fp.name, 'A', seq_len=4, pred_len=4, label_len=2, d_model=2, train_epochs=1, n_heads=1, d_ff=2)
-        cls.informer = Informer(cls.informer_args)
+        cls.required_args = {'root_path': cls.df_fp.parent, 'data_path': cls.df_fp.name, 'target': 'A'}
 
     def test_informer(self):
-        list(self.informer.exp_model.train(self.informer.settings))
-        self.informer.exp_model.predict(self.informer.settings)
+        informer_args = InformerArgs(**self.required_args, **Informer.small_scale_args)
+        informer = Informer(informer_args)
+
+        list(informer.exp_model.train(informer.settings))
+        informer.exp_model.predict(informer.settings)
+
+    def test_informer_sample_scale(self):
+        informer_args = InformerArgs(**self.required_args, **Informer.small_scale_args, sample_scale=True)
+        informer = Informer(informer_args)
+
+        list(informer.exp_model.train(informer.settings))
+        informer.exp_model.predict(informer.settings)
