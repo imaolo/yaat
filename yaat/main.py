@@ -1,11 +1,11 @@
 from typing import Optional, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 from yaat.maester import Maester, InformerDoc, PredictionDoc
 from yaat.informer import Informer
 from dataclasses import asdict
 from pathlib import Path
 from bson import Int64
-import argparse, inspect, tempfile, os, numpy as np
+import argparse, inspect, tempfile, os, numpy as np, pandas as pd
 
 
 # main parser
@@ -135,10 +135,12 @@ def predict(args):
     # get the informer doc
     informer_doc = InformerDoc(**maester.informers.find_one({'name': args.model_name}, {'_id': 0}))
 
-    date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    # get start and end dates TODO - fix start->end date
+    end_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    start_date = end_date - timedelta(days=1)
 
     # get the dataset
-    df = maester.get_dataset(informer_doc.tickers, informer_doc.fields, end_date=date)
+    df = maester.get_live_data(informer_doc.tickers, informer_doc.fields, start_date=start_date, end_date=end_date)
 
     # save to file
     df_fp = Path(tempfile.NamedTemporaryFile(delete=False, suffix='.csv').name)
@@ -158,6 +160,6 @@ def predict(args):
     informer.predict()
 
     # store predictions
-    maester.predictions.insert_one(asdict(PredictionDoc(args.name, args.model_name, date,
+    maester.predictions.insert_one(asdict(PredictionDoc(args.name, args.model_name, pd.to_datetime(df['date'].max()),
                                                         np.load(informer.predictions_file_path).flatten().tolist())))
 
