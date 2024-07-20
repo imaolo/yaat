@@ -1,11 +1,11 @@
 from typing import Optional, Dict, List
 from datetime import datetime
-from yaat.maester import Maester, InformerDoc
+from yaat.maester import Maester, InformerDoc, PredictionDoc
 from yaat.informer import Informer
 from dataclasses import asdict
 from pathlib import Path
 from bson import Int64
-import argparse, inspect, tempfile, os
+import argparse, inspect, tempfile, os, numpy as np
 
 
 # main parser
@@ -135,8 +135,11 @@ def predict(args):
     # get the informer doc
     informer_doc = InformerDoc(**maester.informers.find_one({'name': args.model_name}, {'_id': 0}))
 
+    date = datetime.strptime(args.start_date, '%Y-%m-%d')
+
     # get the dataset
-    df = maester.get_dataset(informer_doc.tickers, informer_doc.fields, end_date=datetime.strptime(args.start_date, '%Y-%m-%d'))
+    df = maester.get_dataset(informer_doc.tickers, informer_doc.fields, end_date=date)
+
     # save to file
     df_fp = Path(tempfile.NamedTemporaryFile(delete=False, suffix='.csv').name)
     df.to_csv(df_fp)
@@ -155,4 +158,6 @@ def predict(args):
     informer.predict()
 
     # store predictions
+    maester.predictions.insert_one(asdict(PredictionDoc(args.name, args.model_name, date,
+                                                        np.load(informer.predictions_file_path).flatten().tolist())))
 
