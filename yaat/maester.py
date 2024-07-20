@@ -24,6 +24,7 @@ pybson_tmap = {
     Optional[np.array]: {'bsonType': ['array', 'null']},
     Optional[ObjectId]: {'bsonType': ['null', 'objectId']},
     List[str]: {'bsonType': 'array', 'items': {'bsonType': 'string'}},
+    List[float]: {'bsonType': 'array', 'items': {'bsonType': 'double'}},
     datetime: {'bsonType': 'date'},
     Optional[Int64]: {'bsonType': ['null', 'long']},
     Optional[float]: {'bsonType':['double', 'null']},
@@ -44,6 +45,14 @@ class InformerDoc(InformerArgs):
     vali_loss: Optional[float] = None
     test_loss: Optional[float] = None
     time_left: Optional[float] = None
+
+@dataclass
+class PredictionDoc:
+    name:str
+    model_name:str
+    date: datetime
+    pred_date:datetime
+    predictions:List[float]
 
 class Maester:
 
@@ -88,15 +97,8 @@ class Maester:
 
     predictions_schema = {
         'title': 'predictions',
-        'required': ['name', 'model_name', 'last_date', 'predictions', 'timestamp'],
-        'properties': {
-            'name': {'bsonType': 'string'},
-            'model_name': {'bsonType': 'string'},
-            'last_date': {'bsonType': 'date'},
-            'predictions': {'bsonType': 'array'},
-            'timestamp': {'bsonType': 'date'},
-
-        }
+        'required': [field.name for field in fields(PredictionDoc)],
+        'properties': {field.name: pybson_tmap[field.type] for field in fields(PredictionDoc)}
     }
 
     # construction

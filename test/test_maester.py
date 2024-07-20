@@ -1,8 +1,9 @@
-from yaat.maester import Maester, InformerDoc
+from yaat.maester import Maester, InformerDoc, PredictionDoc
 from yaat.informer import InformerArgs, Informer
 from dataclasses import asdict
 from bson import Int64
 from pathlib import Path
+from datetime import datetime
 import unittest, os, time, tempfile, torch, copy, pymongo.errors as mongoerr, pandas as pd, numpy as np
 
 class TestMaester(unittest.TestCase):
@@ -95,3 +96,7 @@ class TestMaester(unittest.TestCase):
         fields = set(col.split('_')[1] for col in df.columns if col != 'date')
         self.assertEqual(len(fields), 1, msg=fields)
         self.assertEqual(fields.pop(), 'open')
+
+    def test_prediction_doc(self):
+        pred_doc = PredictionDoc(time.time(), 'model_name', datetime.now(), datetime.now(), [1.0])
+        self.maester.predictions.insert_one(asdict(pred_doc))
