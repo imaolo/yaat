@@ -211,7 +211,8 @@ class Maester:
 
         return weights_file_id
 
-    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None) -> pd.DataFrame:
+    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None,
+                    start_date:Optional[datetime]=None, end_date:Optional[datetime]=None) -> pd.DataFrame:
         # get the dataframes
         dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
 
@@ -232,6 +233,12 @@ class Maester:
 
         # clean nulls
         result_df.dropna(inplace=True)
+
+        # get date ranges
+        if start_date is not None:
+            result_df = result_df[result_df['date'] >= start_date]
+        if end_date is not None:
+            result_df = result_df[result_df['date'] <= end_date]
 
         # save to file
         temp_file_path = tempfile.NamedTemporaryFile(delete=False).name + '.csv'

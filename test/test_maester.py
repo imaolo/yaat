@@ -100,3 +100,13 @@ class TestMaester(unittest.TestCase):
     def test_prediction_doc(self):
         pred_doc = PredictionDoc(str(time.time()), 'model_name', datetime.now(), datetime.now(), [1.0])
         self.maester.predictions.insert_one(asdict(pred_doc))
+
+    def test_get_dataset_date_ranges(self):
+
+        start_date = datetime(year=2019, month=7, day=12, hour=10)
+        end_date = datetime(year=2019, month=7, day=12, hour=14)
+
+        df = self.maester.get_dataset(['SPY'], start_date=start_date, end_date=end_date)
+
+        self.assertEqual(df['date'].max(), end_date)
+        self.assertEqual(df['date'].min(), start_date)
