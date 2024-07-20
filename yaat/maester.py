@@ -177,31 +177,30 @@ class Maester:
 
     def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None,
                     start_date:Optional[datetime]=None, end_date:Optional[datetime]=None) -> pd.DataFrame:
-        # get the dataframes
-        dfs = {tick: pd.DataFrame(list(self.candles1min.find({'ticker': tick}, {'_id': 0}).sort('date', 1))) for tick in tickers}
+        # projection and sort stage
+        proj_sort_stage =  [{'$project': {'_id': 0, **({field:1 for field in fields + ['date']} if fields is not None else {'ticker': 0})}},
+                            {'$sort': {'date': 1}}]
 
-        # process the columns
+        # date stage
+        date_conditions = {}
+        if start_date: date_conditions['$gte'] = start_date
+        if end_date: date_conditions['$lte'] = end_date
+        date_stage = [{'$match': {'date': date_conditions}}] if date_conditions else []
+
+        # per ticker factory
+        tick_stage_factory = lambda tick: [{'$match': {'ticker': tick}}]
+
+        # query and get dataframes
+        dfs = {tick: pd.DataFrame(list(self.candles1min.aggregate(tick_stage_factory(tick) + date_stage + proj_sort_stage))) for tick in tickers}
+
+        # prepend ticker name to column names
         for tick, df in dfs.items():
-            # drop ticker column - NOTE: for now
-            df.drop('ticker', axis=1, inplace=True)
-
-            # prepend ticker name to field
             df.rename(columns={col: f"{tick}_{col}" for col in df.columns if col != 'date'}, inplace=True)
-
-            # drop fields not specified
-            if fields is not None:
-                df.drop([col for col in df.columns if not any(field in col for field in fields) and col != 'date'], axis=1, inplace=True)
 
         # merge the ticker dataframes
         result_df = reduce(lambda left, right: pd.merge(left, right, on='date', how='outer'), dfs.values())
 
         # clean nulls
         result_df.dropna(inplace=True)
-
-        # get date ranges
-        if start_date is not None:
-            result_df = result_df[result_df['date'] >= start_date]
-        if end_date is not None:
-            result_df = result_df[result_df['date'] <= end_date]
 
         return result_df
