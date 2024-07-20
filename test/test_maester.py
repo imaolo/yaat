@@ -20,7 +20,6 @@ class TestMaester(unittest.TestCase):
 
     def test_informer_doc_insert(self):
         self.m.informer_weights.insert_one(asdict(self.informer_doc))
-        doc = self.m.informer_weights.find_one({'name': self.informer_doc.name}, {'_id': 0})
         retdoc = InformerDoc(**self.m.informer_weights.find_one({'name': self.informer_doc.name}, {'_id': 0}))
         self.assertEqual(retdoc, self.informer_doc)
 
