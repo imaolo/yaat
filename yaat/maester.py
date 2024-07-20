@@ -1,7 +1,7 @@
 from yaat.informer import InformerArgs, Informer
 from yaat.util import killproc
 from typing import Dict, Optional, Set, List, Tuple
-from dataclasses import fields
+from dataclasses import fields, field
 from pathlib import Path
 from pymongo import MongoClient
 from subprocess import Popen, DEVNULL
@@ -34,10 +34,10 @@ pybson_tmap = {
 class InformerDoc(InformerArgs):
     tickers: List[str]
     settings: str
-    date: datetime
     name: str
     num_params: Int64
     fields: List[str]
+    date: datetime = field(default_factory=datetime.now)
     alpha_dataset: bool = False
     weights_file_id: Optional[ObjectId] = None
     curr_epoch: Optional[int] = None
