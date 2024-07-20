@@ -25,7 +25,7 @@ pybson_tmap = {
     Optional[ObjectId]: {'bsonType': ['null', 'objectId']},
     List[str]: {'bsonType': 'array', 'items': {'bsonType': 'string'}},
     datetime: {'bsonType': 'date'},
-    Int64: {'bsonType': 'long'},
+    Optional[Int64]: {'bsonType': ['null', 'long']},
     Optional[float]: {'bsonType':['double', 'null']},
     Optional[int]: {'bsonType':['int', 'null']},
 }
@@ -33,9 +33,8 @@ pybson_tmap = {
 @dataclass(kw_only=True)
 class InformerDoc(InformerArgs):
     tickers: List[str]
-    settings: str
     name: str
-    num_params: Int64
+    num_params: Optional[Int64]
     fields: List[str]
     date: datetime = field(default_factory=datetime.now)
     alpha_dataset: bool = False

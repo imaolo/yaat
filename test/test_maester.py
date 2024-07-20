@@ -20,7 +20,7 @@ class TestMaester(unittest.TestCase):
 
         # setup a document
         cls.informer_doc = InformerDoc(**cls.required_args, **Informer.small_scale_args, tickers=['str'], name=time.time(),
-                                       settings='settings', num_params=Int64(1), fields=['field'])
+                                       num_params=Int64(1), fields=['field'])
 
         # mongo uses millisecond precision
         cls.informer_doc.date = cls.informer_doc.date.replace(microsecond=int(cls.informer_doc.date.microsecond / 1000) * 1000)
