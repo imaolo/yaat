@@ -1,14 +1,15 @@
 from typing import Optional, Dict, List
 from datetime import datetime
-import argparse, inspect
+from yaat.maester import Maester, InformerDoc
+from yaat.informer import Informer
+from dataclasses import asdict
+from pathlib import Path
+from bson import Int64
+import argparse, inspect, tempfile, os
 
 
 # main parser
 main_parser = argparse.ArgumentParser(description='[YAAT] Yet Another Automated Trader')
-
-# main arguments
-main_parser.add_argument('--dbdir', type=str, default=None, help='which directory to start local db')
-main_parser.add_argument('--connstr', type=str, default='mongodb://Earl:pink-Flamingo1317@52.91.137.11/', help='database connection string')
 
 # sub - commands
 main_subparser = main_parser.add_subparsers(dest='cmd', required=True, help='yaat command help')
@@ -90,12 +91,43 @@ def parse_args(cmd:Optional[str]=None, args: Dict[str, str]=None):
             _args.append(v)
     return main_parser.parse_args(_args)
 
+connstr = None if (osv := os.getenv('CONNSTR', 'mongodb://Earl:pink-Flamingo1317@52.91.137.11/')) == 'None' else osv
+maester = Maester(connstr=connstr, dbdir=os.getenv('DBDIR'))
 
 def train(args):
     assert args.cmd == inspect.currentframe().f_code.co_name, args.cmd
+    print(args)
 
     # get the dataset
+    print(f"retrieving dataset: tickers - {args.tickers}, fields - {args.fields}")
+    df = maester.get_dataset(args.tickers, args.fields)
+
+    # save to file
+    df_fp = Path(tempfile.NamedTemporaryFile(delete=False, suffix='.csv').name)
+    df.to_csv(df_fp)
+
+    # create the doc
+    informer_doc: InformerDoc = InformerDoc.from_dict(vars(args)
+        | {'root_path': str(df_fp.parent)}
+        | {'data_path': str(df_fp.name)}
+        | {'fields': list(set(col.split('_')[1] for col in df.columns if col != 'date'))})
+
+    print(informer_doc)
 
     # create the model
+    informer = Informer(informer_doc)
 
-    # train
+    # set num_params
+    informer_doc.num_params = Int64(informer.num_params)
+
+    # insert the document
+    maester.informers.insert_one(asdict(informer_doc))
+
+    # train the model
+    print("training model")
+    for update in informer.train():
+        maester.informers.update_one({'name': args.name}, {'$set': update})
+        if 'test_loss' in update.keys():
+            maester.set_informer_weights(informer_doc.name, informer)
+    print("training complete")
+
