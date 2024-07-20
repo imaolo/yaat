@@ -28,24 +28,6 @@ pybson_tmap = {
     Int64: 'long'
 }
 
-# TODO - for array element types
-# book_validator = {
-#     "$jsonSchema": {
-#         "bsonType": "object",
-#         "required": ["authors"],  # Example of a required field
-#         "properties": {
-#             "authors": {
-#                 "bsonType": "array",
-#                 "description": "must be an array of strings and is required",
-#                 "items": {
-#                     "bsonType": "string",
-#                     "description": "each item must be a string"
-#                 }
-#             }
-#         }
-#     }
-# }
-
 @dataclass(kw_only=True)
 class InformerDoc(InformerArgs):
     weights_file_id: Optional[ObjectId]
@@ -331,3 +313,22 @@ class Maester:
         })
 
         return timestamp
+    
+
+# TODO - for array element types
+# book_validator = {
+#     "$jsonSchema": {
+#         "bsonType": "object",
+#         "required": ["authors"],  # Example of a required field
+#         "properties": {
+#             "authors": {
+#                 "bsonType": "array",
+#                 "description": "must be an array of strings and is required",
+#                 "items": {
+#                     "bsonType": "string",
+#                     "description": "each item must be a string"
+#                 }
+#             }
+#         }
+#     }
+# }
