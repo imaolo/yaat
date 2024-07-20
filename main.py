@@ -57,20 +57,11 @@ elif args.cmd == 'plot_prediction':
     plt.show()
 
 # TODO - scale down the model and try a bunch of combinations to see what works best at predicting
-# TODO - refactor for testing
-# def parse_args(args=None):
-#     # Use main_parser defined at the top level of this module
-#     return main_parser.parse_args(args)
-# TODO - when retrieving datasets, filter fields on server, not client
 # TODO - better alpha dataset support
 # TODO - predictions are more than just the end of the day
 # TODO - get better schema update mechanism because I just frigged at 6 hour epoch
 # TODO - true batch scaling, not instance scaling
-# TODO - hotfix for predicting when batch scaled (self.scaler is never fitted)
 # TODO - use alphavantage, that inclues collections per ticker rather than just one collection.
 # make a db just for candles
-# TODO - combine get_dataset and get_prediction_dataset
-# TODO - change "batch_scale" argument name to "sample_scale
 # TODO - handle live jobs better, record them in the database
 # TODO - create dataclasses for each of the collection, use the pymmap to read them in
-# TODO - clean things up!! (overload informer_args for the informer doc)
