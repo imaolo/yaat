@@ -1,19 +1,16 @@
 from yaat.informer import InformerArgs, Informer
 from yaat.util import killproc
-from typing import Dict, Optional, Set, List, Tuple
+from typing import Dict, Optional, List
 from dataclasses import fields, field
 from pathlib import Path
 from pymongo import MongoClient
 from subprocess import Popen, DEVNULL
-from bson.timestamp import Timestamp
-from dataclasses import asdict
 from functools import reduce
-from polygon import RESTClient
-from datetime import datetime, timedelta
+from datetime import datetime
 from bson import Int64, ObjectId
 from dataclasses import dataclass
 from pymongo.collection import Collection
-import atexit, functools, gridfs, tempfile, numpy as np, pymongo.errors as mongoerrs, pandas as pd
+import atexit, functools, gridfs, polygon, numpy as np, pymongo.errors as mongoerrs, pandas as pd
 
 pybson_tmap = {
     str: {'bsonType': 'string'},
@@ -82,19 +79,6 @@ class Maester:
         }
     }
 
-    spy_1min_ohclv_schema = {
-        'title': 'SPY candles every 1 minute from alphavantage',
-        'required': ['open', 'high', 'low', 'close', 'volume', 'date'],
-        'properties': {
-            'open': {'bsonType': 'double'},
-            'high': {'bsonType': 'double'},
-            'low': {'bsonType': 'double'},
-            'close': {'bsonType': 'double'},
-            'volume': {'bsonType': 'int'},
-            'date': {'bsonType': 'date'},
-        }
-    }
-
     predictions_schema = {
         'title': 'predictions',
         'required': [field.name for field in fields(PredictionDoc)],
@@ -123,7 +107,7 @@ class Maester:
 
         # create schemas
 
-        def create_collection(name, schema) -> Collection:
+        def init_collection(name, schema) -> Collection:
             if name in self.db.list_collection_names():
                 self.db.command('collMod', name, validator={'$jsonSchema': schema})
             else:
@@ -131,31 +115,27 @@ class Maester:
             return self.db[name]
 
 
-        self.informers = create_collection('informers', self.informers_schema)
-        self.candles1min = create_collection('candles1min', self.candles1min_schema)
-        self.predictions = create_collection('predictions', self.predictions_schema)
-        self.spy_1min_ohclv = create_collection('spy_1min_ohclv', self.spy_1min_ohclv_schema)
+        self.informers = init_collection('informers', self.informers_schema)
+        self.candles1min = init_collection('candles1min', self.candles1min_schema)
+        self.predictions = init_collection('predictions', self.predictions_schema)
 
         # create indexes
 
-        self.candles1min.create_index(idx:={'ticker':1, 'date':1}, unique=True)
-        self.candles1min.create_index(idx:={'ticker':1})
-        self.candles1min.create_index(idx:={'date':1})
+        self.candles1min.create_index({'ticker':1, 'date':1}, unique=True)
+        self.candles1min.create_index({'ticker':1})
+        self.candles1min.create_index({'date':1})
 
-        self.informers.create_index(idx:={'name':1}, unique=True)
+        self.informers.create_index({'name':1}, unique=True)
 
-        self.predictions.create_index(idx:={'name':1}, unique=True)
-
-        # TODO
-        # self.spy_1min_ohclv.create_index(idx:={'date':1}, unique=True)
+        self.predictions.create_index({'name':1}, unique=True)
 
         # file store
 
         self.fs = gridfs.GridFS(self.db)
 
-        # polygon - fuqZHZzJdzJpYq2kMRxZTI42N1nPlxKj
+        # data api
 
-        self.polygon = RESTClient(api_key='fuqZHZzJdzJpYq2kMRxZTI42N1nPlxKj')
+        self.polygon = polygon.RESTClient(api_key='fuqZHZzJdzJpYq2kMRxZTI42N1nPlxKj')
 
     # database config
 
