@@ -128,3 +128,31 @@ def train(args):
             maester.set_informer_weights(informer_doc.name, informer)
     print("training complete")
 
+def predict(args):
+    assert args.cmd == inspect.currentframe().f_code.co_name, args.cmd
+    print(args)
+
+    # get the informer doc
+    informer_doc = InformerDoc(**maester.informers.find_one({'name': args.model_name}, {'_id': 0}))
+
+    # get the dataset
+    df = maester.get_dataset(informer_doc.tickers, informer_doc.fields, end_date=datetime.strptime(args.start_date, '%Y-%m-%d'))
+    # save to file
+    df_fp = Path(tempfile.NamedTemporaryFile(delete=False, suffix='.csv').name)
+    df.to_csv(df_fp)
+
+    # set the root and data path
+    informer_doc.root_path = str(df_fp.parent)
+    informer_doc.data_path = str(df_fp.name)
+
+    # create the model
+    informer = Informer(informer_doc)
+
+    # load the model
+    informer.load_weights(maester.fs.get(informer_doc.weights_file_id).read())
+
+    # predict
+    informer.predict()
+
+    # store predictions
+
