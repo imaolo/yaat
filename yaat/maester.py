@@ -38,7 +38,7 @@ class InformerDoc(InformerArgs):
     name: str
     num_params: Int64
     fields: List[str]
-    alpha_dataset: bool # TODO - refactor away
+    alpha_dataset: bool = False
     weights_file_id: Optional[ObjectId] = None
     curr_epoch: Optional[int] = None
     train_loss: Optional[float] = None
