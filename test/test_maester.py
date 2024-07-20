@@ -1,16 +1,27 @@
 from yaat.maester import Maester, InformerDoc
+from yaat.informer import InformerArgs, Informer
 from dataclasses import asdict
 from bson import Int64
-import unittest, os, time, pymongo.errors as mongoerr
+from pathlib import Path
+import unittest, os, time, tempfile, copy, pymongo.errors as mongoerr, pandas as pd, numpy as np
 
 class TestMaester(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.m = Maester(connstr=os.getenv('CONNSTR'), dbdir=os.getenv('DBDIR'))
-        cls.ts = time.time()
-        cls.informer_doc = InformerDoc(root_path='somepath', data_path='somepath', target='targ', tickers=['str'],
-                                       settings='settings', name=f"{cls.ts}_name", num_params=Int64(1), fields=['field'])
+        # setup the maester 
+        cls.maester = Maester(connstr=os.getenv('CONNSTR'), dbdir=os.getenv('DBDIR'))
+
+        # setup some data
+        cls.df = pd.DataFrame(np.random.randn(500, 3), columns=['A', 'B', 'date'])
+        cls.df_fp = Path(tempfile.NamedTemporaryFile(suffix='.csv').name)
+        cls.df.to_csv(cls.df_fp)
+        cls.required_args = {'root_path': str(cls.df_fp.parent), 'data_path': str(cls.df_fp.name), 'target': 'A'}
+
+        # setup a document
+        cls.informer_doc = InformerDoc(**cls.required_args, **Informer.small_scale_args, tickers=['str'], name=time.time(),
+                                       settings='settings', num_params=Int64(1), fields=['field'])
+
         # mongo uses millisecond precision
         cls.informer_doc.date = cls.informer_doc.date.replace(microsecond=int(cls.informer_doc.date.microsecond / 1000) * 1000)
 
@@ -22,11 +33,29 @@ class TestMaester(unittest.TestCase):
             InformerDoc(root_path='somepath', data_path='somepath', target='targ')
 
     def test_informer_doc_insert(self):
-        self.m.informers.insert_one(asdict(self.informer_doc))
-        retdoc = InformerDoc(**self.m.informers.find_one({'name': self.informer_doc.name}, {'_id': 0}))
+        self.maester.informers.insert_one(asdict(self.informer_doc))
+        retdoc = InformerDoc(**self.maester.informers.find_one({'name': self.informer_doc.name}, {'_id': 0}))
         self.assertEqual(retdoc, self.informer_doc)
 
     def test_informer_doc_insert_error(self):
-        self.informer_doc.tickers = [1]
+        informer_doc = copy.copy(self.informer_doc)
+        informer_doc.tickers = [1]
         with self.assertRaises(mongoerr.WriteError):
-            self.m.informers.insert_one(asdict(self.informer_doc))
+            self.maester.informers.insert_one(asdict(informer_doc))
+
+    def test_training_update(self):
+        # insert and make sure there is not train loss
+        self.maester.informers.insert_one(asdict(self.informer_doc))
+        retdoc = self.maester.informers.find_one({'name': self.informer_doc.name})
+        self.assertIsNone(retdoc['train_loss'])
+
+        # train and update
+        informer = Informer(self.informer_doc)
+        for update in informer.exp_model.train(informer.settings):
+            update_res = self.maester.informers.update_one({'name': self.informer_doc.name}, {'$set': update})
+            self.assertEqual(update_res.modified_count, 1)
+
+        # make sure update occurred
+        retdoc = self.maester.informers.find_one({'name': self.informer_doc.name})
+        self.assertIsNotNone(retdoc['train_loss'])
+
