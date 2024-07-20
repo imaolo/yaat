@@ -53,7 +53,7 @@ class Maester:
 
     # schemas
 
-    informer_weights_schema: Dict = {
+    informers_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerDoc)],
         'properties': {field.name: pybson_tmap[field.type] for field in fields(InformerDoc)}
@@ -130,7 +130,7 @@ class Maester:
             return self.db[name]
 
 
-        self.informer_weights = create_collection('informer_weights', self.informer_weights_schema)
+        self.informers = create_collection('informers', self.informers_schema)
         self.candles1min = create_collection('candles1min', self.candles1min_schema)
         self.predictions = create_collection('predictions', self.predictions_schema)
         self.spy_1min_ohclv = create_collection('spy_1min_ohclv', self.spy_1min_ohclv_schema)
@@ -141,7 +141,7 @@ class Maester:
         self.candles1min.create_index(idx:={'ticker':1})
         self.candles1min.create_index(idx:={'date':1})
 
-        self.informer_weights.create_index(idx:={'name':1}, unique=True)
+        self.informers.create_index(idx:={'name':1}, unique=True)
 
         self.predictions.create_index(idx:={'name':1}, unique=True)
 
