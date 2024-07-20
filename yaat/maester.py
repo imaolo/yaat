@@ -34,10 +34,10 @@ pybson_tmap = {
 class InformerDoc(InformerArgs):
     tickers: List[str]
     name: str
-    num_params: Optional[Int64]
     fields: List[str]
     date: datetime = field(default_factory=datetime.now)
     alpha_dataset: bool = False
+    num_params: Optional[Int64] = None
     weights_file_id: Optional[ObjectId] = None
     curr_epoch: Optional[int] = None
     train_loss: Optional[float] = None
