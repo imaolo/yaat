@@ -48,7 +48,7 @@ class InformerArgs:
     gpu: int = 0
     use_multi_gpu: bool = False
     devices: str = '0,1,2,3'
-    batch_scale:bool = False
+    sample_scale:bool = False
 
     @classmethod
     def from_dict(cls, args: Dict[str, Any]) -> 'InformerArgs':
