@@ -1,5 +1,7 @@
 from datetime import timedelta
 from yaat.main import parse_args, train, predict, maester
+from yaat.maester import PredictionDoc, InformerDoc
+from datetime import datetime
 import pandas as pd, numpy as np, matplotlib.pyplot as plt
 
 args = parse_args()
@@ -13,38 +15,27 @@ elif args.cmd == 'predict':
 elif args.cmd == 'plot_prediction':
 
     # get prediction doc
-    pred_doc = list(maester.predictions.find({'name': args.name}))
-    assert len(pred_doc) == 1,f"only one prediction document allowed for {args.name}, {len(pred_doc)} found"
-    pred_doc = pred_doc[0]
+    pred_doc = PredictionDoc(**maester.predictions.find_one({'name': args.name}, {'_id': 0}))
     
     # get model doc
-    model_name = pred_doc['model_name']
-    model_doc = list(maester.informer_weights.find({'name': model_name}))
-    assert len(model_doc) == 1,f"only one model document allowed for {model_name}, {len(model_doc)} found"
-    model_doc = model_doc[0]
+    model_doc = InformerDoc(**maester.informers.find_one({'name': pred_doc.model_name}, {'_id': 0}))
 
     # get the prediction data
-    preds = np.array(pred_doc['predictions']).squeeze()
+    preds = np.array(pred_doc.predictions).squeeze()
+    
+    # get the real data
+    target_ticker = model_doc.target.split('_')[0]
+    target_field = model_doc.target.split('_')[1]
+    real_df = maester.get_live_data([target_ticker], model_doc.fields, pred_doc.pred_date, pred_doc.pred_date + timedelta(days=1))
+    real_df = real_df.head(model_doc.seq_len)
 
-    start_pred_date = pred_doc['last_date'] + timedelta(days=1)
-    start_pred_date = start_pred_date.strftime('%Y-%m-%d')
-
-    last_date_actual, actual_dataset_path = maester.get_prediction_data(start_pred_date, model_doc)
-
-    actual_df = pd.read_csv(actual_dataset_path)
-    actual_df['timestamp'] = pd.to_datetime(actual_df['date'], format='%Y-%m-%d %H:%M:%S')
-
-    print(actual_df['timestamp'].min())
-
-    actual_df = actual_df.drop([col for col in actual_df.columns if '_open' not in col], axis=1).head(model_doc['pred_len'])
-
-    actual_df['preds'] = preds
-    # actual_df['preds'] = actual_df['preds'].rolling(window=5).mean()
+    # place predictions in dataframe
+    real_df['preds'] = preds
 
     # Plotting
     plt.figure(figsize=(10, 6))
-    plt.plot(actual_df.index, actual_df['SPY_open'], label='SPY_open', marker='o')
-    plt.plot(actual_df.index, actual_df['preds'], label='preds', marker='x')
+    plt.plot(real_df.index, real_df['SPY_open'], label='SPY_open', marker='o')
+    plt.plot(real_df.index, real_df['preds'], label='preds', marker='x')
     plt.xlabel('Index')
     plt.ylabel('Value')
     plt.title('SPY_open and preds')
