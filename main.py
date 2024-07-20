@@ -3,7 +3,7 @@ from dataclasses import asdict
 from pprint import pprint
 from datetime import datetime, timedelta
 from yaat.informer import Informer, InformerArgs
-from yaat.main import parse_args, train
+from yaat.main import parse_args, train, predict
 import argparse, io, torch, pandas as pd, numpy as np, matplotlib.pyplot as plt
 
 args = parse_args()
@@ -12,42 +12,7 @@ if args.cmd == 'train':
     train(args)
 
 elif args.cmd == 'predict':
-
-    # get the informer document
-    model_doc = maester.informer_weights.find_one({'name': args.model_name})
-    if model_doc is None: raise RuntimeError(f"model name {args.model_name} dne")
-
-    # get the prediction data
-    last_date, dataset_path = maester.get_prediction_data(args.start_date, model_doc)
-    print("last prediction data date: ", last_date)
-    print("prediction data path: ", dataset_path)
-
-    # get the args - TODO - get ride of mean and std for real
-    informer_args = InformerArgs.from_dict(model_doc
-                                            |   {'root_path': str(dataset_path.parent)}
-                                            |   {'data_path': str(dataset_path.name)}
-                                            |   {'std': None}
-                                            |   {'mean': None})
-
-    # create the model
-    informer = Informer(informer_args)
-
-    # get the weights file
-    weights_file = maester.fs.get(model_doc['weights_file_id'])
-
-    # get the bytes
-    state_dict_bytes = weights_file.read()
-
-    # load the bytes into the model
-    with io.BytesIO(state_dict_bytes) as bytes_io:
-        state_dict_deser = torch.load(bytes_io)
-    informer.exp_model.model.load_state_dict(state_dict_deser)
-
-    # do prediction
-    informer.exp_model.predict(informer.settings)
-
-    # store predictions
-    maester.store_predictions(args.name, args.model_name, last_date, informer.predictions_file_path)
+    predict(args)
 
 elif args.cmd == 'plot_prediction':
 
