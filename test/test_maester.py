@@ -98,7 +98,7 @@ class TestMaester(unittest.TestCase):
         self.assertEqual(fields.pop(), 'open')
 
     def test_prediction_doc(self):
-        pred_doc = PredictionDoc(str(time.time()), 'model_name', datetime.now(), datetime.now(), [1.0])
+        pred_doc = PredictionDoc(str(time.time()), 'model_name', datetime.now(), [1.0])
         self.maester.predictions.insert_one(asdict(pred_doc))
 
     def test_get_dataset_date_ranges(self):
