@@ -16,18 +16,18 @@ from pymongo.collection import Collection
 import atexit, functools, gridfs, tempfile, numpy as np, pymongo.errors as mongoerrs, pandas as pd
 
 pybson_tmap = {
-    str: 'string',
-    int: 'int',
-    bool: 'bool',
-    float: 'double',
-    Optional[str]: ['string', 'null'],
-    Optional[np.array]: ['array', 'null'],
-    Optional[ObjectId]: ['null', 'objectId'],
-    List[str]: 'array',
-    datetime: 'date',
-    Int64: 'long',
-    Optional[float]: ['double', 'null'],
-    Optional[int]: ['int', 'null'],
+    str: {'bsonType': 'string'},
+    int: {'bsonType': 'int'},
+    bool: {'bsonType': 'bool'},
+    float: {'bsonType': 'double'},
+    Optional[str]: {'bsonType': ['string', 'null']},
+    Optional[np.array]: {'bsonType': ['array', 'null']},
+    Optional[ObjectId]: {'bsonType': ['null', 'objectId']},
+    List[str]: {'bsonType': 'array', 'items': {'bsonType': 'string'}},
+    datetime: {'bsonType': 'date'},
+    Int64: {'bsonType': 'long'},
+    Optional[float]: {'bsonType':['double', 'null']},
+    Optional[int]: {'bsonType':['int', 'null']},
 }
 
 @dataclass(kw_only=True)
@@ -56,7 +56,7 @@ class Maester:
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
         'required': [field.name for field in fields(InformerDoc)],
-        'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerDoc)}
+        'properties': {field.name: pybson_tmap[field.type] for field in fields(InformerDoc)}
     }
 
     candles1min_schema = {
