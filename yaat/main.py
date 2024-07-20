@@ -112,8 +112,6 @@ def train(args):
         | {'data_path': str(df_fp.name)}
         | {'fields': list(set(col.split('_')[1] for col in df.columns if col != 'date'))})
 
-    print(informer_doc)
-
     # create the model
     informer = Informer(informer_doc)
 
