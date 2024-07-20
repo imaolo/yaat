@@ -1,6 +1,6 @@
 from typing import Optional, Dict, List
 from datetime import datetime
-import argparse
+import argparse, inspect
 
 
 # main parser
@@ -91,3 +91,11 @@ def parse_args(cmd:Optional[str]=None, args: Dict[str, str]=None):
     return main_parser.parse_args(_args)
 
 
+def train(args):
+    assert args.cmd == inspect.currentframe().f_code.co_name, args.cmd
+
+    # get the dataset
+
+    # create the model
+
+    # train

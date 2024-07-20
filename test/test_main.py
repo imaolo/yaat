@@ -1,4 +1,4 @@
-from yaat.main import parse_args
+from yaat.main import parse_args, train
 import unittest
 
 class TestMain(unittest.TestCase):
@@ -11,5 +11,10 @@ class TestMain(unittest.TestCase):
         self.assertEqual(args.name, 'model_name')
         self.assertEqual(args.tickers, ['SPY'])
 
-        # test some defaults
+        # test a default
         self.assertEqual(args.d_model, 512)
+    
+    def test_train(self):
+        args = parse_args('train', {'name': 'model_name', 'tickers': 'SPY'})
+        train(args)
+        
