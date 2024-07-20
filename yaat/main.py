@@ -95,6 +95,7 @@ connstr = None if (osv := os.getenv('CONNSTR', 'mongodb://Earl:pink-Flamingo1317
 maester = Maester(connstr=connstr, dbdir=os.getenv('DBDIR'))
 
 def train(args):
+    # TODO - deploy on gpu instance if specified'
     assert args.cmd == inspect.currentframe().f_code.co_name, args.cmd
     print(args)
 
