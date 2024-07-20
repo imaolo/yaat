@@ -1,5 +1,4 @@
-from yaat.informer import Informer, InformerArgs
-from yaat.maester import Maester
+from yaat.maester import Maester, InformerDoc
 import unittest, os
 
 class TestMaester(unittest.TestCase):
@@ -8,4 +7,6 @@ class TestMaester(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.m = Maester(connstr=os.getenv('CONNSTR'), dbdir=os.getenv('DBDIR'))
 
-    def test_void(self): pass
+    def test_informer_doc(self):
+        with self.assertRaises(TypeError):
+            InformerDoc(root_path='somepath', data_path='somepath', target='targ')
