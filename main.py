@@ -39,7 +39,7 @@ elif args.cmd == 'plot_prediction':
     plt.plot(real_df.index, real_df['preds'], label='preds', marker='x')
     plt.xlabel('Index')
     plt.ylabel('Value')
-    plt.title('SPY_open and preds')
+    plt.title(target_field_full)
     plt.legend()
     plt.grid(True)
     plt.show()
