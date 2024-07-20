@@ -3,7 +3,7 @@ from yaat.informer import InformerArgs, Informer
 from dataclasses import asdict
 from bson import Int64
 from pathlib import Path
-import unittest, os, time, tempfile, copy, pymongo.errors as mongoerr, pandas as pd, numpy as np
+import unittest, os, time, tempfile, torch, copy, pymongo.errors as mongoerr, pandas as pd, numpy as np
 
 class TestMaester(unittest.TestCase):
 
@@ -59,3 +59,27 @@ class TestMaester(unittest.TestCase):
         retdoc = self.maester.informers.find_one({'name': self.informer_doc.name})
         self.assertIsNotNone(retdoc['train_loss'])
 
+    def test_set_informer_weights(self):
+        # create informer
+        informer = Informer(self.informer_doc)
+
+        # insert informer
+        self.maester.informers.insert_one(asdict(self.informer_doc))
+
+        # get the doc
+        retdoc = self.maester.informers.find_one({'name': self.informer_doc.name})
+
+        # should have no weights
+        self.assertIsNone(retdoc['weights_file_id'])
+
+        # update the weights
+        fid = self.maester.set_informer_weights(self.informer_doc.name, informer)
+
+        # create new model
+        informer2 = Informer(self.informer_doc)
+
+        # load weights.
+        informer2.load_weights(self.maester.fs.get(fid).read())
+
+        # compare weights
+        torch.testing.assert_close(informer.exp_model.model.projection.weight, informer2.exp_model.model.projection.weight)

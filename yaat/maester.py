@@ -197,18 +197,18 @@ class Maester:
             | {'fields': list(fields)}
             | {'alpha_dataset': alpha_dataset})
 
-    def set_informer_weights(self, informer:Informer):
-        query = {'settings': informer.settings, 'timestamp': Timestamp(int(informer.timestamp), 1)}
-
+    def set_informer_weights(self, name: str, informer:Informer) -> ObjectId:
         # delete the old file
-        model_doc = self.informer_weights.find_one(query)
+        model_doc = self.informers.find_one(q:={'name': name})
         if model_doc is not None: self.fs.delete(model_doc['weights_file_id'])
          
         # upload weights file
         weights_file_id = self.fs.put(informer.byte_weights)
 
         # set the new weights file id
-        self.informer_weights.update_one(query, {'$set': {'weights_file_id': weights_file_id}})
+        self.informers.update_one(q, {'$set': {'weights_file_id': weights_file_id}})
+
+        return weights_file_id
 
     def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None, max:Optional[int]=None, alpha_dataset:bool=False) -> Tuple[int, Path, Set[str]]:
         # prepend column names with ticker and drop the ticker column
