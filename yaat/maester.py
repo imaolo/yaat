@@ -273,7 +273,11 @@ class Maester:
 
         # TODO - mine that shit
 
-    def call_alpha(self, **kwargs):
+    # alphavantage
+
+    def alpha_extract_data(res): return  res[(set(res.keys()) - {'Meta Data'}).pop()]
+
+    def alpha_call(self, **kwargs):
         # construct the url
         url = self.alpha_url + ''.join(map(lambda kv: kv[0] + '=' + str(kv[1]) + '&', kwargs.items())) + f'apikey={self.alpha_key}'
 
