@@ -51,7 +51,7 @@ class TestMain(unittest.TestCase):
         train_args = parse_args('train', train_args)
         train(train_args)
 
-        pred_args = {'model_name': train_args.name, 'name': str(time.time()), 'start_date': '2019-7-13'}
+        pred_args = {'model_name': train_args.name, 'name': str(time.time()), 'start_date': '2023-7-13'}
         pred_args = parse_args('predict', pred_args)
         predict(pred_args)
 
@@ -64,7 +64,7 @@ class TestMain(unittest.TestCase):
         train_args.seq_len = 12
         train(train_args)
 
-        pred_args = {'model_name': train_args.name, 'name': str(time.time()), 'start_date': '2019-7-13'}
+        pred_args = {'model_name': train_args.name, 'name': str(time.time()), 'start_date': '2023-7-13'}
         pred_args = parse_args('predict', pred_args)
         predict(pred_args)
         
