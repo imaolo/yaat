@@ -51,7 +51,7 @@ class TestMaester(unittest.TestCase):
 
         # train and update
         informer = Informer(self.informer_doc)
-        for update in informer.exp_model.train(informer.settings):
+        for update in informer.train():
             update_res = self.maester.informers.update_one({'name': self.informer_doc.name}, {'$set': update})
             self.assertEqual(update_res.modified_count, 1)
 

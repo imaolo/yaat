@@ -22,5 +22,5 @@ class TestInformer(unittest.TestCase):
         informer_args = InformerArgs(**self.required_args, **Informer.small_scale_args, sample_scale=True)
         informer = Informer(informer_args)
 
-        list(informer.exp_model.train(informer.settings))
-        informer.exp_model.predict(informer.settings)
+        list(informer.train())
+        informer.predict()

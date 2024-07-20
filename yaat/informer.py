@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Generator
 from dataclasses import dataclass, fields
 from exp.exp_informer import Exp_Informer
 from pathlib import Path
@@ -112,3 +112,6 @@ class Informer:
 
     @property
     def num_params(self) -> int: return sum([p.numel() for p in self.exp_model.model.parameters() if p.requires_grad])
+
+    def train(self) -> Generator[Dict, None, None]: yield from self.exp_model.train(self.settings)
+    def predict(self): self.exp_model.predict(self.settings)
