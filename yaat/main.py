@@ -1,4 +1,4 @@
-from typing import Optional, Dict, List
+from typing import Optional, Dict
 from datetime import datetime
 from yaat.maester import Maester, InformerDoc, PredictionDoc
 from yaat.informer import Informer
