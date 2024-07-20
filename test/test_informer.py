@@ -1,6 +1,6 @@
 from yaat.informer import Informer, InformerArgs
 from pathlib import Path
-import unittest, tempfile, numpy as np, pandas as pd
+import unittest, tempfile, numpy as np, pandas as pd, torch
 
 class TestInformer(unittest.TestCase):
 
@@ -24,3 +24,9 @@ class TestInformer(unittest.TestCase):
 
         list(informer.train())
         informer.predict()
+
+    def test_load_and_save(self):
+        informer = Informer(InformerArgs(**self.required_args, **Informer.small_scale_args, sample_scale=True))
+        pre = informer.exp_model.model.projection.weight
+        informer.load_weights(informer.byte_weights)
+        torch.testing.assert_close(pre, informer.exp_model.model.projection.weight)

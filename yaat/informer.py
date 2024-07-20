@@ -95,6 +95,10 @@ class Informer:
         # create the model
         self.exp_model = Exp_Informer(self.args)
 
+    def load_weights(self, bytes_weights:bytes):
+        with io.BytesIO(bytes_weights) as bytes_weights_io:
+            self.exp_model.model.load_state_dict(torch.load(bytes_weights_io))
+
     @property
     def weights_file_path(self) -> Path: return Path.cwd() / self.args.checkpoints / self.settings / 'checkpoints.pth'
 
