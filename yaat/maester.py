@@ -25,24 +25,26 @@ pybson_tmap = {
     Optional[ObjectId]: ['null', 'objectId'],
     List[str]: 'array',
     datetime: 'date',
-    Int64: 'long'
+    Int64: 'long',
+    Optional[float]: ['double', 'null'],
+    Optional[int]: ['int', 'null'],
 }
 
 @dataclass(kw_only=True)
 class InformerDoc(InformerArgs):
-    weights_file_id: Optional[ObjectId]
     tickers: List[str]
     settings: str
     date: datetime
     name: str
     num_params: Int64
-    alpha_dataset: bool # TODO - refactor away
-    curr_epoch: int
-    train_loss: float
-    vali_loss: float
-    test_loss: float
-    time_left: float
     fields: List[str]
+    alpha_dataset: bool # TODO - refactor away
+    weights_file_id: Optional[ObjectId] = None
+    curr_epoch: Optional[int] = None
+    train_loss: Optional[float] = None
+    vali_loss: Optional[float] = None
+    test_loss: Optional[float] = None
+    time_left: Optional[float] = None
 
 class Maester:
 
