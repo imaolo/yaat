@@ -1,22 +1,19 @@
-from __future__ import annotations
-from typing import Dict, Optional, Set, List, Tuple, TYPE_CHECKING
+from yaat.informer import InformerArgs, Informer
+from yaat.util import killproc
+from typing import Dict, Optional, Set, List, Tuple
 from dataclasses import fields
 from pathlib import Path
 from pymongo import MongoClient
 from subprocess import Popen, DEVNULL
-from yaat.informer import InformerArgs
-from yaat.util import killproc
 from bson.timestamp import Timestamp
 from dataclasses import asdict
 from functools import reduce
 from polygon import RESTClient
 from datetime import datetime, timedelta
-from bson import Int64
+from bson import Int64, ObjectId
+from dataclasses import dataclass
+from pymongo.collection import Collection
 import atexit, functools, gridfs, tempfile, numpy as np, pymongo.errors as mongoerrs, pandas as pd
-
-if TYPE_CHECKING:
-    from pymongo.collection import Collection
-    from yaat.informer import Informer
 
 pybson_tmap = {
     str: 'string',
@@ -24,10 +21,28 @@ pybson_tmap = {
     bool: 'bool',
     float: 'double',
     Optional[str]: ['string', 'null'],
-    Optional[np.array]: ['array', 'null']
+    Optional[np.array]: ['array', 'null'],
+    Optional[ObjectId]: ['null', 'objectId'],
+    List[str]: 'array',
+    datetime: 'date',
+    Int64: 'long'
 }
 
-
+@dataclass(kw_only=True)
+class InformerDoc(InformerArgs):
+    weights_file_id: Optional[ObjectId]
+    tickers: List[str]
+    settings: str
+    date: datetime
+    name: str
+    num_params: Int64
+    alpha_dataset: bool # TODO - refactor away
+    curr_epoch: int
+    train_loss: float
+    vali_loss: float
+    test_loss: float
+    time_left: float
+    fields: List[str]
 
 class Maester:
 
@@ -38,23 +53,8 @@ class Maester:
 
     informer_weights_schema: Dict = {
         'title': 'Weights for informer models',
-        'required': [field.name for field in fields(InformerArgs)]
-                        + ['weights_file_id', 'tickers', 'settings', 'timestamp', 'name', 'num_params', 'alpha_dataset',
-                           'curr_epoch', 'train_loss', 'vali_loss', 'test_loss', 'left_time', 'fields'],
-        'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerArgs)}
-                        | {'weights_file_id': {'bsonType': ['null', 'objectId']}}
-                        | {'tickers': {'bsonType': 'array'}}
-                        | {'settings': {'bsonType': 'string'}}
-                        | {'timestamp': {'bsonType': 'timestamp'}} # TODO - all timestamps should be date 
-                        | {'name': {'bsonType': 'string'}}
-                        | {'num_params': {'bsonType': 'long'}}
-                        | {'curr_epoch': {'bsonType': 'int'}}
-                        | {'train_loss': {'bsonType': ['double', 'null']}}
-                        | {'vali_loss': {'bsonType': ['double', 'null']}}
-                        | {'test_loss': {'bsonType': ['double', 'null']}}
-                        | {'left_time': {'bsonType': ['double', 'null']}}
-                        | {'fields': {'bsonType': 'array'}}
-                        | {'alpa_dataset': {'bsonType': 'bool'}}
+        'required': [field.name for field in fields(InformerDoc)],
+        'properties': {field.name: {'bsonType': pybson_tmap[field.type]} for field in fields(InformerDoc)}
     }
 
     candles1min_schema = {
