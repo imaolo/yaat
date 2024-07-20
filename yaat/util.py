@@ -1,5 +1,6 @@
-import subprocess, select
+import subprocess, select, requests
 
+def fetchjson(url:str): return requests.get(url).json()
 def killproc(proc:subprocess.Popen):
         proc.terminate()
         try: proc.wait(timeout=10)
