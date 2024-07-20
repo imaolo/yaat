@@ -118,3 +118,29 @@ class TestMaester(unittest.TestCase):
 
     def test_call_alpha(self):
         self.maester.alpha_call(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='true', interval=f'1min', symbol='SPY', month=f"2023-1")
+
+    def test_alpha_get_earliest_date(self):
+        tick = 'SPY'
+        earliest = self.maester.alpha_get_earliest(tick, start_date=datetime.strptime('2000-3', '%Y-%m'))
+        candles = self.maester.alpha_extract_data(self.maester.alpha_call_intraday(tick, earliest))
+        time = datetime.strptime(list(candles.keys())[0], '%Y-%m-%d %H:%M:%S')
+        self.assertEqual(time.year, earliest.year)
+        self.assertEqual(time.month, earliest.month)
+
+        invalid = earliest - timedelta(weeks=2)
+        candles = self.maester.alpha_extract_data(self.maester.alpha_call_intraday(tick, invalid))
+        time = datetime.strptime(list(candles.keys())[0], '%Y-%m-%d %H:%M:%S')
+        self.assertNotEqual(time.year, earliest.year)
+        self.assertNotEqual(time.month, earliest.month)
+
+        tick = 'TSLA'
+        earliest = self.maester.alpha_get_earliest(tick, start_date=datetime.strptime('2010-07', '%Y-%m'))
+        candles = self.maester.alpha_extract_data(self.maester.alpha_call_intraday(tick, earliest))
+        time = datetime.strptime(list(candles.keys())[0], '%Y-%m-%d %H:%M:%S')
+        self.assertEqual(time.year, earliest.year)
+        self.assertEqual(time.month, earliest.month)
+        print(earliest)
+
+        # some tickers return current data when out of range, others error, should be dealt with more cleanly
+        invalid = earliest - timedelta(weeks=2)
+        with self.assertRaises(AssertionError): self.maester.alpha_extract_data(self.maester.alpha_call_intraday(tick, invalid))

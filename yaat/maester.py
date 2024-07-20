@@ -6,7 +6,7 @@ from pathlib import Path
 from pymongo import MongoClient
 from subprocess import Popen, DEVNULL
 from functools import reduce
-from datetime import datetime
+from datetime import datetime, timedelta
 from bson import Int64, ObjectId
 from dataclasses import dataclass, asdict
 from pymongo.collection import Collection
@@ -275,7 +275,10 @@ class Maester:
 
     # alphavantage
 
-    def alpha_extract_data(res): return  res[(set(res.keys()) - {'Meta Data'}).pop()]
+    def alpha_extract_data(self, res): return  res[(set(res.keys()) - {'Meta Data'}).pop()]
+
+    def alpha_call_intraday(self, ticker:str, date:datetime, freq:str='1min'):
+        return self.alpha_call(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='true', interval=freq, symbol=ticker, month=f"{date.year}-{date.month:02}")
 
     def alpha_call(self, **kwargs):
         # construct the url
@@ -289,3 +292,23 @@ class Maester:
                 return data
             if "higher API call volume" not in data['Information']: raise RuntimeError(data)
         raise RuntimeError(data)
+
+    # NOTE slop
+    def alpha_get_earliest(self, ticker:str, start_date:Optional[datetime]=None) -> datetime:
+        curr_date = datetime.strptime('2020-01', '%Y-%m') if start_date is None else start_date
+        while True:
+            try: res = self.alpha_call_intraday(ticker, curr_date, freq='60min')
+            except AssertionError as e: break
+            candles = res['Time Series (60min)']
+            response_date = datetime.strptime(list(candles.keys())[0], '%Y-%m-%d %H:%M:%S')
+            if curr_date.year == response_date.year and curr_date.month == response_date.month: curr_date = curr_date - timedelta(days=15)
+            else: break
+        good_date = curr_date + timedelta(days=15)
+        try: res = self.alpha_call_intraday(ticker, good_date, freq='60min')
+        except Exception as e:
+            print("proably bad start date")
+            raise e
+        candles = res['Time Series (60min)']
+        response_date = datetime.strptime(list(candles.keys())[0], '%Y-%m-%d %H:%M:%S')
+        assert good_date.year == response_date.year and good_date.month == response_date.month, f"{good_date}, {response_date} - probably bad start_date"
+        return good_date
