@@ -263,11 +263,12 @@ class Maester:
     # tickers db
 
     # gets entire months
-    def create_tickers_dataset(self, ticker:str, start_date:Optional[datetime]=None, end_date:Optional[datetime]=None):
-        assert ticker not in self.candles_db.list_collection_names(), self.candles_db.list_collection_names()
+    def create_tickers_dataset(self, ticker:str, freq:str='1min', start_date:Optional[datetime]=None, end_date:Optional[datetime]=None):
+        collname = f"{ticker}_{freq}"
+        assert collname not in self.candles_db.list_collection_names(), self.candles_db.list_collection_names()
 
         # create the collection
-        tick_coll = self.init_collection(ticker, self.candle_schema, self.candles_db)
+        tick_coll = self.init_collection(collname, self.candle_schema, self.candles_db)
 
         # no duplicate dates
         tick_coll.create_index({'date': 1}, unique=True)
@@ -284,7 +285,7 @@ class Maester:
         dates = list(pd.date_range(start=start_date, end=end_date, freq='MS'))
         with tqdm.tqdm(total=len(dates)) as pbar:
             for date in dates:
-                res = self.alpha_call_intraday(ticker, date)
+                res = self.alpha_call_intraday(ticker, date, freq)
                 assert res['Meta Data']['6. Time Zone'] == 'US/Eastern', res
 
                 # get the tickers dataframe
@@ -305,7 +306,7 @@ class Maester:
 
                 # insert
                 pbar.set_postfix(status=date)
-                try: self.candles_db[ticker].insert_many(tickers.to_dict('records'))
+                try: self.candles_db[collname].insert_many(tickers.to_dict('records'))
                 except Exception as e:
                     print("---- Exception encountered ----")
                     print(e)

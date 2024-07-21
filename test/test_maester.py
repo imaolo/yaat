@@ -116,13 +116,15 @@ class TestMaester(unittest.TestCase):
     def test_create_ticker_dataset(self):
         # cleanup
         ticker = 'SNAP'
-        if ticker in self.maester.candles_db.list_collection_names(): self.maester.candles_db[ticker].drop()
+        freq = '1min'
+        collname = f"{ticker}_{freq}"
+        if collname in self.maester.candles_db.list_collection_names(): self.maester.candles_db[collname].drop()
 
         # mine that shit
         self.maester.create_tickers_dataset(ticker, start_date=datetime(2023, 1, 1), end_date=datetime(2023, 1, 5))
 
         # test
-        self.assertEqual(self.maester.candles_db[ticker].count_documents({}), 11661) # gets the whole month
+        self.assertEqual(self.maester.candles_db[collname].count_documents({}), 11661) # gets the whole month
 
     def test_call_alpha(self):
         self.maester.alpha_call(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='true', interval=f'1min', symbol='SPY', month=f"2023-1")
