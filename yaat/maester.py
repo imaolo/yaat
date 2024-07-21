@@ -198,7 +198,7 @@ class Maester:
     def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None,
                     start_date:Optional[datetime]=None, end_date:Optional[datetime]=None) -> pd.DataFrame:
         # projection and sort stage
-        proj_sort_stage =  [{'$project': {'_id': 0, **({field:1 for field in fields + ['date']} if fields is not None else {'ticker': 0})}},
+        proj_sort_stage =  [{'$project': {'_id': 0, **({field:1 for field in fields + ['date']} if fields is not None else {})}},
                             {'$sort': {'date': 1}}]
 
         # date stage
@@ -207,11 +207,8 @@ class Maester:
         if end_date: date_conditions['$lte'] = end_date
         date_stage = [{'$match': {'date': date_conditions}}] if date_conditions else []
 
-        # per ticker factory
-        tick_stage_factory = lambda tick: [{'$match': {'ticker': tick}}]
-
         # query and get dataframes
-        dfs = {tick: pd.DataFrame(list(self.candles1min.aggregate(tick_stage_factory(tick) + date_stage + proj_sort_stage))) for tick in tickers}
+        dfs = {tick: pd.DataFrame(list(self.db[tick].aggregate(date_stage + proj_sort_stage))) for tick in tickers}
 
         # prepend ticker name to column names
         for tick, df in dfs.items():
