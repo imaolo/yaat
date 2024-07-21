@@ -112,9 +112,15 @@ class TestMaester(unittest.TestCase):
         self.assertEqual(df['date'].min(), start_date)
 
     def test_create_ticker_dataset(self):
-        ticker='TEST_TICK'
+        # cleanup
+        ticker = 'SNAP'
         if ticker in self.maester.db.list_collection_names(): self.maester.db[ticker].drop()
-        self.maester.create_tickers_dataset(ticker)
+
+        # mine that shit
+        self.maester.create_tickers_dataset(ticker, start_date=datetime(2023, 1, 1), end_date=datetime(2023, 1, 5))
+
+        # test
+        self.assertEqual(self.maester.db[ticker].count_documents({}), 11661) # gets the whole month
 
     def test_call_alpha(self):
         self.maester.alpha_call(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='true', interval=f'1min', symbol='SPY', month=f"2023-1")

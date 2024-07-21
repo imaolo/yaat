@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from bson import Int64, ObjectId
 from dataclasses import dataclass, asdict
 from pymongo.collection import Collection
-import atexit, functools, gridfs, polygon, time, numpy as np, pymongo.errors as mongoerrs, pandas as pd
+import atexit, functools, gridfs, tqdm, polygon, time, numpy as np, pymongo.errors as mongoerrs, pandas as pd
 
 pybson_tmap = {
     str: {'bsonType': 'string'},
@@ -57,7 +57,7 @@ class CandleDoc:
     close:float
     high:float
     low:float
-    volume:float
+    volume:int
 
 class Maester:
 
@@ -262,7 +262,8 @@ class Maester:
 
     # tickers db
 
-    def create_tickers_dataset(self, ticker:str):
+    # gets entire months
+    def create_tickers_dataset(self, ticker:str, start_date:Optional[datetime]=None, end_date:Optional[datetime]=None):
         assert ticker not in self.db.list_collection_names(), self.db.list_collection_names()
 
         # create the collection
@@ -271,7 +272,42 @@ class Maester:
         # no duplicate dates
         tick_coll.create_index({'date': 1}, unique=True)
 
-        # TODO - mine that shit
+        # get start and end dates
+
+        if start_date is None:
+            start_date = self.alpha_get_earliest(ticker, datetime(2015, month=1, day=1)) # start_date heuristic
+
+        if end_date is None:
+            end_date = datetime.now()
+
+        # insert data
+        dates = list(pd.date_range(start=start_date, end=end_date, freq='MS'))
+        for date in tqdm.tqdm(dates):
+            res = self.alpha_call_intraday(ticker, date)
+            assert res['Meta Data']['6. Time Zone'] == 'US/Eastern', res
+
+            # get the tickers dataframe
+            tickers = pd.DataFrame.from_dict(self.alpha_extract_data(res), orient='index')
+            colnames = tickers.columns
+            tickers.reset_index(inplace=True)
+            tickers.rename(columns={**{'index': 'timestamp'}, **{name:name.split(' ')[1] for name in colnames}}, inplace=True)
+
+            # process timezone
+            tickers['date'] = pd.to_datetime(tickers['timestamp'], errors='raise').dt.tz_localize('America/New_York', ambiguous='raise')
+
+            # set the datatypes
+            tickers[floatcols] = tickers[floatcols:=['open', 'close', 'high', 'low']].astype(float)
+            tickers['volume'] = tickers['volume'].astype(int)
+
+            # drop the timestamp column
+            tickers.drop('timestamp', axis=1, inplace=True)
+
+            # insert
+            print("inserting date: ", date)
+            try: self.db[ticker].insert_many(tickers.to_dict('records'))
+            except Exception as e:
+                print("---- Exception encountered ----")
+                print(e) 
 
     # alphavantage
 
@@ -312,3 +348,5 @@ class Maester:
         response_date = datetime.strptime(list(candles.keys())[0], '%Y-%m-%d %H:%M:%S')
         assert good_date.year == response_date.year and good_date.month == response_date.month, f"{good_date}, {response_date} - probably bad start_date"
         return good_date
+
+    
