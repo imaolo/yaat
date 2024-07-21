@@ -63,6 +63,7 @@ class Maester:
 
     def_dbdir = Path('yaatdb_local')
     db_name: str = 'yaatdb'
+    candles_db_name: str = 'candlesdb'
 
     # api info
 
@@ -125,6 +126,7 @@ class Maester:
             if self.dbdir is not None: raise RuntimeError('cannot specify a connection string and to start a local database')
         self.dbc = self.conndb(self.connstr)
         self.db = self.dbc[self.db_name]
+        self.candles_db = self.dbc[self.candles_db_name]
 
         # create collections
 
@@ -152,12 +154,13 @@ class Maester:
 
     # database config
 
-    def init_collection(self, name, schema) -> Collection:
-        if name in self.db.list_collection_names():
-            self.db.command('collMod', name, validator={'$jsonSchema': schema})
+    def init_collection(self, name, schema, db=None) -> Collection:
+        db = db if db is not None else self.db
+        if name in db.list_collection_names():
+            db.command('collMod', name, validator={'$jsonSchema': schema})
         else:
-            self.db.create_collection(name, validator={'$jsonSchema': schema})
-        return self.db[name]
+            db.create_collection(name, validator={'$jsonSchema': schema})
+        return db[name]
 
     @classmethod
     def conndb(cls, url:Optional[str]=None, timeout:int=5000) -> MongoClient:
@@ -208,7 +211,7 @@ class Maester:
         date_stage = [{'$match': {'date': date_conditions}}] if date_conditions else []
 
         # query and get dataframes
-        dfs = {tick: pd.DataFrame(list(self.db[tick].aggregate(date_stage + proj_sort_stage))) for tick in tickers}
+        dfs = {tick: pd.DataFrame(list(self.candles_db[tick].aggregate(date_stage + proj_sort_stage))) for tick in tickers}
 
         # prepend ticker name to column names
         for tick, df in dfs.items():
@@ -261,10 +264,10 @@ class Maester:
 
     # gets entire months
     def create_tickers_dataset(self, ticker:str, start_date:Optional[datetime]=None, end_date:Optional[datetime]=None):
-        assert ticker not in self.db.list_collection_names(), self.db.list_collection_names()
+        assert ticker not in self.candles_db.list_collection_names(), self.candles_db.list_collection_names()
 
         # create the collection
-        tick_coll = self.init_collection(ticker, self.candle_schema)
+        tick_coll = self.init_collection(ticker, self.candle_schema, self.candles_db)
 
         # no duplicate dates
         tick_coll.create_index({'date': 1}, unique=True)
@@ -302,7 +305,7 @@ class Maester:
 
                 # insert
                 pbar.set_postfix(status=date)
-                try: self.db[ticker].insert_many(tickers.to_dict('records'))
+                try: self.candles_db[ticker].insert_many(tickers.to_dict('records'))
                 except Exception as e:
                     print("---- Exception encountered ----")
                     print(e)

@@ -105,8 +105,8 @@ class TestMaester(unittest.TestCase):
 
         tick='SPY'
 
-        start_date = self.maester.db[tick].find_one(sort=[("date", 1)])['date']
-        end_date = self.maester.db[tick].find_one(sort=[("date", -1)])['date']
+        start_date = self.maester.candles_db[tick].find_one(sort=[("date", 1)])['date']
+        end_date = self.maester.candles_db[tick].find_one(sort=[("date", -1)])['date']
 
         df = self.maester.get_dataset([tick], start_date=start_date, end_date=end_date)
 
@@ -116,13 +116,13 @@ class TestMaester(unittest.TestCase):
     def test_create_ticker_dataset(self):
         # cleanup
         ticker = 'SNAP'
-        if ticker in self.maester.db.list_collection_names(): self.maester.db[ticker].drop()
+        if ticker in self.maester.candles_db.list_collection_names(): self.maester.candles_db[ticker].drop()
 
         # mine that shit
         self.maester.create_tickers_dataset(ticker, start_date=datetime(2023, 1, 1), end_date=datetime(2023, 1, 5))
 
         # test
-        self.assertEqual(self.maester.db[ticker].count_documents({}), 11661) # gets the whole month
+        self.assertEqual(self.maester.candles_db[ticker].count_documents({}), 11661) # gets the whole month
 
     def test_call_alpha(self):
         self.maester.alpha_call(function='TIME_SERIES_INTRADAY', outputsize='full', extended_hours='true', interval=f'1min', symbol='SPY', month=f"2023-1")
