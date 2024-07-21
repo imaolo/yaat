@@ -6,7 +6,8 @@ from tqdm import tqdm
 
 maester = Maester(connstr='mongodb://Earl:pink-Flamingo1317@52.91.137.11/')
 
-tickers = ['SPY', 'TSLA']
+# already inserted
+# tickers = ['SPY', 'TSLA']
 
 print(maester.db.list_collection_names())
 with tqdm(total=len(tickers)) as pbar:
