@@ -282,32 +282,35 @@ class Maester:
 
         # insert data
         dates = list(pd.date_range(start=start_date, end=end_date, freq='MS'))
-        for date in tqdm.tqdm(dates):
-            res = self.alpha_call_intraday(ticker, date)
-            assert res['Meta Data']['6. Time Zone'] == 'US/Eastern', res
+        with tqdm.tqdm(total=len(dates)) as pbar:
+            for date in dates:
+                res = self.alpha_call_intraday(ticker, date)
+                assert res['Meta Data']['6. Time Zone'] == 'US/Eastern', res
 
-            # get the tickers dataframe
-            tickers = pd.DataFrame.from_dict(self.alpha_extract_data(res), orient='index')
-            colnames = tickers.columns
-            tickers.reset_index(inplace=True)
-            tickers.rename(columns={**{'index': 'timestamp'}, **{name:name.split(' ')[1] for name in colnames}}, inplace=True)
+                # get the tickers dataframe
+                tickers = pd.DataFrame.from_dict(self.alpha_extract_data(res), orient='index')
+                colnames = tickers.columns
+                tickers.reset_index(inplace=True)
+                tickers.rename(columns={**{'index': 'timestamp'}, **{name:name.split(' ')[1] for name in colnames}}, inplace=True)
 
-            # process timezone
-            tickers['date'] = pd.to_datetime(tickers['timestamp'], errors='raise').dt.tz_localize('America/New_York', ambiguous='raise')
+                # process timezone
+                tickers['date'] = pd.to_datetime(tickers['timestamp'], errors='raise').dt.tz_localize('America/New_York', ambiguous='raise')
 
-            # set the datatypes
-            tickers[floatcols] = tickers[floatcols:=['open', 'close', 'high', 'low']].astype(float)
-            tickers['volume'] = tickers['volume'].astype(int)
+                # set the datatypes
+                tickers[floatcols] = tickers[floatcols:=['open', 'close', 'high', 'low']].astype(float)
+                tickers['volume'] = tickers['volume'].astype(int)
 
-            # drop the timestamp column
-            tickers.drop('timestamp', axis=1, inplace=True)
+                # drop the timestamp column
+                tickers.drop('timestamp', axis=1, inplace=True)
 
-            # insert
-            print("inserting date: ", date)
-            try: self.db[ticker].insert_many(tickers.to_dict('records'))
-            except Exception as e:
-                print("---- Exception encountered ----")
-                print(e) 
+                # insert
+                pbar.set_postfix(status=date)
+                try: self.db[ticker].insert_many(tickers.to_dict('records'))
+                except Exception as e:
+                    print("---- Exception encountered ----")
+                    print(e)
+                pbar.update(1)
+                
 
     # alphavantage
 
