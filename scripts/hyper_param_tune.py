@@ -47,7 +47,6 @@ arguments_values = {
     'attn': ['prob', 'full'],
     'output_attention': [True, False],
     'mix': [True, False],
-    'use_amp': [True, False],
     'distil': [True, False],
 }
 single_arg_combos = [dict(zip(arguments_values.keys(), combo)) for combo in list(itertools.product(*arguments_values.values()))]
