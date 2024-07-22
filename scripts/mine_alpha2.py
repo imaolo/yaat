@@ -15,7 +15,7 @@ with tqdm(total=len(tickers)) as pbar:
     for tick in tickers:
         collname = f"{tick}_{freq}"
         pbar.set_postfix(status=tick)
-        if tick in maester.candles_db.list_collection_names(): maester.candles_db[collname].drop()
+        if collname in maester.candles_db.list_collection_names(): maester.candles_db[collname].drop()
         maester.create_tickers_dataset(tick, freq)
         pbar.update(1)
 print("num inserted")
