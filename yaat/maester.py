@@ -180,7 +180,7 @@ class Maester:
 
         return weights_file_id
 
-    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None,
+    def get_dataset(self, tickers:List[str], fields:Optional[List[str]]=None, freq:str='1min',
                     start_date:Optional[datetime]=None, end_date:Optional[datetime]=None) -> pd.DataFrame:
         # projection and sort stage
         proj_sort_stage =  [{'$project': {'_id': 0, **({field:1 for field in fields + ['date']} if fields is not None else {})}},
@@ -193,7 +193,7 @@ class Maester:
         date_stage = [{'$match': {'date': date_conditions}}] if date_conditions else []
 
         # query and get dataframes
-        dfs = {tick: pd.DataFrame(list(self.candles_db[tick].aggregate(date_stage + proj_sort_stage))) for tick in tickers}
+        dfs = {tick: pd.DataFrame(list(self.candles_db[f"{tick}_{freq}"].aggregate(date_stage + proj_sort_stage))) for tick in tickers}
 
         # prepend ticker name to column names
         for tick, df in dfs.items():

@@ -104,9 +104,11 @@ class TestMaester(unittest.TestCase):
     def test_get_dataset_date_ranges(self):
 
         tick='SPY'
+        freq='1min'
+        collname=f"{tick}_{freq}"
 
-        start_date = self.maester.candles_db[tick].find_one(sort=[("date", 1)])['date']
-        end_date = self.maester.candles_db[tick].find_one(sort=[("date", -1)])['date']
+        start_date = self.maester.candles_db[collname].find_one(sort=[("date", 1)])['date']
+        end_date = self.maester.candles_db[collname].find_one(sort=[("date", -1)])['date']
 
         df = self.maester.get_dataset([tick], start_date=start_date, end_date=end_date)
 
