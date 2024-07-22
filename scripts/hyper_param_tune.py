@@ -1,6 +1,7 @@
 import itertools, time
 from pprint import pprint
 from yaat.main import maester, train, parse_args
+from tqdm import tqdm
 
 
 
@@ -59,7 +60,8 @@ collname = 'informer_hp_search'
 if collname in maester.db.list_collection_names(): maester.db[collname].drop()
 test_coll = maester.init_collection(collname, maester.informers_schema)
 
-for combo in single_arg_combos:
+for combo in tqdm(single_arg_combos):
+    print(combo)
     train_args = {'name': str(time.time()),
                 'tickers': 'SPY',
                 'target': 'SPY_open',
