@@ -45,14 +45,8 @@ elif args.cmd == 'plot_prediction':
     plt.show()
 
 # TODO - scale down the model and try a bunch of combinations to see what works best at predicting
-# TODO - better alpha dataset support
 # TODO - predictions are more than just the end of the day
 # TODO - get better schema update mechanism because I just frigged at 6 hour epoch
 # TODO - true batch scaling, not instance scaling
-# TODO - use alphavantage, that inclues collections per ticker rather than just one collection.
-# make a db just for candles
 # TODO - handle live jobs better, record them in the database
-# TODO - create dataclasses for each of the collection, use the pymmap to read them in
 # TODO - test get_live_data
-# TODO - get some other frequencies going
-# TODO - use a candles db rather than grouping with the rest
