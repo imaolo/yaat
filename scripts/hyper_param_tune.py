@@ -66,14 +66,13 @@ for combo in single_arg_combos:
                 'fields': 'open',
                 'seq_len': '128',
                 'pred_len': '32',
-                'train_epochs': 1,
+                'train_epochs': '1',
                 'start_date': '2024-7-1',
                 'attn': combo['attn']
                 }
     combo.pop('attn')
     for k,v in combo.items():
         if v: train_args.update({k: None})
-    print(train_args)
     train_args = parse_args('train', train_args)
     train(train_args)
 
