@@ -46,6 +46,7 @@ elif args.cmd == 'plot_prediction':
 
 # TODO - scale down the model and try a bunch of combinations to see what works best at predicting
 # TODO - predictions are more than just the end of the day
+# better datetime handling (pd.to_datetime, timezones, etc)
 # TODO - get better schema update mechanism because I just frigged at 6 hour epoch
 # TODO - true batch scaling, not instance scaling
 # TODO - handle live jobs better, record them in the database
