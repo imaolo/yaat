@@ -69,7 +69,8 @@ for combo in tqdm(single_arg_combos):
                 'pred_len': '32',
                 'train_epochs': '1',
                 'start_date': '2024-7-1',
-                'attn': combo['attn']
+                'attn': combo['attn'],
+                'sample_scale': None
                 }
     combo.pop('attn')
     for k,v in combo.items():
