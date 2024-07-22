@@ -86,21 +86,6 @@ class Maester:
         'properties': {field.name: pybson_tmap[field.type] for field in fields(InformerDoc)}
     }
 
-    candles1min_schema = {
-        'title': 'Candles every 1 minute',
-        'required': ['ticker', 'volume', 'open', 'close', 'high', 'low', 'date', 'transactions'],
-        'properties': {
-            'ticker': {'bsonType': 'string'},
-            'volume': {'bsonType': 'long'},
-            'open': {'bsonType': 'double'},
-            'close': {'bsonType': 'double'},
-            'high': {'bsonType': 'double'},
-            'low': {'bsonType': 'double'},
-            'date': {'bsonType': 'date'},
-            'transactions': {'bsonType': 'long'},
-        }
-    }
-
     predictions_schema = {
         'title': 'predictions',
         'required': [field.name for field in fields(PredictionDoc)],
@@ -131,17 +116,11 @@ class Maester:
         # create collections
 
         self.informers = self.init_collection('informers', self.informers_schema)
-        self.candles1min = self.init_collection('candles1min', self.candles1min_schema)
         self.predictions = self.init_collection('predictions', self.predictions_schema)
 
         # create indexes
 
-        self.candles1min.create_index({'ticker':1, 'date':1}, unique=True)
-        self.candles1min.create_index({'ticker':1})
-        self.candles1min.create_index({'date':1})
-
         self.informers.create_index({'name':1}, unique=True)
-
         self.predictions.create_index({'name':1}, unique=True)
 
         # file store
