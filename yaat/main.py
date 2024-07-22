@@ -40,7 +40,7 @@ train_parser.add_argument('--name', type=str, required=True, help='name of this 
 train_parser.add_argument('--model', type=str, default='informer',help='model of experiment, options: [informer, informerstack, informerlight(TBD)]')
 
 train_parser.add_argument('--target', type=str, required=True, help='target feature in S or MS task')
-train_parser.add_argument('--freq', type=str, default='h', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
+train_parser.add_argument('--freq', type=str, default='t', help='freq for time features encoding, options:[s:secondly, t:minutely, h:hourly, d:daily, b:business days, w:weekly, m:monthly], you can also use more detailed freq like 15min or 3h')
 train_parser.add_argument('--checkpoints', type=str, default='./checkpoints/', help='location of model checkpoints')
 
 train_parser.add_argument('--seq_len', type=int, default=96, help='input sequence length of Informer encoder')
@@ -59,7 +59,7 @@ train_parser.add_argument('--padding', type=int, default=0, help='padding type')
 train_parser.add_argument('--distil', action='store_false', help='whether to use distilling in encoder, using this argument means not using distilling', default=True)
 train_parser.add_argument('--dropout', type=float, default=0.05, help='dropout')
 train_parser.add_argument('--attn', type=str, default='prob', help='attention used in encoder, options:[prob, full]')
-train_parser.add_argument('--embed', type=str, default='timeF', help='time features encoding, options:[timeF, fixed, learned]')
+train_parser.add_argument('--embed', type=str, default='learned', help='time features encoding, options:[timeF, fixed, learned]')
 train_parser.add_argument('--activation', type=str, default='gelu',help='activation')
 train_parser.add_argument('--output_attention', action='store_true', help='whether to output attention in ecoder')
 train_parser.add_argument('--mix', action='store_false', help='use mix attention in generative decoder', default=True)
