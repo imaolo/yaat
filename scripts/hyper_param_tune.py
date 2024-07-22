@@ -54,14 +54,10 @@ pprint(single_arg_combos)
 print(len(single_arg_combos))
 
 
-# make a test weights collection
-collname = 'informer_hp_search'
-if collname in maester.db.list_collection_names(): maester.db[collname].drop()
-test_coll = maester.init_collection(collname, maester.informers_schema)
-
-for combo in tqdm(single_arg_combos):
+unique_name = str(time.time())
+for idx, combo in enumerate(tqdm(single_arg_combos)):
     print(combo)
-    train_args = {'name': str(time.time()),
+    train_args = {'name': f"{unique_name}_{idx}",
                 'tickers': 'SPY',
                 'target': 'SPY_open',
                 'fields': 'open',
@@ -78,4 +74,5 @@ for combo in tqdm(single_arg_combos):
     train_args = parse_args('train', train_args)
     train(train_args)
 
-pprint(test_coll.find({}, {field:1 for field in single_arg_combos.keys()}).sort('test_loss', 1))
+query = {"name": {"$regex": str(unique_name), "$options": "i"}}
+pprint(maester.informers.find(query, {field:1 for field in single_arg_combos.keys()}).sort('test_loss', 1))
