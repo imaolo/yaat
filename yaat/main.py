@@ -86,7 +86,8 @@ def parse_args(cmd:Optional[str]=None, args: Dict[str, str]=None):
         _args = [cmd]
         for k, v in args.items():
             _args.append('--'+k)
-            _args.append(v)
+            if v is not None:
+                _args.append(v)
     return main_parser.parse_args(_args)
 
 connstr = None if (osv := os.getenv('CONNSTR', 'mongodb://Earl:pink-Flamingo1317@52.91.137.11/')) == 'None' else osv
