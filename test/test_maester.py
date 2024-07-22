@@ -154,3 +154,16 @@ class TestMaester(unittest.TestCase):
         # some tickers return current data when out of range, others error, should be dealt with more cleanly
         invalid = earliest - timedelta(weeks=2)
         with self.assertRaises(AssertionError): self.maester.alpha_extract_data(self.maester.alpha_call_intraday(tick, invalid))
+
+    def test_create_dataset_freq(self):
+        # cleanup
+        ticker = 'SNAP'
+        freq = '15min'
+        collname = f"{ticker}_{freq}"
+        if collname in self.maester.candles_db.list_collection_names(): self.maester.candles_db[collname].drop()
+
+        # mine that shit
+        self.maester.create_tickers_dataset(ticker, freq, start_date=datetime(2023, 1, 1), end_date=datetime(2023, 1, 5))
+
+        # test
+        self.assertEqual(self.maester.candles_db[collname].count_documents({}), 1177) # gets the whole month
