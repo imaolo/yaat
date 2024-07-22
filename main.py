@@ -50,4 +50,3 @@ elif args.cmd == 'plot_prediction':
 # TODO - true batch scaling, not instance scaling
 # TODO - handle live jobs better, record them in the database
 # TODO - test get_live_data
-# TODO - start and end date for train command
