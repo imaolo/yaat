@@ -27,6 +27,8 @@ plot_prediction_parser.add_argument('--name', type=str, required=True)
 
 # train command arguments
 
+train_parser.add_argument('--start_date', type=str, default=None)
+train_parser.add_argument('--end_date', type=str, default=None)
 train_parser.add_argument('--sample_scale', action='store_true', default=False)
 train_parser.add_argument('--alpha_dataset', action='store_true', default=False)
 train_parser.add_argument('--max_data', type=int, default=None, help='max datapoints to train')
@@ -97,9 +99,13 @@ def train(args):
     assert args.cmd == inspect.currentframe().f_code.co_name, args.cmd
     print(args)
 
+    # get the start and end dates
+    if args.start_date is not None: args.start_date = datetime.strptime(args.start_date, '%Y-%m-%d')
+    if args.end_date is not None: args.end_date = datetime.strptime(args.end_date, '%Y-%m-%d')
+
     # get the dataset
     print(f"retrieving dataset: tickers - {args.tickers}, fields - {args.fields}")
-    df = maester.get_dataset(args.tickers, args.fields)
+    df = maester.get_dataset(args.tickers, args.fields, start_date=args.start_date, end_date=args.end_date)
 
     # save to file
     df_fp = Path(tempfile.NamedTemporaryFile(delete=False, suffix='.csv').name)

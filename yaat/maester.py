@@ -23,6 +23,7 @@ pybson_tmap = {
     List[str]: {'bsonType': 'array', 'items': {'bsonType': 'string'}},
     List[float]: {'bsonType': 'array', 'items': {'bsonType': 'double'}},
     datetime: {'bsonType': 'date'},
+    Optional[datetime]: {'bsonType': ['null', 'date']},
     Optional[Int64]: {'bsonType': ['null', 'long']},
     Optional[float]: {'bsonType':['double', 'null']},
     Optional[int]: {'bsonType':['int', 'null']},
@@ -42,6 +43,8 @@ class InformerDoc(InformerArgs):
     vali_loss: Optional[float] = None
     test_loss: Optional[float] = None
     left_time: Optional[float] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
 
 @dataclass
 class PredictionDoc:

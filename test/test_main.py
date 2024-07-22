@@ -67,6 +67,19 @@ class TestMain(unittest.TestCase):
         pred_args = {'model_name': train_args.name, 'name': str(time.time()), 'start_date': '2023-7-13'}
         pred_args = parse_args('predict', pred_args)
         predict(pred_args)
+
+    def test_train_start_date(self):
+        train_args = {'name': str(time.time()), 'tickers': 'SPY', 'target': 'SPY_open', 'start_date': '2024-7-15'} \
+                | dict(map(lambda kv: (kv[0], str(kv[1])), Informer.small_scale_args.items()))
+        train_args = parse_args('train', train_args)
+        train_args.sample_scale=True
+        train_args.pred_len = 12
+        train_args.seq_len = 12
+        train(train_args)
+
+        pred_args = {'model_name': train_args.name, 'name': str(time.time()), 'start_date': '2023-7-13'}
+        pred_args = parse_args('predict', pred_args)
+        predict(pred_args)
         
 
         
