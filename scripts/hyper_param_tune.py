@@ -77,8 +77,3 @@ for combo in single_arg_combos:
     train(train_args)
 
 pprint(test_coll.find({}, {field:1 for field in single_arg_combos.keys()}).sort('test_loss', 1))
-
-# TODO - go through each and see whats up
-
-
-
