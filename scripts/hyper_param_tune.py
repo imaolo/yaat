@@ -65,7 +65,7 @@ for idx, combo in enumerate(tqdm(single_arg_combos)):
                 'seq_len': '128',
                 'pred_len': '32',
                 'train_epochs': '1',
-                'start_date': '2024-7-1',
+                'start_date': '2024-1-1',
                 'attn': combo['attn'],
                 'sample_scale': None
                 }
