@@ -75,4 +75,4 @@ for idx, combo in enumerate(tqdm(single_arg_combos)):
     train(train_args)
 
 query = {"name": {"$regex": str(unique_name), "$options": "i"}}
-pprint(maester.informers.find(query, {field:1 for field in single_arg_combos.keys()}).sort('test_loss', 1))
+pprint(maester.informers.find(query, {field:1 for field in arguments_values.keys()}).sort('test_loss', 1))
