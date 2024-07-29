@@ -108,7 +108,7 @@ class Maester:
                 self.conndb(timeout=1000)
                 raise RuntimeError('Local database already started')
             except (mongoerrs.ServerSelectionTimeoutError, mongoerrs.ConnectionFailure): pass
-            self.mongo_proc = self.startlocdb(self.dbdir if self.dbdir is not None else self.def_dbdir)
+            self.mongo_proc = self.startlocdb(Path(self.dbdir) if self.dbdir is not None else self.def_dbdir)
         else: # connect (dbdir must be none)
             self.mongo_proc = None
             if self.dbdir is not None: raise RuntimeError('cannot specify a connection string and to start a local database')
