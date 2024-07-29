@@ -55,3 +55,4 @@ elif args.cmd == 'plot_prediction':
 # TODO - cleanup database
 # TODO - add Autoformer support
 # TODO - extract all sensitive info to .env file
+# TODO - better setup datbase for testing
