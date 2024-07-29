@@ -54,3 +54,4 @@ elif args.cmd == 'plot_prediction':
 # TODO - remove polygon
 # TODO - cleanup database
 # TODO - add Autoformer support
+# TODO - extract all sensitive info to .env file
