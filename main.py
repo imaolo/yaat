@@ -53,3 +53,4 @@ elif args.cmd == 'plot_prediction':
 # TODO - test get_live_data
 # TODO - remove polygon
 # TODO - cleanup database
+# TODO - add Autoformer support
