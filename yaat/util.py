@@ -1,4 +1,4 @@
-import subprocess, select, requests
+import subprocess, requests
 
 def fetchjson(url:str): return requests.get(url).json()
 def killproc(proc:subprocess.Popen):
