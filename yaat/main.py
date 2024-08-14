@@ -79,7 +79,6 @@ train_parser.add_argument('--use_multi_gpu', action='store_true', help='use mult
 train_parser.add_argument('--devices', type=str, default='0,1,2,3',help='device ids of multile gpus')
 
 def parse_args(cmd:Optional[str]=None, args: Dict[str, str]=None):
-    # Use main_parser defined at the top level of this module
     _args = None
     if cmd is not None:
         assert args is not None
