@@ -1,6 +1,4 @@
-# yaat - Yet Another Automated Trader
-
-yaat is ana 
+# YAAT - Yet Another Automated Trader
 ## install
 ```sh
 python -m pip install -e . 
@@ -19,4 +17,4 @@ python -m pytest test/
 
 See yaat/main.py for detailed usage
 
-yaat has three commands: train, predict, and plot_prediction.
+YAAT has three commands: train, predict, and plot_prediction.
