@@ -102,7 +102,6 @@ class Maester:
         self.dbdir = dbdir
 
         # database start or connect
-
         if self.connstr is None: # start
             try:
                 self.conndb(timeout=1000)
@@ -117,21 +116,17 @@ class Maester:
         self.candles_db = self.dbc[self.candles_db_name]
 
         # create collections
-
         self.informers = self.init_collection('informers', self.informers_schema)
         self.predictions = self.init_collection('predictions', self.predictions_schema)
 
         # create indexes
-
         self.informers.create_index({'name':1}, unique=True)
         self.predictions.create_index({'name':1}, unique=True)
 
         # file store
-
         self.fs = gridfs.GridFS(self.db)
 
         # data api
-
         self.polygon = polygon.RESTClient(api_key=self.polygon_key)
 
     # database config
