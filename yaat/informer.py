@@ -57,14 +57,10 @@ class Informer:
 
     def __init__(self, args:InformerArgs):
 
-        # cache arguments
         self.og_args = copy.copy(args)
         self.args = copy.copy(args)
 
-        # record creation time
-        self.timestamp = time.time()
-
-        # set these manually
+        # these args require logic
         self.args.use_gpu = torch.cuda.is_available() and self.args.use_gpu
         if self.args.use_gpu and self.args.use_multi_gpu:
             self.args.devices = self.args.devices.replace(' ','')
@@ -79,15 +75,16 @@ class Informer:
         cols = pd.read_csv((Path(args.root_path) / args.data_path).resolve(), nrows=0).columns
         self.args.enc_in = self.args.dec_in = len(cols)-1
 
-        # should never change but are required
+        # these args are required but should never change
         self.args.c_out = 1
         self.args.features = 'MS'
         self.args.data = 'custom'
 
+        # construct the settings string
         self.settings = '{}_{}_ft{}_sl{}_ll{}_pl{}_dm{}_nh{}_el{}_dl{}_df{}_at{}_fc{}_eb{}_dt{}_mx{}_{}_ts{}'.format(
             self.args.model, self.args.data, self.args.features, self.args.seq_len, self.args.label_len, self.args.pred_len,
             self.args.d_model, self.args.n_heads, self.args.e_layers, self.args.d_layers, self.args.d_ff, self.args.attn,
-            self.args.factor, self.args.embed, self.args.distil, self.args.mix, self.args.des, self.timestamp)
+            self.args.factor, self.args.embed, self.args.distil, self.args.mix, self.args.des, time.time())
 
         # create the model
         self.exp_model = Exp_Informer(self.args)
