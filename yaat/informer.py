@@ -6,12 +6,9 @@ import torch, io, copy, time, pandas as pd
 
 @dataclass(kw_only=True)
 class InformerArgs:
-    # required
     root_path: str
     data_path: str
     target: str
-
-    # defaults
     model: str = 'informer'
     freq: str = 'h'
     checkpoints: str = './checkpoints/'
