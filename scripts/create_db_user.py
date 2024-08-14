@@ -1,4 +1,7 @@
 import pymongo
+
+#### this file is mostly notes and is not valid python
+
 # nohup python3.11 test.py > test.log 2>&1 &
 
 # db.createUser({ user: "Earl", pwd: "fda#fDASc3.!!" , roles: [{ role: "dbOwner", db: "yaatdb"}] })
