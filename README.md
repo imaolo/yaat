@@ -15,6 +15,6 @@ python -m pytest test/
 
 ## usage
 
-See yaat/main.py for detailed usage
+See ./main.py and yaat/main.py for detailed usage.
 
 YAAT has three commands: train, predict, and plot_prediction.
