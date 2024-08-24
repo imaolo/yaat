@@ -15,6 +15,7 @@ TOP_K = os.getenv('TOP_K', None)
 TOP_K = float(TOP_K) if TOP_K is not None else TOP_K
 TOP_P = os.getenv('TOP_P', None)
 TOP_P = float(TOP_P) if TOP_P is not None else TOP_P
+SAVE_FILE = os.getenv('SAVE_FILE', None)
 
 # get the device
 if torch.cuda.is_available(): device = 'cuda'
@@ -47,6 +48,7 @@ for i in tqdm(range(len(df)-CONTEXT_LEN-PRED_LEN-1), "predicting: "):
 
 # calculate average loss
 loss = 0
+chart_data = []
 for idx, forecast in enumerate(forecasts):
     # get actual data
     pred_start = idx+CONTEXT_LEN+1
@@ -55,11 +57,17 @@ for idx, forecast in enumerate(forecasts):
     # scale the prediction and actual data
     scaler = StandardScaler()
     scaler.fit(np.concatenate([forecast, actual]))
-    actual = scaler.transform(actual)
-    forecast = scaler.transform(forecast)
+    actual_scaled = scaler.transform(actual)
+    forecast_scaled = scaler.transform(forecast)
+
+    # store chart data
+    chart_data.append((actual, forecast))
 
     # accumulate loss
-    loss += torch.nn.functional.mse_loss(torch.tensor(forecast), torch.tensor(actual))
+    loss += torch.nn.functional.mse_loss(torch.tensor(actual_scaled), torch.tensor(forecast_scaled))
 loss /= len(forecasts)
 print(f"{MODEL=}, {NUM_DATA=}, {PRED_LEN=}, {CONTEXT_LEN=}, {TEMP=}, {TOP_K=}, {TOP_P=}")
 print(loss)
+
+if SAVE_FILE is not None:
+    np.save(SAVE_FILE, np.array(forecasts))
