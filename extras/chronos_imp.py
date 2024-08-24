@@ -1,6 +1,7 @@
 from chronos import ChronosPipeline
 from utils.tools import StandardScaler
 from pathlib import Path
+from tqdm import tqdm
 import sys, os, gdown, torch, numpy as np, matplotlib.pyplot as plt, pandas as pd
 
 # script parameters
@@ -35,7 +36,7 @@ df = pd.read_csv(str(p), nrows=NUM_DATA, usecols=['open'])
 
 # predict!!
 forecasts = []
-for i in range(len(df)-CONTEXT_LEN-PRED_LEN-1):
+for i in tqdm(range(len(df)-CONTEXT_LEN-PRED_LEN-1), "predicting: "):
     forecasts.append(pipeline.predict(
         context=torch.tensor(df.iloc[i:i+CONTEXT_LEN].to_numpy()).squeeze(),
         prediction_length=PRED_LEN,
