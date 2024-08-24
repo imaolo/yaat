@@ -1,6 +1,7 @@
 from chronos import ChronosPipeline
 from utils.tools import StandardScaler
-import sys, torch, numpy as np, matplotlib.pyplot as plt, pandas as pd
+from pathlib import Path
+import sys, gdown, torch, numpy as np, matplotlib.pyplot as plt, pandas as pd
 
 # create the model
 if torch.cuda.is_available(): device = 'cuda'
@@ -13,7 +14,9 @@ pipeline = ChronosPipeline.from_pretrained(
 )
 
 # get the data
-df = pd.read_csv("../spy.csv")
+if not (p:=Path('../spy.csv')).exists():
+    gdown.download('https://drive.google.com/uc?id=16V4ZDbx_dfGL4Ky1j1FWxYaWyxG6GGra', str(p), quiet=False)
+df = pd.read_csv(str(p))
 
 # cut it down
 df = df.head(30)
