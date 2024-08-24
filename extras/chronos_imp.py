@@ -30,7 +30,7 @@ CONTEXT_LEN = 24
 forecasts = []
 for i in range(len(df)-CONTEXT_LEN-PRED_LEN+1):
     forecasts.append(pipeline.predict(
-        context=(t:=torch.tensor(df.iloc[i:i+CONTEXT_LEN]["open"].to_numpy())),
+        context=torch.tensor(df.iloc[i:i+CONTEXT_LEN]["open"].to_numpy()),
         prediction_length=PRED_LEN,
         num_samples=NUM_SAMPLES).squeeze().numpy())
 
