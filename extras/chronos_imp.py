@@ -19,18 +19,18 @@ if not (p:=Path('../spy.csv')).exists():
 df = pd.read_csv(str(p))
 
 # cut it down
-df = df.head(100)
+df = df.head(500)["open"]
 
 # define prediction parameters
 NUM_SAMPLES = 1
-PRED_LEN = 12
-CONTEXT_LEN = 24
+PRED_LEN = 2
+CONTEXT_LEN = 48
 
 # predict!!
 forecasts = []
-for i in range(len(df)-CONTEXT_LEN-PRED_LEN+1):
+for i in range(len(df)-CONTEXT_LEN-PRED_LEN-1):
     forecasts.append(pipeline.predict(
-        context=torch.tensor(df.iloc[i:i+CONTEXT_LEN]["open"].to_numpy()),
+        context=torch.tensor(df.iloc[i:i+CONTEXT_LEN].to_numpy()),
         prediction_length=PRED_LEN,
         num_samples=NUM_SAMPLES).squeeze().numpy())
 
@@ -38,7 +38,8 @@ for i in range(len(df)-CONTEXT_LEN-PRED_LEN+1):
 loss = 0
 for idx, forecast in enumerate(forecasts):
     # get actual data
-    actual = df.iloc[idx+1+PRED_LEN:idx+1+PRED_LEN*2]['open'].to_numpy()
+    pred_start = idx+CONTEXT_LEN+1
+    actual = df.iloc[pred_start:pred_start+PRED_LEN].to_numpy()
 
     # scale the prediction and actual data
     scaler = StandardScaler()
