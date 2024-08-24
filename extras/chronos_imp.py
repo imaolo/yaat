@@ -8,9 +8,12 @@ MODEL = os.getenv('MODEL', 'tiny')
 NUM_DATA = int(os.getenv('NUM_DATA', 30))
 PRED_LEN = int(os.getenv('PRED_LEN', 12))
 CONTEXT_LEN = int(os.getenv('CONTEXT_LEN', 12))
-TEMP = float(os.getenv('TEMP', None))
-TOP_K = float(os.getenv('TOP_K', None))
-TOP_P = float(os.getenv('TOP_P', None))
+TEMP = os.getenv('TEMP', None)
+TEMP = float(TEMP) if TEMP is not None else TEMP
+TOP_K = os.getenv('TOP_K', None)
+TOP_K = float(TOP_K) if TOP_K is not None else TOP_K
+TOP_P = os.getenv('TOP_P', None)
+TOP_P = float(TOP_P) if TOP_P is not None else TOP_P
 
 # get the device
 if torch.cuda.is_available(): device = 'cuda'
