@@ -19,19 +19,20 @@ if not (p:=Path('../spy.csv')).exists():
 df = pd.read_csv(str(p))
 
 # cut it down
-df = df.head(30)
+df = df.head(100)
 
 # define prediction parameters
 NUM_SAMPLES = 1
 PRED_LEN = 12
+CONTEXT_LEN = 24
 
 # predict!!
-forecasts = [
-    pipeline.predict(
-        context=torch.tensor(df.iloc[i:i+PRED_LEN]["open"].to_numpy()),
+forecasts = []
+for i in range(len(df)-CONTEXT_LEN-PRED_LEN+1):
+    forecasts.append(pipeline.predict(
+        context=(t:=torch.tensor(df.iloc[i:i+CONTEXT_LEN]["open"].to_numpy())),
         prediction_length=PRED_LEN,
-        num_samples=NUM_SAMPLES).squeeze().numpy()
-    for i in range(len(df)-PRED_LEN*2)]
+        num_samples=NUM_SAMPLES).squeeze().numpy())
 
 # calculate average loss
 loss = 0
