@@ -70,4 +70,4 @@ print(f"{MODEL=}, {NUM_DATA=}, {PRED_LEN=}, {CONTEXT_LEN=}, {TEMP=}, {TOP_K=}, {
 print(loss)
 
 if SAVE_FILE is not None:
-    np.save(SAVE_FILE, np.array(forecasts))
+    np.save(SAVE_FILE, np.array(chart_data))
