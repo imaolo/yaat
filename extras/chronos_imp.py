@@ -56,4 +56,5 @@ for idx, forecast in enumerate(forecasts):
     # accumulate loss
     loss += torch.nn.functional.mse_loss(torch.tensor(forecast), torch.tensor(actual))
 loss /= len(forecasts)
+print(f"{MODEL=}, {NUM_DATA=}, {PRED_LEN=}, {CONTEXT_LEN=}, {TEMP=}, {TOP_K=}, {TOP_P=}")
 print(loss)
