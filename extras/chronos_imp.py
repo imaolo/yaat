@@ -5,12 +5,12 @@ import sys, os, gdown, torch, numpy as np, matplotlib.pyplot as plt, pandas as p
 
 # script parameters
 MODEL = os.getenv('MODEL', 'tiny')
-NUM_DATA = os.getenv('NUM_DATA', 30)
-PRED_LEN = os.getenv('PRED_LEN', 12)
-CONTEXT_LEN = os.getenv('CONTEXT_LEN', 12)
-TEMP = os.getenv('TEMP', None)
-TOP_K = os.getenv('TOP_K', None)
-TOP_P = os.getenv('TOP_P', None)
+NUM_DATA = int(os.getenv('NUM_DATA', 30))
+PRED_LEN = int(os.getenv('PRED_LEN', 12))
+CONTEXT_LEN = int(os.getenv('CONTEXT_LEN', 12))
+TEMP = float(os.getenv('TEMP', None))
+TOP_K = float(os.getenv('TOP_K', None))
+TOP_P = float(os.getenv('TOP_P', None))
 
 # get the device
 if torch.cuda.is_available(): device = 'cuda'
