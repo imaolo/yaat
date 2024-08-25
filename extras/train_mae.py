@@ -37,7 +37,8 @@ informer_args = InformerArgs(
     dropout=DROPOUT,
     sample_scale=True,
     freq='t',
-    loss='mae')
+    loss='mae',
+    use_gpu=True)
 
 # create the model
 informer = Informer(informer_args)
