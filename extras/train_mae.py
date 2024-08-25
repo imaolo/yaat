@@ -34,6 +34,7 @@ informer_args = InformerArgs(
     d_layers=D_LAYERS,
     dropout=DROPOUT,
     sample_scale=True,
+    freq='t',
     loss='mae')
 
 # create the model
