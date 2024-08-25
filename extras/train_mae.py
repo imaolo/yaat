@@ -17,7 +17,9 @@ DROPOUT = float(os.getenv('DROPOUT', 0.1))
 # get the data
 if not (p:=Path('../spy.csv')).exists():
     gdown.download('https://drive.google.com/uc?id=16V4ZDbx_dfGL4Ky1j1FWxYaWyxG6GGra', str(p), quiet=False)
-df = pd.read_csv(str(p), usecols=['open'])
+df = pd.read_csv(str(p))
+df.rename(columns={'window_start':'date'}, inplace=True)
+df.to_csv(str(p))
 
 # create the doc
 informer_args = InformerArgs(
