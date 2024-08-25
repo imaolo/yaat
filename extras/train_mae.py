@@ -38,7 +38,8 @@ informer_args = InformerArgs(
     sample_scale=True,
     freq='t',
     loss='mae',
-    use_gpu=True)
+    use_gpu=True,
+    embed='learned')
 
 # create the model
 informer = Informer(informer_args)
