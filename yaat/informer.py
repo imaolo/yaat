@@ -41,7 +41,7 @@ class InformerArgs:
     lradj: str = 'type1'
     use_amp: bool = False
     inverse: bool = False
-    use_gpu: bool = False
+    use_gpu: bool = True
     gpu: int = 0
     use_multi_gpu: bool = False
     devices: str = '0,1,2,3'
