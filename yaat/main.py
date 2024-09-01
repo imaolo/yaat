@@ -32,6 +32,7 @@ plot_prediction_parser.add_argument('--name', type=str, required=True)
 train_parser.add_argument('--start_date', type=str, default=None)
 train_parser.add_argument('--end_date', type=str, default=None)
 train_parser.add_argument('--sample_scale', action='store_true', default=False)
+train_parser.add_argument('--batch_scale', action='store_true', default=False)
 train_parser.add_argument('--fields', type=str, default=None, nargs='+', help='ticker fields to train on')
 train_parser.add_argument('--tickers', type=str, required=True, nargs='+', help='ticker symbols to train on')
 
