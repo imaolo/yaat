@@ -1,18 +1,12 @@
-from yaat.maester import Maester
-from datetime import datetime
+from yaat.main import maester
 from tqdm import tqdm
 
 ## BE CAREFUL this drops production data!!!
 
-maester = Maester(connstr='mongodb://Earl:pink-Flamingo1317@52.91.137.11/')
-
-# already inserted
-#tickers = ['SPY', 'QQQ', 'XLF', 'XLK', 'VXX']
-# freq = '1min'
-# start_date=None
-# tickers = ['TSLA']
-# freq = '1min'
-# start_date=None
+# these ticker collections are dropped
+# tickers = ['SPXL']
+freq = '1min'
+start_date=None
 
 print(maester.candles_db.list_collection_names())
 with tqdm(total=len(tickers)) as pbar:
