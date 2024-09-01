@@ -71,7 +71,6 @@ class Maester:
     # api info
 
     alpha_url = 'https://www.alphavantage.co/query?'
-    alpha_key = '3KZFIF8WVK43Q92B'
 
     polygon_key = 'fuqZHZzJdzJpYq2kMRxZTI42N1nPlxKj'
 
@@ -97,7 +96,10 @@ class Maester:
 
     # construction
 
-    def __init__(self, connstr:Optional[str]=None, dbdir:Optional[Path | str]=None):
+    def __init__(self, connstr:Optional[str]=None, dbdir:Optional[Path | str]=None, alpha_key:Optional[str] = None):
+        assert alpha_key is not None
+
+        self.alpha_key = alpha_key
         self.connstr = connstr
         self.dbdir = dbdir
 
@@ -253,7 +255,7 @@ class Maester:
         # get start and end dates
 
         if start_date is None:
-            start_date = self.alpha_get_earliest(ticker, datetime(2015, month=1, day=1)) # start_date heuristic
+            start_date = self.alpha_get_earliest(ticker, datetime(2010, month=1, day=1)) # start_date heuristic
 
         if end_date is None:
             end_date = datetime.now()
