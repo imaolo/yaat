@@ -8,8 +8,7 @@ from pathlib import Path
 from bson import Int64
 import argparse, inspect, tempfile, os, numpy as np, pandas as pd
 
-
-DB_PW, DB_IP = getenv('DB_PW', ''), getenv('DB_IP')
+DB_PW, DB_IP, DB_DIR = getenv('DB_PW', None), getenv('DB_IP', None), getenv('DB_DIR', None) 
 
 # main parser
 main_parser = argparse.ArgumentParser(description='[YAAT] Yet Another Automated Trader')
@@ -92,8 +91,8 @@ def parse_args(cmd:Optional[str]=None, args: Dict[str, str]=None):
                 _args.append(v)
     return main_parser.parse_args(_args)
 
-connstr = None if (osv := os.getenv('CONNSTR', 'mongodb://Earl:pink-Flamingo1317@52.91.137.11/')) == 'None' else osv
-maester = Maester(connstr=f'mongodb://{DB_PW}@{DB_IP}/' if DB_IP != 0 else None, dbdir=os.getenv('DBDIR'))
+assert DB_PW is None == DB_IP is None, f"{DB_PW} - {DB_IP}"
+maester = Maester(connstr= None if DB_PW is None else f'mongodb://{DB_PW}@{DB_IP}/', dbdir=DB_DIR)
 
 def train(args):
     # TODO - deploy on gpu instance if specified'
