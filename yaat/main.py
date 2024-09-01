@@ -6,7 +6,7 @@ from yaat.util import getenv
 from dataclasses import asdict
 from pathlib import Path
 from bson import Int64
-import argparse, inspect, tempfile, os, numpy as np, pandas as pd
+import argparse, inspect, tempfile, os, numpy as np, pandas as pd, matplotlib.pyplot as plt
 
 DB_PW, DB_IP, DB_DIR = getenv('DB_PW', None), getenv('DB_IP', None), getenv('DB_DIR', None) 
 
@@ -28,7 +28,6 @@ predict_parser.add_argument('--start_date', type=str, default=datetime.now().str
 plot_prediction_parser.add_argument('--name', type=str, required=True)
 
 # train command arguments
-
 train_parser.add_argument('--start_date', type=str, default=None)
 train_parser.add_argument('--end_date', type=str, default=None)
 train_parser.add_argument('--sample_scale', action='store_true', default=False)
@@ -169,3 +168,34 @@ def predict(args):
     maester.predictions.insert_one(asdict(PredictionDoc(args.name, args.model_name, pd.to_datetime(df['date'].max()),
                                                         np.load(informer.predictions_file_path).flatten().tolist())))
 
+def plot_prediction(args):
+
+    # get prediction doc
+    pred_doc = PredictionDoc(**maester.predictions.find_one({'name': args.name}, {'_id': 0}))
+    
+    # get model doc
+    model_doc = InformerDoc(**maester.informers.find_one({'name': pred_doc.model_name}, {'_id': 0}))
+
+    # get the prediction data
+    preds = np.array(pred_doc.predictions).squeeze()
+    
+    # get the real data
+    target_ticker = model_doc.target.split('_')[0]
+    target_field = model_doc.target.split('_')[1]
+    real_df = maester.get_live_data([target_ticker], [target_field], pred_doc.pred_date, pred_doc.pred_date + timedelta(days=4))
+    real_df = real_df.head(model_doc.pred_len)
+
+    # place predictions in dataframe
+    real_df['preds'] = preds
+
+    # Plotting
+    target_field_full = f"{target_ticker}_{target_field}"
+    plt.figure(figsize=(10, 6))
+    plt.plot(real_df.index, real_df[target_field_full], label=target_field_full, marker='o')
+    plt.plot(real_df.index, real_df['preds'], label='preds', marker='x')
+    plt.xlabel('Index')
+    plt.ylabel('Value')
+    plt.title(target_field_full)
+    plt.legend()
+    plt.grid(True)
+    plt.show()
