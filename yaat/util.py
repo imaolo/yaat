@@ -1,5 +1,8 @@
-import subprocess, requests
+import subprocess, requests, dotenv, os
 
+dotenv.load_dotenv()
+
+def getenv(key:str, default=0): return type(default)(os.getenv(key, default))
 def fetchjson(url:str): return requests.get(url).json()
 def killproc(proc:subprocess.Popen):
         proc.terminate()
