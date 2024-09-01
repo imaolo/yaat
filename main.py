@@ -1,12 +1,6 @@
 from yaat.main import parse_args, train, predict, plot_prediction, maester
 
-args = parse_args()
-
-if args.cmd == 'train': train(args)
-elif args.cmd == 'predict': predict(args)
-elif args.cmd == 'plot_prediction': plot_prediction(args)
-else:
-    raise RuntimeError(f"command {args.cmd} not recognized")
+{'train': train, 'predict': predict, 'plot_prediction': plot_prediction}[(args:=parse_args()).cmd](args)
 
 # TODO - scale down the model and try a bunch of combinations to see what works best at predicting
 # TODO - predictions are more than just the end of the day
