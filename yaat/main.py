@@ -2,11 +2,14 @@ from typing import Optional, Dict
 from datetime import datetime, timedelta
 from yaat.maester import Maester, InformerDoc, PredictionDoc
 from yaat.informer import Informer
+from yaat.util import getenv
 from dataclasses import asdict
 from pathlib import Path
 from bson import Int64
 import argparse, inspect, tempfile, os, numpy as np, pandas as pd
 
+
+DB_PW, DB_IP = getenv('DB_PW', ''), getenv('DB_IP')
 
 # main parser
 main_parser = argparse.ArgumentParser(description='[YAAT] Yet Another Automated Trader')
@@ -90,7 +93,7 @@ def parse_args(cmd:Optional[str]=None, args: Dict[str, str]=None):
     return main_parser.parse_args(_args)
 
 connstr = None if (osv := os.getenv('CONNSTR', 'mongodb://Earl:pink-Flamingo1317@52.91.137.11/')) == 'None' else osv
-maester = Maester(connstr=connstr, dbdir=os.getenv('DBDIR'))
+maester = Maester(connstr=f'mongodb://{DB_PW}@{DB_IP}/' if DB_IP != 0 else None, dbdir=os.getenv('DBDIR'))
 
 def train(args):
     # TODO - deploy on gpu instance if specified'
