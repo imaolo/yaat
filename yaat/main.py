@@ -9,6 +9,7 @@ from bson import Int64
 import argparse, inspect, tempfile, os, numpy as np, pandas as pd, matplotlib.pyplot as plt
 
 DB_UA, DB_PW, DB_IP, DB_DIR = getenv('DB_UA', None), getenv('DB_PW', None), getenv('DB_IP', None), getenv('DB_DIR', None)
+ALPHA_KEY = getenv('ALPHA_KEY', None)
 
 # main parser
 main_parser = argparse.ArgumentParser(description='[YAAT] Yet Another Automated Trader')
@@ -90,8 +91,9 @@ def parse_args(cmd:Optional[str]=None, args: Dict[str, str]=None):
                 _args.append(v)
     return main_parser.parse_args(_args)
 
-assert DB_PW is None == DB_IP is None == DB_UA is None, f"{DB_UA} - {DB_PW} - {DB_IP}"
-maester = Maester(connstr= None if DB_PW is None else f'mongodb://{DB_UA}:{DB_PW}@{DB_IP}/', dbdir=DB_DIR)
+db_info = (DB_PW, DB_IP, DB_UA)
+assert all(i is not None for i in db_info) or all(i is None for i in db_info), db_info
+maester = Maester(connstr= None if DB_PW is None else f'mongodb://{DB_UA}:{DB_PW}@{DB_IP}/', dbdir=DB_DIR, alpha_key=ALPHA_KEY)
 
 def train(args):
     # TODO - deploy on gpu instance if specified'
