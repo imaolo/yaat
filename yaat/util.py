@@ -10,3 +10,6 @@ def killproc(proc:subprocess.Popen):
         except subprocess.TimeoutExpired:
             print(f"process {proc.args} didn't terminate gracefully, killing it...")
             proc.kill()
+
+
+DB_PW, DB_IP = getenv('DB_PW'), getenv('DB_IP')
