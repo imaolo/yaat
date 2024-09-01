@@ -1,4 +1,4 @@
-from yaat.main import parse_args, train, predict, plot_prediction, maester
+from yaat.main import parse_args, train, predict, plot_prediction
 
 {'train': train, 'predict': predict, 'plot_prediction': plot_prediction}[(args:=parse_args()).cmd](args)
 
