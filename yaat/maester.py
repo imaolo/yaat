@@ -249,6 +249,9 @@ class Maester:
         # create the collection
         tick_coll = self.init_collection(collname, self.candle_schema, self.candles_db)
 
+        # no duplicate dates
+        tick_coll.create_index({'date': 1}, unique=True)
+
         # get start and end dates
 
         if start_date is None:
@@ -287,9 +290,6 @@ class Maester:
                     print("---- Exception encountered ----")
                     print(e)
                 pbar.update(1)
-
-        # no duplicate dates
-        tick_coll.create_index({'date': 1}, unique=True)
                 
 
     # alphavantage
