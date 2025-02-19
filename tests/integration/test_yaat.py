@@ -1,13 +1,9 @@
-from pathlib import Path
 from pymongo import MongoClient
 from yaat.yaat import TopMoversScalper
-import unittest, pytest, os, time
+from tests.common import docker_compose_file
+import unittest, pytest, time
 
-@pytest.fixture(scope="session")
-def docker_compose_file(pytestconfig):
-    return os.path.join(Path(str(pytestconfig.rootdir)) / 'docker-compose.yml')
-
-class TestApp(unittest.TestCase):
+class TestYaat(unittest.TestCase):
 
     @pytest.fixture(autouse=True)
     def inject_docker_services(self, docker_ip, docker_services):
