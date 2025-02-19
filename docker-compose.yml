@@ -1,3 +1,11 @@
+x-yaat-common: &yaat-common
+  image: python:3.12-slim
+  volumes:
+    - .:/repo
+  working_dir: /repo
+  depends_on:
+    - mongo
+
 services:
 
   mongo:
@@ -9,10 +17,11 @@ services:
     command: ["mongod", "--config", "/etc/mongo.conf"]
 
   yaat:
-    image: python:3.12-slim
-    volumes:
-      - .:/repo
-    working_dir: /repo
+    <<: *yaat-common
     depends_on:
       - mongo
     command: /bin/sh -c "pip install -e . && python main.py"
+
+  yaat-unit-test:
+    <<: *yaat-common
+    command: /bin/sh -c "pip install -e '.[test]' && pytest tests/unit"
