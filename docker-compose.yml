@@ -1,0 +1,18 @@
+services:
+
+  mongo:
+    image: mongo:latest
+    volumes:
+      - ./mongo.conf:/etc/mongo.conf:ro
+    ports:
+      - "27017:27017"
+    command: ["mongod", "--config", "/etc/mongo.conf"]
+
+  yaat:
+    image: python:3.12-slim
+    volumes:
+      - .:/repo
+    working_dir: /repo
+    depends_on:
+      - mongo
+    command: /bin/sh -c "pip install -e . && python main.py"

@@ -1,0 +1,101 @@
+from pymongo import MongoClient
+from yaat.mongo import MongoCollection, MongoDoc
+from typing import Callable, final
+from apscheduler.schedulers.blocking import BlockingScheduler
+from abc import ABC, abstractmethod
+from yaat.mongo import MongoCollection
+from dataclasses import asdict
+from datetime import datetime
+import os, requests
+
+# https://docs.coingecko.com/reference/coins-top-gainers-losers
+
+class TopMoverQuery(MongoDoc):
+    duration: str
+    top_coins: str
+
+class TopMoverResult(MongoDoc):
+    id: str
+    symbol: str
+    name: str
+    usd: float
+    market_cap_rank: int
+    usd_24h_vol: int
+    usd_1y_change: int
+
+class TopMoverDoc(MongoDoc):
+    timestamp: datetime
+    query: TopMoverQuery
+    result: TopMoverResult
+
+COINGECKO_KEY = os.getenv('COINGECKO_KEY', "CG-X334WMchqCMVjvmVwqHmXkyJ")
+
+class Scalper(ABC):
+    dbname: str = 'scalper_db'
+
+    def __init__(self, mcoll:MongoCollection, interval_sec:int):
+        self.mcoll = mcoll
+        self.interval_sec = interval_sec
+
+    def __call__(self, url: str, headers: dict | None = None, **kwargs) -> dict:
+        return requests.get(url, headers=headers, params=kwargs).json()
+
+    @final
+    def schedule_job(self, scheduler:BlockingScheduler):
+        scheduler.add_job(self.get_job(), 'interval', seconds=self.interval_sec)
+
+    @abstractmethod
+    def get_job(self) -> Callable:
+        pass
+
+class CoinGeckoScalper(Scalper, ABC):
+    api_url = "https://api.coingecko.com/api/v3"
+
+    def __init__(self, coll:MongoCollection, interval_sec:int, api_key:str=COINGECKO_KEY):
+        super().__init__(coll, interval_sec)
+        self.headers = {"accept": "application/json", "x-cg-demo-api-key": api_key}
+
+    def __call__(self, cmd:str, **kwargs) -> dict:
+        return super().__call__(self.api_url + cmd, headers=self.headers, **kwargs)
+
+class TopMoversScalper(CoinGeckoScalper):
+    collname: str = 'top_movers'
+    durations: list[str] = ['1h', '24h', '7d', '14d', '30d', '1y']
+    top_coins: list[str] = ['300', '500', '1000', 'all']
+
+    def __init__(self, dbc:MongoClient, interval_sec:int, api_key:str=COINGECKO_KEY):
+        super().__init__(MongoCollection(dbc[self.dbname][self.collname], TopMoverDoc), interval_sec, api_key)
+
+    def __call__(self, **kwargs) -> dict:
+        return super().__call__('/movers', **kwargs)
+
+    def get_job(self) -> Callable:
+        def job():
+            for duration in self.durations:
+                for top_coin in self.top_coins:
+                    query_doc = TopMoverQuery(duration=duration, top_coins=top_coin)
+                    # TODO - clean
+                    # coll.insert_many(
+                    #     [(doc.pop("image"), TopMoverDoc(timestamp=datetime.now(), query=query_doc, results=TopMoverResult(**doc)))[1]
+                    #      for doc in self.call('/movers', **dict(query_doc))[0]["top_gainers"]])
+                    self.mcoll.coll.insert_many([
+                        asdict(self.mcoll.doctype(timestamp=datetime.now(), query=query_doc, result=TopMoverResult(**{
+                            'id': 'btc',
+                            'symbol': 'btc',
+                            'name': 'bitcoin',
+                            'usd': 1.0,
+                            'market_cap_rank': 1,
+                            'usd_24h_vol': 1,
+                            'usd_1y_change': 1,
+                        })))
+                    ])
+        return job
+
+def run():
+    # TODO - DB_HOST name, db name and collname
+    dbc = MongoClient(host='mongo')
+
+    # schedule jobs
+    scheduler = BlockingScheduler()
+    TopMoversScalper(dbc, 1).schedule_job(scheduler)
+    scheduler.start()

@@ -1,0 +1,23 @@
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    env:
+      SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+      SSH_HOST: ${{ secrets.SSH_HOST }}
+      SSH_KEY: ${{ secrets.SSH_KEY }}
+      GH_PAT: ${{ secrets.GH_PAT }}
+      RUNNER: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Install Python Dependencies
+        run: python -m pip install -e ".[test]"
+
+      - name: Run CI
+        run: python ci.py

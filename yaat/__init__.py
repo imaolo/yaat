@@ -1,0 +1,1 @@
+from yaat.yaat import run
