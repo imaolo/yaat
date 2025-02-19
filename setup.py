@@ -12,7 +12,8 @@ setup(
     ],
     extras_require={
         'test': [
-            "pytest-docker"
+            "pytest-docker",
+            "pytest"
         ]
     }
 )
