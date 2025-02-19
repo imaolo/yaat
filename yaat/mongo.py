@@ -1,10 +1,11 @@
 from __future__ import annotations
 from bson import Int64, ObjectId
 from datetime import datetime
-from dataclasses import dataclass, fields, asdict
+from dataclasses import dataclass, fields
 from typing import Union, get_origin, get_args, TYPE_CHECKING, Type
-from abc import ABC, abstractmethod
+from abc import ABC
 from typing import get_origin, get_args, TypeAlias
+import types
 if TYPE_CHECKING:
     from pymongo.synchronous.database import Collection
     from collections.abc import Iterable
@@ -25,10 +26,8 @@ BSON_OBJ_TYPE: TypeAlias = dict[str, 'BSON_TYPE']
 BSON_LIS_TYPE: TypeAlias = list['BSON_TYPE']
 BSON_TYPE: TypeAlias = BSON_OBJ_TYPE | BSON_LIS_TYPE | str
 
+@dataclass(frozen=True, kw_only=True)
 class MongoDoc(ABC):
-
-    @abstractmethod
-    def __init__(self): pass
 
     @classmethod
     def get_schema(cls) -> dict: return cls._get_schema(cls)
@@ -60,7 +59,8 @@ class MongoDoc(ABC):
     def _get_required(cls) -> list[str]: return [field.name for field in fields(cls)]
 
     @classmethod
-    def _get_properties(cls) -> BSON_OBJ_TYPE: return {field.name: cls._get_schema(field.type) for field in fields(cls)}
+    def _get_properties(cls) -> BSON_OBJ_TYPE:
+        return {field.name: cls._get_schema(field.type) for field in fields(cls)}
 
     @classmethod
     def _get_items(cls, list_type: Iterable) -> BSON_OBJ_TYPE:
@@ -68,13 +68,16 @@ class MongoDoc(ABC):
         return cls._get_schema(elem_type)
 
     @staticmethod
-    def _is_list_type(typ) -> bool: return type is list or get_origin(typ) is list
+    def _is_list_type(typ) -> bool:
+        return type is list or get_origin(typ) is list
 
     @staticmethod
-    def _is_doc_type(t) -> bool: return issubclass(t, MongoDoc)
+    def _is_doc_type(t) -> bool:
+        return not isinstance(t, types.GenericAlias) and issubclass(t, MongoDoc)
 
     @staticmethod
-    def _is_optional_type(t) -> bool: return get_origin(t) is Union and type(None) in get_args(t)
+    def _is_optional_type(t) -> bool:
+        return get_origin(t) is Union and type(None) in get_args(t)
 
 class MongoCollection:
 
