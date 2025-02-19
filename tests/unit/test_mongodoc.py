@@ -21,6 +21,7 @@ class Doc2Array(MongoDoc):
     f1: bool
 
 class TestMongoDoc(unittest.TestCase):
+    # TODO test union and optionals
 
     def test_doc(self):
         self.assertEqual(Doc1.get_schema(),{
