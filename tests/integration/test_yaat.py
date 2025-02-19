@@ -23,5 +23,4 @@ class TestYaat(unittest.TestCase):
 
     def test_sample(self):
         coll = MongoClient()[TopMoversScalper.dbname][TopMoversScalper.collname]
-        assert coll.count_documents({}) > 1
-
+        self.assertGreater(coll.count_documents({}), 1)

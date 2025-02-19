@@ -1,4 +1,4 @@
-# from common import Doc1, Doc2, Doc1Array, Doc2Array
+from tests.common import Doc1, Doc2, Doc1Array, Doc2Array
 import unittest
 
 class TestMongoDoc(unittest.TestCase):
