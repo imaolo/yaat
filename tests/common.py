@@ -1,4 +1,10 @@
 from yaat.mongo import MongoDoc
+from pathlib import Path
+import pytest, os
+
+@pytest.fixture(scope="session")
+def docker_compose_file(pytestconfig):
+    return os.path.join(Path(str(pytestconfig.rootdir)) / 'docker-compose.yml')
 
 class Doc1(MongoDoc):
     f1: str
