@@ -4,7 +4,6 @@ SSH_USERNAME = os.getenv('SSH_USERNAME')
 SSH_HOST = os.getenv('SSH_HOST')
 SSH_KEY = os.getenv('SSH_KEY')
 GH_PAT = os.getenv('GH_PAT')
-COMMIT = os.getenv('COMMIT', False)
 RUNNER = os.getenv('RUNNER', False)
 
 if RUNNER and (not SSH_USERNAME or not SSH_KEY or not SSH_HOST or not GH_PAT):
