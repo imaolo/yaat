@@ -92,10 +92,8 @@ class TopMoversScalper(CoinGeckoScalper):
         return job
 
 def run():
-    # TODO - DB_HOST name, db name and collname
     dbc = MongoClient(host='mongo')
 
-    # schedule jobs
     scheduler = BlockingScheduler()
     TopMoversScalper(dbc, 1).schedule_job(scheduler)
     scheduler.start()
