@@ -47,13 +47,17 @@ class MongoDoc(ABC):
             if nt is not type(None): raise RuntimeError(nt)
             bson_type.append('null')
 
-        if t in pybson_tmap: return {'bsonType': [pybson_tmap[t]] + bson_type}
-        elif cls._is_doc_type(t): return {'bsonType': ['object'] + bson_type ,
-                                          'properties': t._get_properties(),
-                                          'required':  t._get_required()}
-        elif cls._is_list_type(t): return {'bsonType': ['array'] + bson_type,
-                                           'items': cls._get_items(t)}
-        else: raise RuntimeError(t)
+        if t in pybson_tmap:
+            return {'bsonType': [pybson_tmap[t]] + bson_type}
+        elif cls._is_doc_type(t):
+            return {'bsonType': ['object'] + bson_type ,
+                    'properties': t._get_properties(),
+                    'required':  t._get_required()}
+        elif cls._is_list_type(t):
+            return {'bsonType': ['array'] + bson_type,
+                    'items': cls._get_items(t)}
+        else:
+            raise RuntimeError(t)
 
     @classmethod
     def _get_required(cls) -> list[str]: return [field.name for field in fields(cls)]
