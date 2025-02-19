@@ -62,7 +62,6 @@ class TestMongoDoc(unittest.TestCase):
             'required': ['l1', 'l2', 'f3']})
 
     def test_array_nest(self):
-        from pprint import pprint
         self.assertEqual(Doc2Array.get_schema(), {
             'bsonType': ['object'],
             'properties': {
