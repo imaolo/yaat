@@ -5,7 +5,7 @@ SSH_HOST = os.getenv('SSH_HOST')
 SSH_KEY = os.getenv('SSH_KEY')
 GH_PAT = os.getenv('GH_PAT')
 
-if not SSH_USERNAME or not SSH_KEY or not SSH_HOST or not GH_PAT):
+if not SSH_USERNAME or not SSH_KEY or not SSH_HOST or not GH_PAT:
     raise RuntimeError("SSH_USERNAME, SSH_KEY, SSH_HOST, and GH_PAT required")
 
 def runcmd(cmd:str) -> None | str:
