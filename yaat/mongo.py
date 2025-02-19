@@ -26,7 +26,6 @@ BSON_LIS_TYPE: TypeAlias = list['BSON_TYPE']
 BSON_TYPE: TypeAlias = BSON_OBJ_TYPE | BSON_LIS_TYPE | str
 
 class MongoDoc(ABC):
-    # TODO - index information
 
     @abstractmethod
     def __init__(self): pass
