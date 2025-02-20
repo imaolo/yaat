@@ -13,6 +13,7 @@ class Doc4(MongoDoc):
 
 class TestMongo(IntegrationTestCase, wait_yaat=False):
     # TODO test union and optionals
+    # TODO array testing
 
     def setUp(self):
         super().setUp()
@@ -31,6 +32,11 @@ class TestMongo(IntegrationTestCase, wait_yaat=False):
         mcoll = MongoCollection(self.db['test_doc_simple_failure_missing_field'], Doc1)
         with self.assertRaises(WriteError):
             mcoll.coll.insert_one({'f1': 'str'})
+
+    def test_doc_simple_failure_extra_field(self):
+        mcoll = MongoCollection(self.db['test_doc_simple_failure_missing_field'], Doc1)
+        with self.assertRaises(WriteError):
+            mcoll.coll.insert_one({'f1': 'str', 'f2': 1, 'f3': 1})
 
     # NOTE succeeds
     class Doc1Alias_a(Doc1): pass
@@ -51,7 +57,7 @@ class TestMongo(IntegrationTestCase, wait_yaat=False):
         with self.assertRaises(WriteError):
             mcoll.coll.insert_one(Doc2(d1=Doc1(f1=1, f2=1), f1=1).asdict())
 
-    def test_doc_nest_failure_type_obj(self):
+    def test_doc_nest_failure_type_extra_field(self):
         mcoll = MongoCollection(self.db['test_doc_nest_failure_type_obj'], Doc2)
         with self.assertRaises(WriteError):
             mcoll.coll.insert_one(Doc2(d1=Doc3(doc2_f1=1, f1='str', f2=1), f1=1).asdict())
