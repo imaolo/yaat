@@ -12,7 +12,7 @@ jobs:
       SSH_KEY: ${{ secrets.SSH_KEY }}
       GH_PAT: ${{ secrets.GH_PAT }}
       COINGECKO_KEY: ${{ secrets.COINGECKO_KEY }}
-      RUNNER: false
+      DEPLOY: false
     steps:
       - name: Checkout
         uses: actions/checkout@v3
