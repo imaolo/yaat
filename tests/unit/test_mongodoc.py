@@ -6,10 +6,10 @@ class TestMongoDoc(unittest.TestCase):
 
     def test_doc(self):
         self.assertEqual(Doc1.get_schema(),{
-            'bsonType': ['object'],
+            'bsonType': 'object',
             'properties': {
-                'f1': {'bsonType': ['string']},
-                'f2': {'bsonType': ['int']},
+                'f1': {'bsonType': 'string'},
+                'f2': {'bsonType': 'int'},
                 '_id': {'bsonType': 'objectId'}
             },
             'required': ['f1', 'f2'],
@@ -18,15 +18,15 @@ class TestMongoDoc(unittest.TestCase):
 
     def test_doc_nest(self):
         self.assertEqual(Doc2.get_schema(),{
-            'bsonType': ['object'],
+            'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
-                'f1': {'bsonType': ['int']},
+                'f1': {'bsonType': 'int'},
                 'd1': {
-                    'bsonType': ['object'],
+                    'bsonType': 'object',
                     'properties': {
-                        'f1': {'bsonType': ['string']},
-                        'f2': {'bsonType': ['int']}},
+                        'f1': {'bsonType': 'string'},
+                        'f2': {'bsonType': 'int'}},
                     'required': ['f1', 'f2'],
                     'additionalProperties': False}},
             'required': ['d1', 'f1'],
@@ -34,64 +34,64 @@ class TestMongoDoc(unittest.TestCase):
 
     def test_array(self):
         self.assertEqual(Doc1Array.get_schema(),{
-            'bsonType': ['object'],
+            'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
-                'f3': {'bsonType': ['int']},
+                'f3': {'bsonType': 'int'},
                 'l1': {
-                    'bsonType': ['array'],
-                    'items': {'bsonType': ['string']}},
+                    'bsonType': 'array',
+                    'items': {'bsonType': 'string'}},
                 'l2': {
-                    'bsonType': ['array'],
+                    'bsonType': 'array',
                     'items': {
-                        'bsonType': ['array'],
-                        'items': {'bsonType': ['int']}}}},
+                        'bsonType': 'array',
+                        'items': {'bsonType': 'int'}}}},
             'required': ['l1', 'l2', 'f3'],
             'additionalProperties': False})
 
     def test_array_nest(self):
         self.assertEqual(Doc2Array.get_schema(), {
-            'bsonType': ['object'],
+            'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
-                'f1': {'bsonType': ['bool']},
+                'f1': {'bsonType': 'bool'},
                 'l1': {
-                    'bsonType': ['array'],
+                    'bsonType': 'array',
                     'items': {
-                        'bsonType': ['object'],
+                        'bsonType': 'object',
                         'properties': {
-                            'f3': {'bsonType': ['int']},
+                            'f3': {'bsonType': 'int'},
                             'l1': {
-                                'bsonType': ['array'],
-                                'items': {'bsonType': ['string']}},
+                                'bsonType': 'array',
+                                'items': {'bsonType': 'string'}},
                             'l2': {
-                                'bsonType': ['array'],
+                                'bsonType': 'array',
                                 'items': {
-                                    'bsonType': ['array'],
-                                    'items': {'bsonType': ['int']}}}},
+                                    'bsonType': 'array',
+                                    'items': {'bsonType': 'int'}}}},
                         'required': ['l1', 'l2', 'f3'],
                         'additionalProperties': False}},
                 'l2': {
-                    'bsonType': ['array'],
+                    'bsonType': 'array',
                     'items': {
-                        'bsonType': ['array'],
+                        'bsonType': 'array',
                         'items': {
-                            'bsonType': ['object'],
+                            'bsonType': 'object',
                             'properties': {
-                                'f3': {'bsonType': ['int']},
+                                'f3': {'bsonType': 'int'},
                                 'l1': {
-                                    'bsonType': ['array'],
-                                    'items': {'bsonType': ['string']}},
+                                    'bsonType': 'array',
+                                    'items': {'bsonType': 'string'}},
                                 'l2': {
-                                    'bsonType': ['array'],
+                                    'bsonType': 'array',
                                     'items': {
-                                        'bsonType': ['array'],
-                                        'items': {'bsonType': ['int']}}}},
+                                        'bsonType': 'array',
+                                        'items': {'bsonType': 'int'}}}},
                             'required': ['l1', 'l2', 'f3'],
                             'additionalProperties': False}}},
                 'l3': {
-                    'bsonType': ['array'],
-                    'items': {'bsonType': ['double']}}},
+                    'bsonType': 'array',
+                    'items': {'bsonType': 'double'}}},
             'required': ['l1', 'l2', 'l3', 'f1'],
             'additionalProperties': False
         })
@@ -99,11 +99,11 @@ class TestMongoDoc(unittest.TestCase):
     def test_dict(self):
         self.assertEqual(Doc1Dict.get_schema(), {
             'additionalProperties': False,
-            'bsonType': ['object'],
+            'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
-                'dict1': {'bsonType': ['object']},
-                'f1': {'bsonType': ['int']}},
+                'dict1': {'bsonType': 'object'},
+                'f1': {'bsonType': 'int'}},
             'required': ['dict1', 'f1']})
 
     # TODO failure
@@ -113,9 +113,9 @@ class TestMongoDoc(unittest.TestCase):
     def test_dict2(self):
         self.assertEqual(self.Doc2Dict.get_schema(), {
             'additionalProperties': False,
-            'bsonType': ['object'],
+            'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
-                'dict1': {'bsonType': ['object']},
-                'f1': {'bsonType': ['int']}},
+                'dict1': {'bsonType': 'object'},
+                'f1': {'bsonType': 'int'}},
             'required': ['dict1', 'f1']})

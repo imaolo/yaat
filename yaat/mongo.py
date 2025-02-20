@@ -4,25 +4,57 @@ from datetime import datetime
 from dataclasses import dataclass, fields, asdict
 from typing import Union, get_origin, get_args, TYPE_CHECKING, Type
 from abc import ABC, abstractmethod
-from typing import get_origin, get_args, TypeAlias, final
-import types
+from typing import get_origin, get_args, TypeAlias, final, Any, Callable
+import types, copy
 if TYPE_CHECKING:
     from pymongo.synchronous.database import Collection, Database
     from pymongo import MongoClient
     from collections.abc import Iterable
 
-pybson_tmap = {
-    # TODO np.array
-    str: 'string',
-    int: 'int',
-    bool: 'bool',
-    float: 'double',
-    datetime: 'date',
-    ObjectId: 'objectId',
-    Int64: 'long',
-    float:'double',
-    dict: 'object'
-}
+
+class _PyBSON_TMap:
+    def __init__(self):
+        self.pybson_prim_map = {
+            # TODO np.array
+            str: 'string',
+            int: 'int',
+            bool: 'bool',
+            float: 'double',
+            datetime: 'date',
+            ObjectId: 'objectId',
+            Int64: 'long',
+            float: 'double',
+            dict: 'object',
+        }
+
+        self.pybson_tmap = {
+            lambda T: T in self.pybson_prim_map: lambda T: {'bsonType': self.pybson_prim_map[T]},
+            lambda T: not isinstance(T, types.GenericAlias) and issubclass(T, MongoDoc): lambda T: self.get_doc(T),
+            lambda T: type is list or get_origin(T) is list: lambda T: self.get_list(T),
+            lambda T: get_origin(T) is Union and type(None) in get_args(T): lambda T: self.get_optional(T),
+        }
+
+    def get_doc(self, doct: type[MongoDoc]) -> dict:
+        return {'bsonType': 'object',
+                'properties': {field.name: self[field.type] for field in fields(doct)},
+                'required':  [field.name for field in fields(doct)],
+                'additionalProperties': False}
+
+    def get_list(self, listt: Iterable) -> dict:
+        elemt, = get_args(listt)
+        return {'bsonType': 'array', 'items': self[elemt]}
+
+    def get_optional(self, optt: Any) -> dict:
+        t, nt = get_args(optt)
+        if nt is not type(None): raise RuntimeError(nt)
+        (d:=self[t]).update({'bsonType': ['null', d['bsonType']]})
+        return d
+
+    def __getitem__(self, T: Any) -> dict:
+        schema, = [schema(T) for check, schema in self.pybson_tmap.items() if check(T)]
+        return schema
+
+PyBSON_TMap = _PyBSON_TMap()
 
 BSON_OBJ_TYPE: TypeAlias = dict[str, 'BSON_TYPE']
 BSON_LIS_TYPE: TypeAlias = list['BSON_TYPE']
@@ -33,60 +65,16 @@ class MongoDoc(ABC):
 
     def asdict(self) -> dict: return asdict(self)
 
+    # TODO $jsonschema
     @classmethod
-    def get_schema(cls) -> dict: return cls._get_schema(cls, include_id=True)
+    def get_schema(cls) -> dict:
+        (schema:=PyBSON_TMap[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
+        return schema
 
     @classmethod
     def __init_subclass__(cls, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
         dataclass(cls, kw_only=True, frozen=True)
-
-    @classmethod
-    def _get_schema(cls, t: Union[MongoDoc, list, *pybson_tmap.keys()], include_id: bool = False) -> BSON_OBJ_TYPE: # type: ignore
-        bson_type = []
-
-        # HACK for Optionals, could strip the Union better
-        if cls._is_optional_type(t): # NOTE could strip union better
-            t, nt = get_args(t)
-            if nt is not type(None): raise RuntimeError(nt)
-            bson_type.append('null')
-
-        if t in pybson_tmap:
-            return {'bsonType': [pybson_tmap[t]] + bson_type}
-        elif cls._is_doc_type(t):
-            return {'bsonType': ['object'] + bson_type ,
-                    'properties': t._get_properties() |  ({'_id': {'bsonType': 'objectId'}} if include_id else {}),
-                    'required':  t._get_required(),
-                    'additionalProperties': False}
-        elif cls._is_list_type(t):
-            return {'bsonType': ['array'] + bson_type,
-                    'items': cls._get_items(t)}
-        else:
-            raise RuntimeError(t)
-
-    @classmethod
-    def _get_required(cls) -> list[str]: return [field.name for field in fields(cls)]
-
-    @classmethod
-    def _get_properties(cls) -> BSON_OBJ_TYPE:
-        return {field.name: cls._get_schema(field.type) for field in fields(cls)}
-
-    @classmethod
-    def _get_items(cls, list_type: Iterable) -> BSON_OBJ_TYPE:
-        elem_type, = get_args(list_type)
-        return cls._get_schema(elem_type)
-
-    @staticmethod
-    def _is_list_type(typ) -> bool:
-        return type is list or get_origin(typ) is list
-
-    @staticmethod
-    def _is_doc_type(t) -> bool:
-        return not isinstance(t, types.GenericAlias) and issubclass(t, MongoDoc)
-
-    @staticmethod
-    def _is_optional_type(t) -> bool:
-        return get_origin(t) is Union and type(None) in get_args(t)
 
 class MongoCommitDoc(MongoDoc, ABC):
     pass
