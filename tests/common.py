@@ -1,7 +1,7 @@
 from yaat.mongo import MongoDoc
 from pymongo import MongoClient
 from abc import ABC
-import pytest, unittest, docker
+import pytest, unittest, docker, time
 
 
 class IntegrationTestCase(unittest.TestCase, ABC):
@@ -36,6 +36,7 @@ class IntegrationTestCase(unittest.TestCase, ABC):
                 pause=0.1,
                 check=check_mongo
             )
+            time.sleep(0.25)
 
 class Doc1(MongoDoc):
     f1: str
