@@ -94,6 +94,7 @@ def run():
     web_listener = lambda:  HTTPServer(('0.0.0.0', 80), SimpleHandler).serve_forever(poll_interval=0.1)
 
     # create the schedule and add the jobs
+    # TODO - dynamic jobs?
     scheduler = BlockingScheduler()
     scheduler.add_job(TopMoversScraper(dbc).scrape, 'interval', seconds=1)
     scheduler.add_job(hb_listener, 'date', run_date=datetime.now())
