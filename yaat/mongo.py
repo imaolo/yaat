@@ -1,7 +1,7 @@
 from __future__ import annotations
 from bson import Int64, ObjectId
 from datetime import datetime
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, asdict
 from typing import Union, get_origin, get_args, TYPE_CHECKING, Type
 from abc import ABC
 from typing import get_origin, get_args, TypeAlias
@@ -29,8 +29,10 @@ BSON_TYPE: TypeAlias = BSON_OBJ_TYPE | BSON_LIS_TYPE | str
 @dataclass(frozen=True, kw_only=True)
 class MongoDoc(ABC):
 
+    def asdict(self) -> dict: return asdict(self)
+
     @classmethod
-    def get_schema(cls) -> dict: return cls._get_schema(cls)
+    def get_schema(cls) -> dict: return cls._get_schema(cls, include_id=True)
 
     @classmethod
     def __init_subclass__(cls, *args, **kwargs):
@@ -38,7 +40,7 @@ class MongoDoc(ABC):
         dataclass(cls, kw_only=True, frozen=True)
 
     @classmethod
-    def _get_schema(cls, t: Union[MongoDoc, list, *pybson_tmap.keys()]) -> BSON_OBJ_TYPE: # type: ignore
+    def _get_schema(cls, t: Union[MongoDoc, list, *pybson_tmap.keys()], include_id: bool = False) -> BSON_OBJ_TYPE: # type: ignore
         bson_type = []
 
         # HACK for Optionals, could strip the Union better
@@ -51,8 +53,9 @@ class MongoDoc(ABC):
             return {'bsonType': [pybson_tmap[t]] + bson_type}
         elif cls._is_doc_type(t):
             return {'bsonType': ['object'] + bson_type ,
-                    'properties': t._get_properties(),
-                    'required':  t._get_required()}
+                    'properties': t._get_properties() |  ({'_id': {'bsonType': 'objectId'}} if include_id else {}),
+                    'required':  t._get_required(),
+                    'additionalProperties': False}
         elif cls._is_list_type(t):
             return {'bsonType': ['array'] + bson_type,
                     'items': cls._get_items(t)}
@@ -84,6 +87,7 @@ class MongoDoc(ABC):
         return get_origin(t) is Union and type(None) in get_args(t)
 
 class MongoCollection:
+    # TODO - index information
 
     def __init__(self, coll:Collection, doctype: Type[MongoDoc]):
         self.coll = coll
@@ -93,5 +97,3 @@ class MongoCollection:
             self.coll.database.command('collMod', self.coll.name, validator={'$jsonSchema':self.doctype.get_schema()})
         else:
             self.coll.database.create_collection(self.coll.name, validator={'$jsonSchema':self.doctype.get_schema()})
-
-    # TODO - index information

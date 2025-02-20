@@ -9,28 +9,34 @@ class TestMongoDoc(unittest.TestCase):
             'bsonType': ['object'],
             'properties': {
                 'f1': {'bsonType': ['string']},
-                'f2': {'bsonType': ['int']}
+                'f2': {'bsonType': ['int']},
+                '_id': {'bsonType': 'objectId'}
             },
-            'required': ['f1', 'f2']
+            'required': ['f1', 'f2'],
+            'additionalProperties': False
         })
 
     def test_doc_nest(self):
         self.assertEqual(Doc2.get_schema(),{
             'bsonType': ['object'],
             'properties': {
+                '_id': {'bsonType': 'objectId'},
                 'f1': {'bsonType': ['int']},
                 'd1': {
                     'bsonType': ['object'],
                     'properties': {
                         'f1': {'bsonType': ['string']},
                         'f2': {'bsonType': ['int']}},
-                    'required': ['f1', 'f2']}},
-            'required': ['d1', 'f1']})
+                    'required': ['f1', 'f2'],
+                    'additionalProperties': False}},
+            'required': ['d1', 'f1'],
+            'additionalProperties': False})
 
     def test_array(self):
         self.assertEqual(Doc1Array.get_schema(),{
             'bsonType': ['object'],
             'properties': {
+                '_id': {'bsonType': 'objectId'},
                 'f3': {'bsonType': ['int']},
                 'l1': {
                     'bsonType': ['array'],
@@ -40,12 +46,14 @@ class TestMongoDoc(unittest.TestCase):
                     'items': {
                         'bsonType': ['array'],
                         'items': {'bsonType': ['int']}}}},
-            'required': ['l1', 'l2', 'f3']})
+            'required': ['l1', 'l2', 'f3'],
+            'additionalProperties': False})
 
     def test_array_nest(self):
         self.assertEqual(Doc2Array.get_schema(), {
             'bsonType': ['object'],
             'properties': {
+                '_id': {'bsonType': 'objectId'},
                 'f1': {'bsonType': ['bool']},
                 'l1': {
                     'bsonType': ['array'],
@@ -61,7 +69,8 @@ class TestMongoDoc(unittest.TestCase):
                                 'items': {
                                     'bsonType': ['array'],
                                     'items': {'bsonType': ['int']}}}},
-                        'required': ['l1', 'l2', 'f3']}},
+                        'required': ['l1', 'l2', 'f3'],
+                        'additionalProperties': False}},
                 'l2': {
                     'bsonType': ['array'],
                     'items': {
@@ -78,9 +87,11 @@ class TestMongoDoc(unittest.TestCase):
                                     'items': {
                                         'bsonType': ['array'],
                                         'items': {'bsonType': ['int']}}}},
-                            'required': ['l1', 'l2', 'f3']}}},
+                            'required': ['l1', 'l2', 'f3'],
+                            'additionalProperties': False}}},
                 'l3': {
                     'bsonType': ['array'],
                     'items': {'bsonType': ['double']}}},
-            'required': ['l1', 'l2', 'l3', 'f1']
+            'required': ['l1', 'l2', 'l3', 'f1'],
+            'additionalProperties': False
         })
