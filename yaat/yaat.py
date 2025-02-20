@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 from yaat.mongo import MongoCollection, MongoDoc
 from typing import Callable, final
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
 from abc import ABC, abstractmethod
 from dataclasses import asdict
 from datetime import datetime
@@ -41,7 +41,7 @@ class Scraper(ABC):
         return requests.get(url, headers=headers, params=kwargs).json()
 
     @final
-    def schedule_job(self, scheduler:BlockingScheduler):
+    def schedule_job(self, scheduler:BackgroundScheduler):
         scheduler.add_job(self.scrape, 'interval', seconds=self.interval_sec)
 
     @abstractmethod
@@ -92,24 +92,13 @@ def run():
     dbc = MongoClient(host='mongo')
 
     # create the schedule 
-    scheduler = BlockingScheduler()
+    scheduler = BackgroundScheduler()
 
     # add to schedule
     TopMoversScraper(dbc, 1).schedule_job(scheduler)
 
-    # configure heartbeat
-    hb_server = make_server("0.0.0.0", 8000, lambda env, res: (res('200 OK', [('Content-type', 'text/plain; charset=utf-8')]), [b"OK"])[1])
-    hb_thread = threading.Thread(target=hb_server.serve_forever, daemon=True)
-
-    # handle shutdowns
-    def shutdown_handler(signum, frame):
-        print(f"Received signal {signum}, shutting down scheduler...")
-        scheduler.shutdown(wait=False)
-        hb_server.shutdown()
-        sys.exit(0)
-    signal.signal(signal.SIGTERM, shutdown_handler)
-    signal.signal(signal.SIGINT, shutdown_handler)
-
-    # start the server
-    hb_thread.start()
+    # start the schedule
     scheduler.start()
+
+    # start the heardbeat
+    make_server("0.0.0.0", 8000, lambda env, res: (res('200 OK', [('Content-type', 'text/plain; charset=utf-8')]), [b"OK"])[1]).serve_forever()
