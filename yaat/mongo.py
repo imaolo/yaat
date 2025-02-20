@@ -87,7 +87,7 @@ class MongoDoc(ABC):
         return get_origin(t) is Union and type(None) in get_args(t)
 
 class MongoCollection:
-    # TODO - index information
+    # TODO - index information - time series collection
 
     def __init__(self, coll:Collection, doctype: Type[MongoDoc]):
         self.coll = coll
