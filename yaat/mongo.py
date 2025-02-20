@@ -3,11 +3,12 @@ from bson import Int64, ObjectId
 from datetime import datetime
 from dataclasses import dataclass, fields, asdict
 from typing import Union, get_origin, get_args, TYPE_CHECKING, Type
-from abc import ABC
-from typing import get_origin, get_args, TypeAlias
+from abc import ABC, abstractmethod
+from typing import get_origin, get_args, TypeAlias, final
 import types
 if TYPE_CHECKING:
-    from pymongo.synchronous.database import Collection
+    from pymongo.synchronous.database import Collection, Database
+    from pymongo import MongoClient
     from collections.abc import Iterable
 
 pybson_tmap = {
@@ -20,6 +21,7 @@ pybson_tmap = {
     ObjectId: 'objectId',
     Int64: 'long',
     float:'double',
+    dict: 'object'
 }
 
 BSON_OBJ_TYPE: TypeAlias = dict[str, 'BSON_TYPE']
@@ -86,9 +88,41 @@ class MongoDoc(ABC):
     def _is_optional_type(t) -> bool:
         return get_origin(t) is Union and type(None) in get_args(t)
 
-class MongoCollection:
-    # TODO - index information - time series collection
+class MongoCommitDoc(MongoDoc, ABC):
+    pass
+#     ''' Doc has a database init procedure '''
+#     @abstractmethod
+#     def init(cls, *args, **kwargs):
+#         pass
 
+# @final
+class MongoCollectionDoc(MongoCommitDoc):
+    pass
+#     name: str
+#     schema: dict
+#     # TODO - index, time series information, etc, others creation info
+
+#     def init(self, db: Database):
+#         coll = db[self.name]
+#         if coll.name in coll.database.list_collection_names():
+#             coll.database.command('collMod', coll.name, validator={'$jsonSchema':self.doc.get_schema()})
+#         else:
+#             coll.database.create_collection(coll.name, validator={'$jsonSchema':self.doc.get_schema()})
+#         pass
+
+# @final
+class MongoDatabaseDoc(MongoCommitDoc):
+    pass
+#     name: str
+#     colls: list[MongoCollectionDoc]
+#     # TODO other information about the db, security, collections, etc 
+
+#     def commit(self, dbc: MongoClient):
+#         db = dbc[self.name]
+#         for coll in self.colls: coll.commit(db)
+
+
+class MongoCollection:
     def __init__(self, coll:Collection, doctype: Type[MongoDoc]):
         self.coll = coll
         self.doctype = doctype
