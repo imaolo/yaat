@@ -4,6 +4,10 @@ from tests.common import IntegrationTestCase
 
 class TestYaat(IntegrationTestCase):
 
-    def test_sample(self):
+    def test_TopMoversScraper(self):
         coll = MongoClient()[TopMoversScraper.dbname][TopMoversScraper.collname]
-        self.assertGreater(coll.count_documents({}), 1)
+        self.docker_services.wait_until_responsive(
+            timeout=10.0,
+            pause=0.1,
+            check=lambda: (coll.count_documents({}) > 0)
+        )
