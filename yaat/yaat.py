@@ -99,22 +99,19 @@ def run():
     # add to schedule
     TopMoversScraper(dbc, 1).schedule_job(scheduler)
 
-    # create health checker listener
-    health_check_listener = make_server("0.0.0.0", 8000, lambda env, start_response: (start_response("200 OK", [("Content-Type", "text/plain")]), [b"OK"]))
-    server_thread = threading.Thread(
-        target=health_check_listener.serve_forever,
-        daemon=True
-    )
+    # configure heartbeat
+    hb_server = make_server("0.0.0.0", 8000, lambda env, res: (res('200 OK', [('Content-type', 'text/plain; charset=utf-8')]), [b"OK"])[1])
+    hb_thread = threading.Thread(target=hb_server.serve_forever, daemon=True)
 
     # handle shutdowns
     def shutdown_handler(signum, frame):
         print(f"Received signal {signum}, shutting down scheduler...")
         scheduler.shutdown(wait=False)
-        health_check_listener.shutdown()
+        hb_server.shutdown()
         sys.exit(0)
     signal.signal(signal.SIGTERM, shutdown_handler)
     signal.signal(signal.SIGINT, shutdown_handler)
 
     # start the server
-    server_thread.start()
+    hb_thread.start()
     scheduler.start()
