@@ -49,7 +49,7 @@ class Scraper(ABC):
         pass
 
 class CoinGeckoScraper(Scraper, ABC):
-    api_url = "https://api.coingecko.com/api/v3"
+    api_url = "https://api.coingecko.com/api/v3/"
 
     def __init__(self, coll:MongoCollection, interval_sec:int, api_key:str=COINGECKO_KEY):
         super().__init__(coll, interval_sec)
@@ -67,7 +67,7 @@ class TopMoversScraper(CoinGeckoScraper):
         super().__init__(MongoCollection(dbc[self.dbname][self.collname], TopMoverDoc), interval_sec, api_key)
 
     def __call__(self, **kwargs) -> dict:
-        return super().__call__('/movers', **kwargs)
+        return super().__call__('movers', **kwargs)
 
     def scrape(self):
         for duration in self.durations:
@@ -77,8 +77,8 @@ class TopMoversScraper(CoinGeckoScraper):
                 # coll.insert_many(
                 #     [(doc.pop("image"), TopMoverDoc(timestamp=datetime.now(), query=query_doc, results=TopMoverResult(**doc)))[1]
                 #      for doc in self.call('/movers', **dict(query_doc))[0]["top_gainers"]])
-                self.mcoll.coll.insert_many([
-                    asdict(self.mcoll.doctype(timestamp=datetime.now(), query=query_doc, result=TopMoverResult(**{
+                self.mcoll.coll.insert_one(
+                    self.mcoll.doctype(timestamp=datetime.now(), query=query_doc, result=TopMoverResult(**{
                         'id': 'btc',
                         'symbol': 'btc',
                         'name': 'bitcoin',
@@ -86,8 +86,7 @@ class TopMoversScraper(CoinGeckoScraper):
                         'market_cap_rank': 1,
                         'usd_24h_vol': 1,
                         'usd_1y_change': 1,
-                    })))
-                ])
+                    })).asdict())
 
 def run():
     dbc = MongoClient(host='mongo')
