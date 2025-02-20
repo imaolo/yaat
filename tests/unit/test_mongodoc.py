@@ -5,7 +5,7 @@ class TestMongoDoc(unittest.TestCase):
     # TODO test union and optionals
 
     def test_doc(self):
-        self.assertEqual(Doc1.get_schema(),{
+        self.assertEqual(Doc1.get_schema().pop('$jsonSchema'),{
             'bsonType': 'object',
             'properties': {
                 'f1': {'bsonType': 'string'},
@@ -17,7 +17,7 @@ class TestMongoDoc(unittest.TestCase):
         })
 
     def test_doc_nest(self):
-        self.assertEqual(Doc2.get_schema(),{
+        self.assertEqual(Doc2.get_schema().pop('$jsonSchema'),{
             'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
@@ -33,7 +33,7 @@ class TestMongoDoc(unittest.TestCase):
             'additionalProperties': False})
 
     def test_array(self):
-        self.assertEqual(Doc1Array.get_schema(),{
+        self.assertEqual(Doc1Array.get_schema().pop('$jsonSchema'),{
             'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
@@ -50,7 +50,7 @@ class TestMongoDoc(unittest.TestCase):
             'additionalProperties': False})
 
     def test_array_nest(self):
-        self.assertEqual(Doc2Array.get_schema(), {
+        self.assertEqual(Doc2Array.get_schema().pop('$jsonSchema'), {
             'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
@@ -97,7 +97,7 @@ class TestMongoDoc(unittest.TestCase):
         })
 
     def test_dict(self):
-        self.assertEqual(Doc1Dict.get_schema(), {
+        self.assertEqual(Doc1Dict.get_schema().pop('$jsonSchema'), {
             'additionalProperties': False,
             'bsonType': 'object',
             'properties': {
@@ -111,7 +111,7 @@ class TestMongoDoc(unittest.TestCase):
         dict1: dict[str, str]
     @unittest.skip("annotate dict raise runtime error. should these become docs?")
     def test_dict2(self):
-        self.assertEqual(self.Doc2Dict.get_schema(), {
+        self.assertEqual(self.Doc2Dict.get_schema().pop('$jsonSchema'), {
             'additionalProperties': False,
             'bsonType': 'object',
             'properties': {

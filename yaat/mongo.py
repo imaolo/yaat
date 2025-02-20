@@ -69,7 +69,7 @@ class MongoDoc(ABC):
     @classmethod
     def get_schema(cls) -> dict:
         (schema:=PyBSON_TMap[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
-        return schema
+        return {'$jsonSchema': schema}
 
     @classmethod
     def __init_subclass__(cls, *args, **kwargs):
@@ -116,6 +116,6 @@ class MongoCollection:
         self.doctype = doctype
 
         if self.coll.name in self.coll.database.list_collection_names():
-            self.coll.database.command('collMod', self.coll.name, validator={'$jsonSchema':self.doctype.get_schema()})
+            self.coll.database.command('collMod', self.coll.name, validator=self.doctype.get_schema())
         else:
-            self.coll.database.create_collection(self.coll.name, validator={'$jsonSchema':self.doctype.get_schema()})
+            self.coll.database.create_collection(self.coll.name, validator=self.doctype.get_schema())
