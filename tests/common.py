@@ -10,12 +10,12 @@ class IntegrationTestCase(unittest.TestCase):
         self.docker_services = docker_services
 
     def setUp(self):
-        # wait on mongo
-        dbc = MongoClient(host=self.docker_ip, port=self.docker_services.port_for("mongo", 27017))
+        # create mongoclient and wait on connection
+        self.dbc = MongoClient(host=self.docker_ip, port=self.docker_services.port_for("mongo", 27017))
         self.docker_services.wait_until_responsive(
             timeout=30.0,
             pause=0.1,
-            check=lambda: dbc['admin'].command('ping')
+            check=lambda: self.dbc['admin'].command('ping')
         )
 
         # wait on yaat
