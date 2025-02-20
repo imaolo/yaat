@@ -1,4 +1,4 @@
-from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, IntegrationTestCase
+from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, IntegrationTestCase, Doc1Dict
 from yaat.mongo import MongoCollection, MongoDoc
 from pymongo.errors import WriteError
 
@@ -68,3 +68,21 @@ class TestMongo(IntegrationTestCase, wait_yaat=False):
         mcoll = MongoCollection(self.db['test_doc_nest_failure_type_obj'], Doc2)
         with self.assertRaises(WriteError):
             mcoll.coll.insert_one(Doc2(d1=Doc4(f1=1), f1=1).asdict())
+
+    def test_doc_nest_failure_type_missing_field(self):
+        mcoll = MongoCollection(self.db['test_doc_nest_failure_type_missing_field'], Doc2)
+        with self.assertRaises(WriteError):
+            mcoll.coll.insert_one(Doc2(d1=Doc4(f1=1), f1=1).asdict())
+
+    def test_doc_success_dict(self):
+        mcoll = MongoCollection(self.db['test_doc_success_dict'], Doc1Dict)
+        mcoll.coll.insert_one(Doc1Dict(dict1={}, f1=1).asdict())
+
+    def test_doc_success_dict2(self):
+        mcoll = MongoCollection(self.db['test_doc_success_dict'], Doc1Dict)
+        mcoll.coll.insert_one(Doc1Dict(dict1={'1':2}, f1=1).asdict())
+
+    def test_doc_failure_dict(self):
+        mcoll = MongoCollection(self.db['test_doc_success_dict'], Doc1Dict)
+        with self.assertRaises(WriteError):
+            mcoll.coll.insert_one(Doc1Dict(dict1=1, f1=1).asdict())

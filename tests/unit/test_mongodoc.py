@@ -1,4 +1,4 @@
-from tests.common import Doc1, Doc2, Doc1Array, Doc2Array
+from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, MongoDoc
 import unittest
 
 class TestMongoDoc(unittest.TestCase):
@@ -95,3 +95,27 @@ class TestMongoDoc(unittest.TestCase):
             'required': ['l1', 'l2', 'l3', 'f1'],
             'additionalProperties': False
         })
+
+    def test_dict(self):
+        self.assertEqual(Doc1Dict.get_schema(), {
+            'additionalProperties': False,
+            'bsonType': ['object'],
+            'properties': {
+                '_id': {'bsonType': 'objectId'},
+                'dict1': {'bsonType': ['object']},
+                'f1': {'bsonType': ['int']}},
+            'required': ['dict1', 'f1']})
+
+    # TODO failure
+    class Doc2Dict(MongoDoc):
+        dict1: dict[str, str]
+    @unittest.skip("annotate dict raise runtime error. should these become docs?")
+    def test_dict2(self):
+        self.assertEqual(self.Doc2Dict.get_schema(), {
+            'additionalProperties': False,
+            'bsonType': ['object'],
+            'properties': {
+                '_id': {'bsonType': 'objectId'},
+                'dict1': {'bsonType': ['object']},
+                'f1': {'bsonType': ['int']}},
+            'required': ['dict1', 'f1']})
