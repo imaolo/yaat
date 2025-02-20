@@ -6,7 +6,8 @@ from abc import ABC, abstractmethod
 from yaat.mongo import MongoCollection
 from dataclasses import asdict
 from datetime import datetime
-import os, requests
+from wsgiref.simple_server import make_server;
+import os, requests, threading, signal, sys
 
 # https://docs.coingecko.com/reference/coins-top-gainers-losers
 
@@ -30,7 +31,7 @@ class TopMoverDoc(MongoDoc):
 
 COINGECKO_KEY = os.getenv('COINGECKO_KEY', "CG-X334WMchqCMVjvmVwqHmXkyJ")
 
-class Scalper(ABC):
+class Scraper(ABC):
     dbname: str = 'scalper_db'
 
     def __init__(self, mcoll:MongoCollection, interval_sec:int):
@@ -42,13 +43,13 @@ class Scalper(ABC):
 
     @final
     def schedule_job(self, scheduler:BlockingScheduler):
-        scheduler.add_job(self.get_job(), 'interval', seconds=self.interval_sec)
+        scheduler.add_job(self.scrape, 'interval', seconds=self.interval_sec)
 
     @abstractmethod
-    def get_job(self) -> Callable:
+    def scrape(self) -> Callable:
         pass
 
-class CoinGeckoScalper(Scalper, ABC):
+class CoinGeckoScraper(Scraper, ABC):
     api_url = "https://api.coingecko.com/api/v3"
 
     def __init__(self, coll:MongoCollection, interval_sec:int, api_key:str=COINGECKO_KEY):
@@ -58,7 +59,7 @@ class CoinGeckoScalper(Scalper, ABC):
     def __call__(self, cmd:str, **kwargs) -> dict:
         return super().__call__(self.api_url + cmd, headers=self.headers, **kwargs)
 
-class TopMoversScalper(CoinGeckoScalper):
+class TopMoversScraper(CoinGeckoScraper):
     collname: str = 'top_movers'
     durations: list[str] = ['1h', '24h', '7d', '14d', '30d', '1y']
     top_coins: list[str] = ['300', '500', '1000', 'all']
@@ -69,31 +70,51 @@ class TopMoversScalper(CoinGeckoScalper):
     def __call__(self, **kwargs) -> dict:
         return super().__call__('/movers', **kwargs)
 
-    def get_job(self) -> Callable:
-        def job():
-            for duration in self.durations:
-                for top_coin in self.top_coins:
-                    query_doc = TopMoverQuery(duration=duration, top_coins=top_coin)
-                    # TODO - clean
-                    # coll.insert_many(
-                    #     [(doc.pop("image"), TopMoverDoc(timestamp=datetime.now(), query=query_doc, results=TopMoverResult(**doc)))[1]
-                    #      for doc in self.call('/movers', **dict(query_doc))[0]["top_gainers"]])
-                    self.mcoll.coll.insert_many([
-                        asdict(self.mcoll.doctype(timestamp=datetime.now(), query=query_doc, result=TopMoverResult(**{
-                            'id': 'btc',
-                            'symbol': 'btc',
-                            'name': 'bitcoin',
-                            'usd': 1.0,
-                            'market_cap_rank': 1,
-                            'usd_24h_vol': 1,
-                            'usd_1y_change': 1,
-                        })))
-                    ])
-        return job
+    def scrape(self) -> Callable:
+        for duration in self.durations:
+            for top_coin in self.top_coins:
+                query_doc = TopMoverQuery(duration=duration, top_coins=top_coin)
+                # TODO - clean
+                # coll.insert_many(
+                #     [(doc.pop("image"), TopMoverDoc(timestamp=datetime.now(), query=query_doc, results=TopMoverResult(**doc)))[1]
+                #      for doc in self.call('/movers', **dict(query_doc))[0]["top_gainers"]])
+                self.mcoll.coll.insert_many([
+                    asdict(self.mcoll.doctype(timestamp=datetime.now(), query=query_doc, result=TopMoverResult(**{
+                        'id': 'btc',
+                        'symbol': 'btc',
+                        'name': 'bitcoin',
+                        'usd': 1.0,
+                        'market_cap_rank': 1,
+                        'usd_24h_vol': 1,
+                        'usd_1y_change': 1,
+                    })))
+                ])
 
 def run():
     dbc = MongoClient(host='mongo')
 
+    # create the schedule 
     scheduler = BlockingScheduler()
-    TopMoversScalper(dbc, 1).schedule_job(scheduler)
+
+    # add to schedule
+    TopMoversScraper(dbc, 1).schedule_job(scheduler)
+
+    # create health checker listener
+    health_check_listener = make_server("0.0.0.0", 8000, lambda env, start_response: (start_response("200 OK", [("Content-Type", "text/plain")]), [b"OK"]))
+    server_thread = threading.Thread(
+        target=health_check_listener.serve_forever,
+        daemon=True
+    )
+
+    # handle shutdowns
+    def shutdown_handler(signum, frame):
+        print(f"Received signal {signum}, shutting down scheduler...")
+        scheduler.shutdown(wait=False)
+        health_check_listener.shutdown()
+        sys.exit(0)
+    signal.signal(signal.SIGTERM, shutdown_handler)
+    signal.signal(signal.SIGINT, shutdown_handler)
+
+    # start the server
+    server_thread.start()
     scheduler.start()
