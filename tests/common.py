@@ -1,11 +1,6 @@
 from yaat.mongo import MongoDoc
-from pathlib import Path
 from pymongo import MongoClient
-import pytest, os, unittest, time
-
-@pytest.fixture(scope="session")
-def docker_compose_file(pytestconfig):
-    return os.path.join(Path(str(pytestconfig.rootdir)) / 'docker-compose.yml')
+import pytest, unittest, docker
 
 class IntegrationTestCase(unittest.TestCase):
 
@@ -15,15 +10,24 @@ class IntegrationTestCase(unittest.TestCase):
         self.docker_services = docker_services
 
     def setUp(self):
-        port = self.docker_services.port_for("mongo", 27017)
-        url = "mongodb://{}:{}".format(self.docker_ip, port)
-        dbc = MongoClient(url)
+        # wait on mongo
+        dbc = MongoClient(host=self.docker_ip, port=self.docker_services.port_for("mongo", 27017))
         self.docker_services.wait_until_responsive(
             timeout=30.0,
             pause=0.1,
             check=lambda: dbc['admin'].command('ping')
         )
-        time.sleep(10)
+
+        # wait on yaat
+        container, = docker.from_env().containers.list(filters={"label": f"com.docker.compose.service=yaat"})
+        def check_mongo():
+            container.reload()
+            return container.health == 'healthy'
+        self.docker_services.wait_until_responsive(
+            timeout=30.0,
+            pause=0.1,
+            check=check_mongo
+        )
 
 class Doc1(MongoDoc):
     f1: str
