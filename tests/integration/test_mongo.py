@@ -11,6 +11,12 @@ class Doc3(Doc1):
 class Doc4(MongoDoc):
     f1:int
 
+class Doc1Alias_a(Doc1):
+    pass
+class Doc1Alias_b(MongoDoc):
+    f1:str
+    f2:int
+
 class TestMongo(IntegrationTestCase, wait_yaat=False):
     # TODO test union and optionals
     # TODO array testing
@@ -39,14 +45,10 @@ class TestMongo(IntegrationTestCase, wait_yaat=False):
             mcoll.coll.insert_one({'f1': 'str', 'f2': 1, 'f3': 1})
 
     # NOTE succeeds
-    class Doc1Alias_a(Doc1): pass
-    class Doc1Alias_b(MongoDoc):
-        f1:str
-        f2:int
     def test_doc_simple_alias_objs(self):
         mcoll = MongoCollection(self.db['test_doc_simple_failure_extra_field'], Doc1)
-        mcoll.coll.insert_one(self.Doc1Alias_a(f1='str', f2=1).asdict())
-        mcoll.coll.insert_one(self.Doc1Alias_b(f1='str', f2=1).asdict())
+        mcoll.coll.insert_one(Doc1Alias_a(f1='str', f2=1).asdict())
+        mcoll.coll.insert_one(Doc1Alias_b(f1='str', f2=1).asdict())
 
     def test_doc_nest_success(self):
         mcoll = MongoCollection(self.db['test_doc_nest_success'], Doc2)
