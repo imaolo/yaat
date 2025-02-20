@@ -45,7 +45,7 @@ class Scraper(ABC):
         scheduler.add_job(self.scrape, 'interval', seconds=self.interval_sec)
 
     @abstractmethod
-    def scrape(self) -> Callable:
+    def scrape(self):
         pass
 
 class CoinGeckoScraper(Scraper, ABC):
@@ -69,7 +69,7 @@ class TopMoversScraper(CoinGeckoScraper):
     def __call__(self, **kwargs) -> dict:
         return super().__call__('/movers', **kwargs)
 
-    def scrape(self) -> Callable:
+    def scrape(self):
         for duration in self.durations:
             for top_coin in self.top_coins:
                 query_doc = TopMoverQuery(duration=duration, top_coins=top_coin)
