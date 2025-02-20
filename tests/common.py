@@ -56,3 +56,8 @@ class Doc2Array(MongoDoc):
     l2: list[list[Doc1Array]]
     l3: list[float]
     f1: bool
+
+
+class Doc1Dict(MongoDoc):
+    dict1: dict
+    f1: int
