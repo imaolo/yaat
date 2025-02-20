@@ -6,9 +6,9 @@ setup(
     packages=find_packages(),
     install_requires=[
         "pymongo",
-        "GitPython",
         "requests",
-        "apscheduler"
+        "apscheduler",
+        "httpie"
     ],
     extras_require={
         'test': [
