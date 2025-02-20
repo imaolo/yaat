@@ -10,7 +10,7 @@ jobs:
       SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
       SSH_HOST: ${{ secrets.SSH_HOST }}
       SSH_KEY: ${{ secrets.SSH_KEY }}
-      GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
+      GH_PAT: ${{ secrets.GH_PAT }}
       COINGECKO_KEY: ${{ secrets.COINGECKO_KEY }}
       RUNNER: true
     steps:
