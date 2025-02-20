@@ -28,7 +28,8 @@ class TopMoverDoc(MongoDoc):
     query: TopMoverQuery
     result: TopMoverResult
 
-COINGECKO_KEY = os.environ['COINGECKO_KEY']
+# TODO - make mandatory
+COINGECKO_KEY = os.getenv('COINGECKO_KEY')
 
 class Scraper(ABC):
     dbname: str = 'scraper_db'
