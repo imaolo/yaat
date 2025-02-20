@@ -1,6 +1,6 @@
 from pymongo import MongoClient
 from yaat.yaat import TopMoversScraper
-from tests.common import docker_compose_file, IntegrationTestCase
+from tests.common import IntegrationTestCase
 
 class TestYaat(IntegrationTestCase):
 
