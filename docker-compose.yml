@@ -21,6 +21,8 @@ services:
     <<: *yaat-common
     depends_on:
       - mongo
+    ports:
+      - "80:80"
     command: /bin/sh -c "pip install -e . && python main.py"
     healthcheck:
       test: ["CMD", "python", "-m", "httpie", "localhost:8000"]
