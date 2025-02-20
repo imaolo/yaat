@@ -12,6 +12,7 @@ services:
     image: mongo:latest
     volumes:
       - ./mongo.conf:/etc/mongo.conf:ro
+      - ./storage/db:/data/db
     ports:
       - "27017:27017"
     command: ["mongod", "--config", "/etc/mongo.conf"]
