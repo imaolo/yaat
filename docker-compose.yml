@@ -31,7 +31,3 @@ services:
       interval: 10s
       timeout: 2s
       retries: 30
-
-  yaat-unit-test:
-    <<: *yaat-common
-    command: /bin/sh -c "pip install -e '.[test]' && pytest tests/unit"
