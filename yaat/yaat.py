@@ -1,12 +1,11 @@
 from pymongo import MongoClient
 from yaat.mongo import MongoCollection, MongoDoc
-from typing import final
 from apscheduler.schedulers.blocking import BlockingScheduler
 from abc import ABC, abstractmethod
 from datetime import datetime
 from wsgiref.simple_server import make_server;
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import os, requests, asyncio
+import os, requests
 
 # https://docs.coingecko.com/reference/coins-top-gainers-losers
 
