@@ -3,7 +3,6 @@ from yaat.mongo import MongoCollection, MongoDoc
 from typing import Callable, final
 from apscheduler.schedulers.blocking import BlockingScheduler
 from abc import ABC, abstractmethod
-from yaat.mongo import MongoCollection
 from dataclasses import asdict
 from datetime import datetime
 from wsgiref.simple_server import make_server;
@@ -32,7 +31,7 @@ class TopMoverDoc(MongoDoc):
 COINGECKO_KEY = os.getenv('COINGECKO_KEY', "CG-X334WMchqCMVjvmVwqHmXkyJ")
 
 class Scraper(ABC):
-    dbname: str = 'scalper_db'
+    dbname: str = 'scraper_db'
 
     def __init__(self, mcoll:MongoCollection, interval_sec:int):
         self.mcoll = mcoll
