@@ -15,7 +15,7 @@ def runcmd(cmd:str) -> None | str:
 
 if __name__ == "__main__":
     runcmd('python -m pytest tests')
-    if DEPLOY:
+    if DEPLOY is not None:
         ssh_cmd = "cd yaat && "
         ssh_cmd += f"git pull https://imaolo:{GH_PAT}@github.com/imaolo/yaat && "
         ssh_cmd += "docker-compose up --build --force-recreate --remove-orphans -d"
