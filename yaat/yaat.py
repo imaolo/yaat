@@ -1,5 +1,5 @@
-from pymongo import MongoClient
 from yaat.mongo import MongoCollection, MongoDoc
+from pymongo import MongoClient
 from apscheduler.schedulers.blocking import BlockingScheduler
 from abc import ABC, abstractmethod
 from datetime import datetime
