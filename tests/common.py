@@ -1,8 +1,16 @@
 from yaat.mongo import MongoDoc
 from pymongo import MongoClient
+from abc import ABC
 import pytest, unittest, docker
 
-class IntegrationTestCase(unittest.TestCase):
+
+class IntegrationTestCase(unittest.TestCase, ABC):
+
+    def __init_subclass__(cls, *, wait_mongo=True, wait_yaat=True, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # You can assign the parameter to the class attribute or do any initialization logic here.
+        cls.wait_mongo = wait_mongo
+        cls.wait_yaat = wait_yaat
 
     @pytest.fixture(autouse=True)
     def inject_docker_services(self, docker_ip, docker_services):
@@ -10,24 +18,24 @@ class IntegrationTestCase(unittest.TestCase):
         self.docker_services = docker_services
 
     def setUp(self):
-        # create mongoclient and wait on connection
-        self.dbc = MongoClient(host=self.docker_ip, port=self.docker_services.port_for("mongo", 27017))
-        self.docker_services.wait_until_responsive(
-            timeout=30.0,
-            pause=0.1,
-            check=lambda: self.dbc['admin'].command('ping')
-        )
+        if self.wait_mongo:
+            self.dbc = MongoClient(host=self.docker_ip, port=self.docker_services.port_for("mongo", 27017))
+            self.docker_services.wait_until_responsive(
+                timeout=30.0,
+                pause=0.1,
+                check=lambda: self.dbc['admin'].command('ping')
+            )
 
-        # wait on yaat
-        container, = docker.from_env().containers.list(filters={"label": f"com.docker.compose.service=yaat"})
-        def check_mongo():
-            container.reload()
-            return container.health == 'healthy'
-        self.docker_services.wait_until_responsive(
-            timeout=30.0,
-            pause=0.1,
-            check=check_mongo
-        )
+        if self.wait_yaat:
+            container, = docker.from_env().containers.list(filters={"label": f"com.docker.compose.service=yaat"})
+            def check_mongo():
+                container.reload()
+                return container.health == 'healthy'
+            self.docker_services.wait_until_responsive(
+                timeout=30.0,
+                pause=0.1,
+                check=check_mongo
+            )
 
 class Doc1(MongoDoc):
     f1: str
