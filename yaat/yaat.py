@@ -1,4 +1,4 @@
-from yaat.mongo import MongoCollection, MongoDoc
+from yaat.mongo import MongoDoc
 from pymongo import MongoClient
 from apscheduler.schedulers.blocking import BlockingScheduler
 from abc import ABC, abstractmethod
@@ -62,8 +62,7 @@ class TopMoversScraper(Scraper):
 
     def __init__(self, dbc: MongoClient):
         super().__init__(dbc, self.doctype)
-        self.coll = self.db[self.name]
-        self.doctype.init(self.db)
+        self.coll = self.doctype.create_collection(self.db)
 
     def __call__(self, **kwargs) -> dict:
         return CoinGecko('movers', **kwargs)
