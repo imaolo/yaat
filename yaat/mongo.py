@@ -2,7 +2,7 @@ from __future__ import annotations
 from bson import Int64, ObjectId
 from datetime import datetime
 from dataclasses import dataclass, fields, asdict
-from typing import TYPE_CHECKING, dataclass, get_origin, get_args, get_type_hints, Callable, Union, Any
+from typing import TYPE_CHECKING, get_origin, get_args, get_type_hints, Callable, Union, Any
 import abc
 if TYPE_CHECKING:
     from pymongo.synchronous.database import Collection, Database
@@ -53,7 +53,7 @@ class MongoDoc(abc.ABC):
         cls.colldoc = colldoc # TODO
 
     @classmethod
-    def init(cls, db: Database):
+    def create_collection(cls, db: Database) -> Collection:
         # schema
         if cls.collname in db.list_collection_names():
             db.command('collMod', cls.collname, validator=cls.get_schema())
@@ -62,6 +62,8 @@ class MongoDoc(abc.ABC):
 
         # TODO time series information
         # TODO index information
+
+        return db[cls.collname]
 
     @classmethod
     def get_schema(cls) -> SCHEMA_DICT_T:
