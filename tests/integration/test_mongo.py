@@ -1,5 +1,5 @@
 from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, IntegrationTestCase, Doc1Dict
-from yaat.mongo import MongoCollection, MongoDoc
+from yaat.mongo import MongoDoc
 from pymongo.errors import WriteError
 
 class Doc1a(Doc1):
@@ -26,63 +26,63 @@ class TestMongo(IntegrationTestCase, wait_yaat=False):
         self.db = self.dbc['TestMongo-db']
 
     def test_doc_simple_success(self):
-        mcoll = MongoCollection(self.db['test_doc_success'], Doc1)
-        mcoll.coll.insert_one(Doc1(f1='str', f2=1).dict)
+        coll = Doc1.create_collection(self.db)
+        coll.insert_one(Doc1(f1='str', f2=1).dict)
 
     def test_doc_simple_failure_type(self):
-        mcoll = MongoCollection(self.db['test_doc_simple_failure_type'], Doc1)
+        coll = Doc1.create_collection(self.db)
         with self.assertRaises(WriteError):
-            mcoll.coll.insert_one(Doc1(f1=1, f2=1).dict)
+            coll.insert_one(Doc1(f1=1, f2=1).dict)
 
     def test_doc_simple_failure_missing_field(self):
-        mcoll = MongoCollection(self.db['test_doc_simple_failure_missing_field'], Doc1)
+        coll = Doc1.create_collection(self.db)
         with self.assertRaises(WriteError):
-            mcoll.coll.insert_one({'f1': 'str'})
+            coll.insert_one({'f1': 'str'})
 
     def test_doc_simple_failure_extra_field(self):
-        mcoll = MongoCollection(self.db['test_doc_simple_failure_missing_field'], Doc1)
+        coll = Doc1.create_collection(self.db)
         with self.assertRaises(WriteError):
-            mcoll.coll.insert_one({'f1': 'str', 'f2': 1, 'f3': 1})
+            coll.insert_one({'f1': 'str', 'f2': 1, 'f3': 1})
 
     # NOTE succeeds
     def test_doc_simple_alias_objs(self):
-        mcoll = MongoCollection(self.db['test_doc_simple_failure_extra_field'], Doc1)
-        mcoll.coll.insert_one(Doc1Alias_a(f1='str', f2=1).dict)
-        mcoll.coll.insert_one(Doc1Alias_b(f1='str', f2=1).dict)
+        coll = Doc1.create_collection(self.db)
+        coll.insert_one(Doc1Alias_a(f1='str', f2=1).dict)
+        coll.insert_one(Doc1Alias_b(f1='str', f2=1).dict)
 
     def test_doc_nest_success(self):
-        mcoll = MongoCollection(self.db['test_doc_nest_success'], Doc2)
-        mcoll.coll.insert_one(Doc2(d1=Doc1(f1='str', f2=1), f1=1).dict)
+        coll = Doc2.create_collection(self.db)
+        coll.insert_one(Doc2(d1=Doc1(f1='str', f2=1), f1=1).dict)
 
     def test_doc_nest_failure_type_prim(self):
-        mcoll = MongoCollection(self.db['test_doc_nest_failure_type'], Doc2)
+        coll = Doc2.create_collection(self.db)
         with self.assertRaises(WriteError):
-            mcoll.coll.insert_one(Doc2(d1=Doc1(f1=1, f2=1), f1=1).dict)
+            coll.insert_one(Doc2(d1=Doc1(f1=1, f2=1), f1=1).dict)
 
     def test_doc_nest_failure_type_extra_field(self):
-        mcoll = MongoCollection(self.db['test_doc_nest_failure_type_obj'], Doc2)
+        coll = Doc2.create_collection(self.db)
         with self.assertRaises(WriteError):
-            mcoll.coll.insert_one(Doc2(d1=Doc3(doc2_f1=1, f1='str', f2=1), f1=1).dict)
+            coll.insert_one(Doc2(d1=Doc3(doc2_f1=1, f1='str', f2=1), f1=1).dict)
 
     def test_doc_nest_failure_type_missing_field(self):
-        mcoll = MongoCollection(self.db['test_doc_nest_failure_type_obj'], Doc2)
+        coll = Doc2.create_collection(self.db)
         with self.assertRaises(WriteError):
-            mcoll.coll.insert_one(Doc2(d1=Doc4(f1=1), f1=1).dict)
+            coll.insert_one(Doc2(d1=Doc4(f1=1), f1=1).dict)
 
     def test_doc_nest_failure_type_missing_field(self):
-        mcoll = MongoCollection(self.db['test_doc_nest_failure_type_missing_field'], Doc2)
+        coll = Doc2.create_collection(self.db)
         with self.assertRaises(WriteError):
-            mcoll.coll.insert_one(Doc2(d1=Doc4(f1=1), f1=1).dict)
+            coll.insert_one(Doc2(d1=Doc4(f1=1), f1=1).dict)
 
     def test_doc_success_dict(self):
-        mcoll = MongoCollection(self.db['test_doc_success_dict'], Doc1Dict)
-        mcoll.coll.insert_one(Doc1Dict(dict1={}, f1=1).dict)
+        coll = Doc1Dict.create_collection(self.db)
+        coll.insert_one(Doc1Dict(dict1={}, f1=1).dict)
 
     def test_doc_success_dict2(self):
-        mcoll = MongoCollection(self.db['test_doc_success_dict'], Doc1Dict)
-        mcoll.coll.insert_one(Doc1Dict(dict1={'1':2}, f1=1).dict)
+        coll = Doc1Dict.create_collection(self.db)
+        coll.insert_one(Doc1Dict(dict1={'1':2}, f1=1).dict)
 
     def test_doc_failure_dict(self):
-        mcoll = MongoCollection(self.db['test_doc_success_dict'], Doc1Dict)
+        coll = Doc1Dict.create_collection(self.db)
         with self.assertRaises(WriteError):
-            mcoll.coll.insert_one(Doc1Dict(dict1=1, f1=1).dict)
+            coll.insert_one(Doc1Dict(dict1=1, f1=1).dict)
