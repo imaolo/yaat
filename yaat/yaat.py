@@ -77,7 +77,7 @@ class TopMoversScraper(CoinGeckoScraper):
                         'market_cap_rank': 1,
                         'usd_24h_vol': 1,
                         'usd_1y_change': 1,
-                    })).asdict())
+                    })).dict)
 
 class SimpleHandler(BaseHTTPRequestHandler):
     def do_GET(self):

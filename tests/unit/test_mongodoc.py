@@ -107,15 +107,7 @@ class TestMongoDoc(unittest.TestCase):
             'required': ['dict1', 'f1']})
 
     # TODO failure
-    class Doc2Dict(MongoDoc):
-        dict1: dict[str, str]
     @unittest.skip("annotate dict raise runtime error. should these become docs?")
     def test_dict2(self):
-        self.assertEqual(self.Doc2Dict.get_schema().pop('$jsonSchema'), {
-            'additionalProperties': False,
-            'bsonType': 'object',
-            'properties': {
-                '_id': {'bsonType': 'objectId'},
-                'dict1': {'bsonType': 'object'},
-                'f1': {'bsonType': 'int'}},
-            'required': ['dict1', 'f1']})
+        class Doc2Dict(MongoDoc):
+            dict1: dict[str, str]
