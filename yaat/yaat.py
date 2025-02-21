@@ -4,79 +4,46 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from abc import ABC, abstractmethod
 from datetime import datetime
 from dataclasses import field
-from wsgiref.simple_server import make_server;
+from wsgiref.simple_server import make_server
 from http.server import HTTPServer, BaseHTTPRequestHandler
-import os, requests
+from typing import Generator, ClassVar
 
-COINGECKO_KEY = os.environ['COINGECKO_KEY']
-
-class _CoinGecko:
-    api_url = "https://api.coingecko.com/api/v3/"
-
-    def __init__(self, api_key:str=COINGECKO_KEY):
-        self.headers = {"accept": "application/json", "x-cg-demo-api-key": api_key}
-
-    def __call__(self, cmd:str='', **kwargs) -> dict:
-        return super().__call__(self.api_url + cmd, headers=self.headers, **kwargs)
-CoinGecko = _CoinGecko()
+class RetrieverDoc(MongoDoc, ABC):
+    @abstractmethod
+    def retrieve(cls) -> Generator[list[MongoDoc], None, None]:
+        pass
 
 # https://docs.coingecko.com/reference/coins-top-gainers-losers
 
-class TopMoverQuery(MongoDoc):
-    duration: str
-    top_coins: str
+class TopMoverDoc(RetrieverDoc):
 
-class TopMoverResult(MongoDoc):
-    id: str
-    symbol: str
-    name: str
-    usd: float
-    market_cap_rank: int
-    usd_24h_vol: int
-    usd_1y_change: int
+    # sub document definitions
+    class QueryDoc(MongoDoc):
+        duration: str
+        top_coins: str
+    class ResultDoc(MongoDoc):
+        id: str
+        symbol: str
+        name: str
+        usd: float
+        market_cap_rank: int
+        usd_24h_vol: int
+        usd_1y_change: int
 
-class TopMoverDoc(MongoDoc):
-    query: TopMoverQuery
-    result: TopMoverResult
+    # document fields
+    query: QueryDoc
+    result: ResultDoc
     timestamp: datetime = field(default_factory=datetime.now)
 
-class Scraper(ABC):
-    def __init__(self, dbc: MongoClient, doctype: type[MongoDoc]):
-        self.db = dbc[self.name]
-        self.doctype = doctype
+    # class information
+    durations: ClassVar[list[str]] = ['1h', '24h', '7d', '14d', '30d', '1y']
+    top_coins: ClassVar[list[str]] = ['300', '500', '1000', 'all']
 
-    def __call__(self, url: str, headers: dict | None = None, **kwargs) -> dict:
-        return requests.get(url, headers=headers, params=kwargs).json()
-
-    @property
-    def name(self) -> str: return type(self).__name__
-
-    @abstractmethod
-    def scrape(self):
-        pass
-
-class TopMoversScraper(Scraper):
-    durations: list[str] = ['1h', '24h', '7d', '14d', '30d', '1y']
-    top_coins: list[str] = ['300', '500', '1000', 'all']
-    doctype: type[MongoDoc] = TopMoverDoc
-
-    def __init__(self, dbc: MongoClient):
-        super().__init__(dbc, self.doctype)
-        self.coll = self.doctype.create_collection(self.db)
-
-    def __call__(self, **kwargs) -> dict:
-        return CoinGecko('movers', **kwargs)
-
-    def scrape(self):
-        for duration in self.durations:
-            for top_coin in self.top_coins:
-                query_doc = TopMoverQuery(duration=duration, top_coins=top_coin)
-                # TODO - clean
-                # coll.insert_many(
-                #     [(doc.pop("image"), TopMoverDoc(timestamp=datetime.now(), query=query_doc, results=TopMoverResult(**doc)))[1]
-                #      for doc in self.call('/movers', **dict(query_doc))[0]["top_gainers"]])
-                self.coll.insert_one(
-                    self.doctype(query=query_doc, result=TopMoverResult(**{
+    @classmethod
+    def retrieve(cls) -> Generator[list[MongoDoc], None, None]:
+        for duration in cls.durations:
+            for top_coin in cls.top_coins:
+                yield [cls(query=cls.QueryDoc(duration=duration, top_coins=top_coin), result=cls.ResultDoc(**{
                         'id': 'btc',
                         'symbol': 'btc',
                         'name': 'bitcoin',
@@ -84,17 +51,25 @@ class TopMoversScraper(Scraper):
                         'market_cap_rank': 1,
                         'usd_24h_vol': 1,
                         'usd_1y_change': 1,
-                    })).dict)
+                    }))]
 
-class SimpleHandler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"whaddup yaat.club")
+class Scraper:
+    def __init__(self, dbc: MongoClient, retriever_doc: type[RetrieverDoc]):
+        self.retriever_doc = retriever_doc
+        self.coll = self.retriever_doc.create_collection(dbc[type(self).__name__])
+
+    def __call__(self):
+        for docs in self.retriever_doc.retrieve():
+            self.coll.insert_many([d.dict for d in docs])
 
 def run():
     dbc = MongoClient(host='mongo')
+    class SimpleHandler(BaseHTTPRequestHandler):
+        def do_GET(self):
+            self.send_response(200)
+            self.send_header("Content-type", "text/plain")
+            self.end_headers()
+            self.wfile.write(b"whaddup yaat.club")
 
     # create the listeners
     hb_listener = lambda:  make_server("0.0.0.0", 8000, lambda env, res: (res('200 OK', [('Content-type', 'text/plain; charset=utf-8')]), [b"OK"])[1]).serve_forever(poll_interval=0.1)
@@ -103,7 +78,7 @@ def run():
     # create the schedule and add the jobs
     # TODO - dynamic jobs?
     scheduler = BlockingScheduler()
-    scheduler.add_job(TopMoversScraper(dbc).scrape, 'interval', seconds=1)
+    scheduler.add_job(Scraper(dbc, TopMoverDoc), 'interval', seconds=1)
     scheduler.add_job(hb_listener, 'date', run_date=datetime.now())
     scheduler.add_job(web_listener, 'date', run_date=datetime.now())
 
