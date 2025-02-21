@@ -71,6 +71,8 @@ class SimpleHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(b"whaddup yaat.club")
 
+## start yaat python component
+
 def run():
     dbc = MongoClient(host='mongo')
 
