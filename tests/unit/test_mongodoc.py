@@ -122,7 +122,3 @@ class TestMongoDoc(unittest.TestCase):
                 't1': {'bsonType': 'str'}},
             'required': ['f1', 't1']
         })
-
-    # TODO
-    # def test_scrape(self):
-    #     scraper = TopMoversScraper(MongoClient()).scrape()
