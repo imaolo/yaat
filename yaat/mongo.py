@@ -2,25 +2,10 @@ from __future__ import annotations
 from bson import Int64, ObjectId
 from datetime import datetime
 from dataclasses import dataclass, fields, asdict
-from typing import Union, get_origin, get_args, TYPE_CHECKING, Type
-from abc import ABC, abstractmethod
-from typing import get_origin, get_args, TypeAlias, final, Any, Callable, Union, get_type_hints
-import types, copy
+from typing import TYPE_CHECKING, dataclass, get_origin, get_args, get_type_hints, Callable, Union, Any
+import abc
 if TYPE_CHECKING:
     from pymongo.synchronous.database import Collection, Database
-    from pymongo import MongoClient
-    from collections.abc import Iterable
-
-PyBSONPrimType = (
-    type[str] |
-    type[int] |
-    type[bool] |
-    type[float] |
-    type[datetime] |
-    type[ObjectId] |
-    type[Int64] |
-    type[dict]
-)
 
 pybson_prim_map: dict[PyBSONPrimType, str] = {
     # TODO np.array
@@ -34,6 +19,8 @@ pybson_prim_map: dict[PyBSONPrimType, str] = {
     dict: 'object',
 }
 
+PyBSONPrimType = Union[*pybson_prim_map.keys()]
+
 SCHEMA_DICT_VALUE_T = str | list[str] | dict[str, 'SCHEMA_DICT_VALUE_T']
 SCHEMA_DICT_T = dict[str, SCHEMA_DICT_VALUE_T]
 
@@ -41,7 +28,7 @@ DOC_DICT_VALUE_T = PyBSONPrimType | list[PyBSONPrimType] | dict[str, 'DOC_DICT_V
 DOC_DICT_T = dict[str, DOC_DICT_VALUE_T]
 
 @dataclass(frozen=True, kw_only=True)
-class MongoDoc(ABC):
+class MongoDoc(abc.ABC):
     # TODO - index, time series information, etc, others class creation info
     @classmethod
     def __init_subclass__(cls, colldoc: MongoCollDoc | None = None, *args, **kwargs):
@@ -63,7 +50,7 @@ class MongoDoc(ABC):
 
         # extract the collname
         cls.collname = cls.__name__
-        cls.colldoc = colldoc
+        cls.colldoc = colldoc # TODO
 
     @classmethod
     def init(cls, db: Database):
@@ -97,7 +84,7 @@ class MongoDoc(ABC):
     def is_optional(t: type[Union[PyBSONType, None]] | Any) -> bool: return get_origin(t) is Union and type(None) in get_args(t)
 
     @staticmethod
-    def is_mongodoc_type(t: Type[Type[MongoDoc]] | Any) -> bool: return get_origin(t) is type and issubclass(get_args(t)[0], MongoDoc)
+    def is_mongodoc_type(t: type[type[MongoDoc]] | Any) -> bool: return get_origin(t) is type and issubclass(get_args(t)[0], MongoDoc)
 
 PyBSONType = PyBSONPrimType | type[MongoDoc] | type[list] | type[Union['PyBSONType', None]]
 class _Py2BSON_Schema:
@@ -134,20 +121,10 @@ class _Py2BSON_Schema:
         (d:=self[t]).update({'bsonType': ['null', d['bsonType']]})
         return d
 
-    def get_mongodoc_type(self, _: Type[Type[MongoDoc]]): return {'bsonType': 'str'}
+    def get_mongodoc_type(self, _: type[type[MongoDoc]]): return {'bsonType': 'str'}
 
 Py2BSON_Schema = _Py2BSON_Schema()
 
 # TODO
 class MongoCollDoc(MongoDoc):
     index_information: str
-
-class MongoCollection:
-    def __init__(self, coll:Collection, doctype: Type[MongoDoc]):
-        self.coll = coll
-        self.doctype = doctype
-
-        if self.coll.name in self.coll.database.list_collection_names():
-            self.coll.database.command('collMod', self.coll.name, validator=self.doctype.get_schema())
-        else:
-            self.coll.database.create_collection(self.coll.name, validator=self.doctype.get_schema())
