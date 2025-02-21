@@ -40,14 +40,17 @@ SCHEMA_DICT_T = dict[str, SCHEMA_DICT_VALUE_T]
 DOC_DICT_VALUE_T = PyBSONPrimType | list[PyBSONPrimType] | dict[str, 'DOC_DICT_VALUE_T']
 DOC_DICT_T = dict[str, DOC_DICT_VALUE_T]
 
-Mongo_Docs: dict[str, type[MongoDoc]] = {}
 @dataclass(frozen=True, kw_only=True)
 class MongoDoc(ABC):
-
+    # TODO - index, time series information, etc, others class creation info
     @classmethod
-    def __init_subclass__(cls, *args, **kwargs):
+    def __init_subclass__(cls, colldoc: MongoCollDoc | None = None, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
+    
+        # each sub class is the same
         dataclass(cls, kw_only=True, frozen=True)
+
+        # check that field types are valid
         type_hints = get_type_hints(cls)
         for field in fields(cls):
             th = type_hints[field.name]
@@ -57,11 +60,25 @@ class MongoDoc(ABC):
             if cls.is_optional(th): continue
             if cls.is_mongodoc_type(th): continue
             raise RuntimeError(f"invalid MongoDoc class {cls}, {field}, {th}")
-        Mongo_Docs[cls.__name__] = cls
+
+        # extract the collname
+        cls.collname = cls.__name__
+        cls.colldoc = colldoc
+
+    @classmethod
+    def init(cls, db: Database):
+        # schema
+        if cls.collname in db.list_collection_names():
+            db.command('collMod', cls.collname, validator=cls.get_schema())
+        else:
+            db.create_collection(cls.collname, validator=cls.get_schema())
+
+        # TODO time series information
+        # TODO index information
 
     @classmethod
     def get_schema(cls) -> SCHEMA_DICT_T:
-        (schema:=PyBSON_TMap[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
+        (schema:=Py2BSON_Schema[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
         return {'$jsonSchema': schema}
 
     @property
@@ -83,7 +100,7 @@ class MongoDoc(ABC):
     def is_mongodoc_type(t: Type[Type[MongoDoc]] | Any) -> bool: return get_origin(t) is type and issubclass(get_args(t)[0], MongoDoc)
 
 PyBSONType = PyBSONPrimType | type[MongoDoc] | type[list] | type[Union['PyBSONType', None]]
-class _PyBSON_TMap:
+class _Py2BSON_Schema:
     def __init__(self):
         self.pybson_tmap: dict[Callable[[type[Any]], bool], Callable[[type[Any]], SCHEMA_DICT_T]] = {
             MongoDoc.is_primitive: self.get_primitive,
@@ -119,9 +136,11 @@ class _PyBSON_TMap:
 
     def get_mongodoc_type(self, _: Type[Type[MongoDoc]]): return {'bsonType': 'str'}
 
-PyBSON_TMap = _PyBSON_TMap()
+Py2BSON_Schema = _Py2BSON_Schema()
 
-
+# TODO
+class MongoCollDoc(MongoDoc):
+    index_information: str
 
 class MongoCollection:
     def __init__(self, coll:Collection, doctype: Type[MongoDoc]):
