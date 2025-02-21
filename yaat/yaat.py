@@ -16,7 +16,6 @@ class RetrieverDoc(MongoDoc, ABC):
 # https://docs.coingecko.com/reference/coins-top-gainers-losers
 
 class TopMoverDoc(RetrieverDoc):
-
     # sub document definitions
     class QueryDoc(MongoDoc):
         duration: str

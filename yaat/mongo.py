@@ -1,7 +1,7 @@
 from __future__ import annotations
 from bson import Int64, ObjectId
 from datetime import datetime
-from dataclasses import dataclass, fields, asdict, field
+from dataclasses import dataclass, fields, asdict
 from typing import TYPE_CHECKING, get_origin, get_args, get_type_hints, Callable, Union, ClassVar, Any
 import abc
 if TYPE_CHECKING:
