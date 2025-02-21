@@ -38,6 +38,7 @@ class IntegrationTestCase(unittest.TestCase, ABC):
                 pause=0.1,
                 check=check_mongo
             )
+            # TODO - needed?
             time.sleep(0.25)
 
 class Doc1(MongoDoc):
