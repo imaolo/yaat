@@ -3,9 +3,22 @@ from pymongo import MongoClient
 from apscheduler.schedulers.blocking import BlockingScheduler
 from abc import ABC, abstractmethod
 from datetime import datetime
+from dataclasses import field
 from wsgiref.simple_server import make_server;
 from http.server import HTTPServer, BaseHTTPRequestHandler
 import os, requests
+
+COINGECKO_KEY = os.environ['COINGECKO_KEY']
+
+class _CoinGecko:
+    api_url = "https://api.coingecko.com/api/v3/"
+
+    def __init__(self, api_key:str=COINGECKO_KEY):
+        self.headers = {"accept": "application/json", "x-cg-demo-api-key": api_key}
+
+    def __call__(self, cmd:str='', **kwargs) -> dict:
+        return super().__call__(self.api_url + cmd, headers=self.headers, **kwargs)
+CoinGecko = _CoinGecko()
 
 # https://docs.coingecko.com/reference/coins-top-gainers-losers
 
@@ -23,42 +36,37 @@ class TopMoverResult(MongoDoc):
     usd_1y_change: int
 
 class TopMoverDoc(MongoDoc):
-    timestamp: datetime
     query: TopMoverQuery
     result: TopMoverResult
-
-COINGECKO_KEY = os.environ['COINGECKO_KEY']
+    timestamp: datetime = field(default_factory=datetime.now)
 
 class Scraper(ABC):
-    dbname: str = 'scraper_db'
+    def __init__(self, dbc: MongoClient, doctype: type[MongoDoc]):
+        self.db = dbc[self.name]
+        self.doctype = doctype
 
     def __call__(self, url: str, headers: dict | None = None, **kwargs) -> dict:
         return requests.get(url, headers=headers, params=kwargs).json()
+
+    @property
+    def name(self) -> str: return type(self).__name__
 
     @abstractmethod
     def scrape(self):
         pass
 
-class CoinGeckoScraper(Scraper, ABC):
-    api_url = "https://api.coingecko.com/api/v3/"
-
-    def __init__(self, coll:MongoCollection, api_key:str=COINGECKO_KEY):
-        self.mcoll = coll
-        self.headers = {"accept": "application/json", "x-cg-demo-api-key": api_key}
-
-    def __call__(self, cmd:str, **kwargs) -> dict:
-        return super().__call__(self.api_url + cmd, headers=self.headers, **kwargs)
-
-class TopMoversScraper(CoinGeckoScraper):
-    collname: str = 'top_movers'
+class TopMoversScraper(Scraper):
     durations: list[str] = ['1h', '24h', '7d', '14d', '30d', '1y']
     top_coins: list[str] = ['300', '500', '1000', 'all']
+    doctype: type[MongoDoc] = TopMoverDoc
 
-    def __init__(self, dbc:MongoClient, api_key:str=COINGECKO_KEY):
-        super().__init__(MongoCollection(dbc[self.dbname][self.collname], TopMoverDoc), api_key)
+    def __init__(self, dbc: MongoClient):
+        super().__init__(dbc, self.doctype)
+        self.coll = self.db[self.name]
+        self.doctype.init(self.db)
 
     def __call__(self, **kwargs) -> dict:
-        return super().__call__('movers', **kwargs)
+        return CoinGecko('movers', **kwargs)
 
     def scrape(self):
         for duration in self.durations:
@@ -68,8 +76,8 @@ class TopMoversScraper(CoinGeckoScraper):
                 # coll.insert_many(
                 #     [(doc.pop("image"), TopMoverDoc(timestamp=datetime.now(), query=query_doc, results=TopMoverResult(**doc)))[1]
                 #      for doc in self.call('/movers', **dict(query_doc))[0]["top_gainers"]])
-                self.mcoll.coll.insert_one(
-                    self.mcoll.doctype(timestamp=datetime.now(), query=query_doc, result=TopMoverResult(**{
+                self.coll.insert_one(
+                    self.doctype(query=query_doc, result=TopMoverResult(**{
                         'id': 'btc',
                         'symbol': 'btc',
                         'name': 'bitcoin',
