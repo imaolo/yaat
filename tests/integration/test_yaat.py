@@ -5,7 +5,7 @@ from tests.common import IntegrationTestCase
 class TestYaat(IntegrationTestCase):
 
     def test_TopMoversScraper(self):
-        coll = MongoClient()[TopMoversScraper.dbname][TopMoversScraper.collname]
+        coll = TopMoversScraper(MongoClient()).coll
         self.docker_services.wait_until_responsive(
             timeout=10.0,
             pause=0.1,
