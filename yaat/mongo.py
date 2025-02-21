@@ -101,8 +101,9 @@ class _PyBSON_TMap:
     def get_primitive(t: PyBSONPrimType) -> SCHEMA_DICT_T: return {'bsonType': pybson_prim_map[t]}
 
     def get_mongodoc(self, t: type[MongoDoc]) -> SCHEMA_DICT_T:
+        type_hints = get_type_hints(t)
         return {'bsonType': 'object',
-                'properties': {field.name: self[field.type] for field in fields(t)},
+                'properties': {field.name: self[type_hints[field.name]] for field in fields(t)},
                 'required':  [field.name for field in fields(t)],
                 'additionalProperties': False}
 
@@ -120,42 +121,6 @@ class _PyBSON_TMap:
 
 PyBSON_TMap = _PyBSON_TMap()
 
-class MongoCommitDoc(MongoDoc, ABC):
-    pass
-#     ''' Doc has a database init procedure '''
-#     @abstractmethod
-#     def init(cls, *args, **kwargs):
-#         pass
-
-# # @final
-# class MongoCollectionDoc(MongoDoc):
-#     name: int
-#     doc: type[MongoDoc]
-
-#     name: str
-#     schema: type[MongoDoc]
-#     name: str
-#     schema: dict
-#     # TODO - index, time series information, etc, others creation info
-
-#     def init(self, db: Database):
-#         coll = db[self.name]
-#         if coll.name in coll.database.list_collection_names():
-#             coll.database.command('collMod', coll.name, validator={'$jsonSchema':self.doc.get_schema()})
-#         else:
-#             coll.database.create_collection(coll.name, validator={'$jsonSchema':self.doc.get_schema()})
-#         pass
-
-# @final
-class MongoDatabaseDoc(MongoCommitDoc):
-    pass
-#     name: str
-#     colls: list[MongoCollectionDoc]
-#     # TODO other information about the db, security, collections, etc 
-
-#     def commit(self, dbc: MongoClient):
-#         db = dbc[self.name]
-#         for coll in self.colls: coll.commit(db)
 
 
 class MongoCollection:
