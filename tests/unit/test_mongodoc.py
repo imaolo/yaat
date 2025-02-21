@@ -1,6 +1,6 @@
 from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc, MongoDoc
 import unittest
-from yaat.yaat import MongoClient
+
 class TestMongoDoc(unittest.TestCase):
     # TODO test union and optionals
 
