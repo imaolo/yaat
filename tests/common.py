@@ -1,3 +1,5 @@
+# from __future__ import annotations
+
 from yaat.mongo import MongoDoc
 from pymongo import MongoClient
 from abc import ABC
@@ -61,3 +63,8 @@ class Doc2Array(MongoDoc):
 class Doc1Dict(MongoDoc):
     dict1: dict
     f1: int
+
+
+class Doc1TypeDoc(MongoDoc):
+    f1: int
+    t1: type[Doc1]

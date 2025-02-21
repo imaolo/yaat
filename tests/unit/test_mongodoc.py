@@ -1,4 +1,4 @@
-from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, MongoDoc
+from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc, MongoDoc
 import unittest
 
 class TestMongoDoc(unittest.TestCase):
@@ -111,3 +111,14 @@ class TestMongoDoc(unittest.TestCase):
     def test_dict2(self):
         class Doc2Dict(MongoDoc):
             dict1: dict[str, str]
+
+    def test_doc_type_doc(self):
+        self.assertEqual(Doc1TypeDoc(t1=Doc1, f1=1).get_schema().pop('$jsonSchema'), {
+            'additionalProperties': False,
+            'bsonType': 'object',
+            'properties': {
+                '_id': {'bsonType': 'objectId'},
+                'f1': {'bsonType': 'int'},
+                't1': {'bsonType': 'str'}},
+            'required': ['f1', 't1']
+        })

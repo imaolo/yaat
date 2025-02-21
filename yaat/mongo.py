@@ -4,7 +4,7 @@ from datetime import datetime
 from dataclasses import dataclass, fields, asdict
 from typing import Union, get_origin, get_args, TYPE_CHECKING, Type
 from abc import ABC, abstractmethod
-from typing import get_origin, get_args, TypeAlias, final, Any, Callable, Union
+from typing import get_origin, get_args, TypeAlias, final, Any, Callable, Union, get_type_hints
 import types, copy
 if TYPE_CHECKING:
     from pymongo.synchronous.database import Collection, Database
@@ -40,6 +40,7 @@ SCHEMA_DICT_T = dict[str, SCHEMA_DICT_VALUE_T]
 DOC_DICT_VALUE_T = PyBSONPrimType | list[PyBSONPrimType] | dict[str, 'DOC_DICT_VALUE_T']
 DOC_DICT_T = dict[str, DOC_DICT_VALUE_T]
 
+Mongo_Docs: dict[str, type[MongoDoc]] = {}
 @dataclass(frozen=True, kw_only=True)
 class MongoDoc(ABC):
 
@@ -47,12 +48,16 @@ class MongoDoc(ABC):
     def __init_subclass__(cls, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
         dataclass(cls, kw_only=True, frozen=True)
+        type_hints = get_type_hints(cls)
         for field in fields(cls):
-            if cls.is_primitive(field.type): continue
-            if cls.is_mongodoc(field.type): continue
-            if cls.is_list(field.type): continue
-            if cls.is_optional(field.type): continue
-            raise RuntimeError(f"invalid MongoDoc class {cls}, {field.type}")
+            th = type_hints[field.name]
+            if cls.is_primitive(th): continue
+            if cls.is_mongodoc(th): continue
+            if cls.is_list(th): continue
+            if cls.is_optional(th): continue
+            if cls.is_mongodoc_type(th): continue
+            raise RuntimeError(f"invalid MongoDoc class {cls}, {field}, {th}")
+        Mongo_Docs[cls.__name__] = cls
 
     @classmethod
     def get_schema(cls) -> SCHEMA_DICT_T:
@@ -63,16 +68,19 @@ class MongoDoc(ABC):
     def dict(self) -> DOC_DICT_T: return asdict(self)
 
     @staticmethod
-    def is_primitive(t: type[Any]) -> bool: return t in pybson_prim_map
+    def is_primitive(t: PyBSONPrimType | Any) -> bool: return t in pybson_prim_map
 
     @staticmethod
-    def is_mongodoc(t: type[Any]) -> bool: return not isinstance(t, types.GenericAlias) and issubclass(t, MongoDoc)
+    def is_mongodoc(t: type[MongoDoc] | Any) -> bool: return get_origin(t) is None and issubclass(t, MongoDoc)
 
     @staticmethod
-    def is_list(t: type[Any]) -> bool: return type is list or get_origin(t) is list
+    def is_list(t: type[list[PyBSONType]] | Any) -> bool: return type is list or get_origin(t) is list
 
     @staticmethod
-    def is_optional(t: type[Any]) -> bool: return get_origin(t) is Union and type(None) in get_args(t)
+    def is_optional(t: type[Union[PyBSONType, None]] | Any) -> bool: return get_origin(t) is Union and type(None) in get_args(t)
+
+    @staticmethod
+    def is_mongodoc_type(t: Type[Type[MongoDoc]] | Any) -> bool: return get_origin(t) is type and issubclass(get_args(t)[0], MongoDoc)
 
 PyBSONType = PyBSONPrimType | type[MongoDoc] | type[list] | type[Union['PyBSONType', None]]
 class _PyBSON_TMap:
@@ -82,6 +90,7 @@ class _PyBSON_TMap:
             MongoDoc.is_mongodoc: self.get_mongodoc,
             MongoDoc.is_list: self.get_list,
             MongoDoc.is_optional: self.get_optional,
+            MongoDoc.is_mongodoc_type: self.get_mongodoc_type
         }
 
     def __getitem__(self, T: type[Any]) -> SCHEMA_DICT_T:
@@ -101,11 +110,13 @@ class _PyBSON_TMap:
         t, = get_args(t)
         return {'bsonType': 'array', 'items': self[t]}
 
-    def get_optional(self, optt: type[Union[PyBSONType, None]]) -> SCHEMA_DICT_T:
-        t, nt = get_args(optt)
+    def get_optional(self, t: type[Union[PyBSONType, None]]) -> SCHEMA_DICT_T:
+        t, nt = get_args(t)
         if nt is not type(None): raise RuntimeError(nt)
         (d:=self[t]).update({'bsonType': ['null', d['bsonType']]})
         return d
+
+    def get_mongodoc_type(self, _: Type[Type[MongoDoc]]): return {'bsonType': 'str'}
 
 PyBSON_TMap = _PyBSON_TMap()
 
@@ -116,9 +127,13 @@ class MongoCommitDoc(MongoDoc, ABC):
 #     def init(cls, *args, **kwargs):
 #         pass
 
-# @final
-class MongoCollectionDoc(MongoCommitDoc):
-    pass
+# # @final
+# class MongoCollectionDoc(MongoDoc):
+#     name: int
+#     doc: type[MongoDoc]
+
+#     name: str
+#     schema: type[MongoDoc]
 #     name: str
 #     schema: dict
 #     # TODO - index, time series information, etc, others creation info
