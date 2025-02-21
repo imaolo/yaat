@@ -4,77 +4,110 @@ from datetime import datetime
 from dataclasses import dataclass, fields, asdict
 from typing import Union, get_origin, get_args, TYPE_CHECKING, Type
 from abc import ABC, abstractmethod
-from typing import get_origin, get_args, TypeAlias, final, Any, Callable
+from typing import get_origin, get_args, TypeAlias, final, Any, Callable, Union
 import types, copy
 if TYPE_CHECKING:
     from pymongo.synchronous.database import Collection, Database
     from pymongo import MongoClient
     from collections.abc import Iterable
 
+PyBSONPrimType = (
+    type[str] |
+    type[int] |
+    type[bool] |
+    type[float] |
+    type[datetime] |
+    type[ObjectId] |
+    type[Int64] |
+    type[dict]
+)
 
-class _PyBSON_TMap:
-    def __init__(self):
-        self.pybson_prim_map = {
-            # TODO np.array
-            str: 'string',
-            int: 'int',
-            bool: 'bool',
-            float: 'double',
-            datetime: 'date',
-            ObjectId: 'objectId',
-            Int64: 'long',
-            float: 'double',
-            dict: 'object',
-        }
+pybson_prim_map: dict[PyBSONPrimType, str] = {
+    # TODO np.array
+    str: 'string',
+    int: 'int',
+    bool: 'bool',
+    float: 'double',
+    datetime: 'date',
+    ObjectId: 'objectId',
+    Int64: 'long',
+    dict: 'object',
+}
 
-        self.pybson_tmap = {
-            lambda T: T in self.pybson_prim_map: lambda T: {'bsonType': self.pybson_prim_map[T]},
-            lambda T: not isinstance(T, types.GenericAlias) and issubclass(T, MongoDoc): lambda T: self.get_doc(T),
-            lambda T: type is list or get_origin(T) is list: lambda T: self.get_list(T),
-            lambda T: get_origin(T) is Union and type(None) in get_args(T): lambda T: self.get_optional(T),
-        }
+SCHEMA_DICT_VALUE_T = str | list[str] | dict[str, 'SCHEMA_DICT_VALUE_T']
+SCHEMA_DICT_T = dict[str, SCHEMA_DICT_VALUE_T]
 
-    def get_doc(self, doct: type[MongoDoc]) -> dict:
-        return {'bsonType': 'object',
-                'properties': {field.name: self[field.type] for field in fields(doct)},
-                'required':  [field.name for field in fields(doct)],
-                'additionalProperties': False}
-
-    def get_list(self, listt: Iterable) -> dict:
-        elemt, = get_args(listt)
-        return {'bsonType': 'array', 'items': self[elemt]}
-
-    def get_optional(self, optt: Any) -> dict:
-        t, nt = get_args(optt)
-        if nt is not type(None): raise RuntimeError(nt)
-        (d:=self[t]).update({'bsonType': ['null', d['bsonType']]})
-        return d
-
-    def __getitem__(self, T: Any) -> dict:
-        schema, = [schema(T) for check, schema in self.pybson_tmap.items() if check(T)]
-        return schema
-
-PyBSON_TMap = _PyBSON_TMap()
-
-BSON_OBJ_TYPE: TypeAlias = dict[str, 'BSON_TYPE']
-BSON_LIS_TYPE: TypeAlias = list['BSON_TYPE']
-BSON_TYPE: TypeAlias = BSON_OBJ_TYPE | BSON_LIS_TYPE | str
+DOC_DICT_VALUE_T = PyBSONPrimType | list[PyBSONPrimType] | dict[str, 'DOC_DICT_VALUE_T']
+DOC_DICT_T = dict[str, DOC_DICT_VALUE_T]
 
 @dataclass(frozen=True, kw_only=True)
 class MongoDoc(ABC):
-
-    def asdict(self) -> dict: return asdict(self)
-
-    # TODO $jsonschema
-    @classmethod
-    def get_schema(cls) -> dict:
-        (schema:=PyBSON_TMap[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
-        return {'$jsonSchema': schema}
 
     @classmethod
     def __init_subclass__(cls, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
         dataclass(cls, kw_only=True, frozen=True)
+        for field in fields(cls):
+            if cls.is_primitive(field.type): continue
+            if cls.is_mongodoc(field.type): continue
+            if cls.is_list(field.type): continue
+            if cls.is_optional(field.type): continue
+            raise RuntimeError(f"invalid MongoDoc class {cls}, {field.type}")
+
+    @classmethod
+    def get_schema(cls) -> SCHEMA_DICT_T:
+        (schema:=PyBSON_TMap[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
+        return {'$jsonSchema': schema}
+
+    @property
+    def dict(self) -> DOC_DICT_T: return asdict(self)
+
+    @staticmethod
+    def is_primitive(t: type[Any]) -> bool: return t in pybson_prim_map
+
+    @staticmethod
+    def is_mongodoc(t: type[Any]) -> bool: return not isinstance(t, types.GenericAlias) and issubclass(t, MongoDoc)
+
+    @staticmethod
+    def is_list(t: type[Any]) -> bool: return type is list or get_origin(t) is list
+
+    @staticmethod
+    def is_optional(t: type[Any]) -> bool: return get_origin(t) is Union and type(None) in get_args(t)
+
+PyBSONType = PyBSONPrimType | type[MongoDoc] | type[list] | type[Union['PyBSONType', None]]
+class _PyBSON_TMap:
+    def __init__(self):
+        self.pybson_tmap: dict[Callable[[type[Any]], bool], Callable[[type[Any]], SCHEMA_DICT_T]] = {
+            MongoDoc.is_primitive: self.get_primitive,
+            MongoDoc.is_mongodoc: self.get_mongodoc,
+            MongoDoc.is_list: self.get_list,
+            MongoDoc.is_optional: self.get_optional,
+        }
+
+    def __getitem__(self, T: type[Any]) -> SCHEMA_DICT_T:
+        schema, = [schema(T) for check, schema in self.pybson_tmap.items() if check(T)]
+        return schema
+
+    @staticmethod
+    def get_primitive(t: PyBSONPrimType) -> SCHEMA_DICT_T: return {'bsonType': pybson_prim_map[t]}
+
+    def get_mongodoc(self, t: type[MongoDoc]) -> SCHEMA_DICT_T:
+        return {'bsonType': 'object',
+                'properties': {field.name: self[field.type] for field in fields(t)},
+                'required':  [field.name for field in fields(t)],
+                'additionalProperties': False}
+
+    def get_list(self, t: type[list[PyBSONType]]) -> SCHEMA_DICT_T:
+        t, = get_args(t)
+        return {'bsonType': 'array', 'items': self[t]}
+
+    def get_optional(self, optt: type[Union[PyBSONType, None]]) -> SCHEMA_DICT_T:
+        t, nt = get_args(optt)
+        if nt is not type(None): raise RuntimeError(nt)
+        (d:=self[t]).update({'bsonType': ['null', d['bsonType']]})
+        return d
+
+PyBSON_TMap = _PyBSON_TMap()
 
 class MongoCommitDoc(MongoDoc, ABC):
     pass
