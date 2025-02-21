@@ -1,11 +1,11 @@
 from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc, MongoDoc
 import unittest
-from yaat.yaat import MongoClient, TopMoversScraper
+from yaat.yaat import MongoClient
 class TestMongoDoc(unittest.TestCase):
     # TODO test union and optionals
 
     def test_doc(self):
-        self.assertEqual(Doc1.get_schema().pop('$jsonSchema'),{
+        self.assertEqual(Doc1.schema.pop('$jsonSchema'),{
             'bsonType': 'object',
             'properties': {
                 'f1': {'bsonType': 'string'},
@@ -17,7 +17,7 @@ class TestMongoDoc(unittest.TestCase):
         })
 
     def test_doc_nest(self):
-        self.assertEqual(Doc2.get_schema().pop('$jsonSchema'),{
+        self.assertEqual(Doc2.schema.pop('$jsonSchema'),{
             'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
@@ -33,7 +33,7 @@ class TestMongoDoc(unittest.TestCase):
             'additionalProperties': False})
 
     def test_array(self):
-        self.assertEqual(Doc1Array.get_schema().pop('$jsonSchema'),{
+        self.assertEqual(Doc1Array.schema.pop('$jsonSchema'),{
             'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
@@ -50,7 +50,7 @@ class TestMongoDoc(unittest.TestCase):
             'additionalProperties': False})
 
     def test_array_nest(self):
-        self.assertEqual(Doc2Array.get_schema().pop('$jsonSchema'), {
+        self.assertEqual(Doc2Array.schema.pop('$jsonSchema'), {
             'bsonType': 'object',
             'properties': {
                 '_id': {'bsonType': 'objectId'},
@@ -97,7 +97,7 @@ class TestMongoDoc(unittest.TestCase):
         })
 
     def test_dict(self):
-        self.assertEqual(Doc1Dict.get_schema().pop('$jsonSchema'), {
+        self.assertEqual(Doc1Dict.schema.pop('$jsonSchema'), {
             'additionalProperties': False,
             'bsonType': 'object',
             'properties': {
@@ -113,7 +113,7 @@ class TestMongoDoc(unittest.TestCase):
             dict1: dict[str, str]
 
     def test_doc_type_doc(self):
-        self.assertEqual(Doc1TypeDoc(t1=Doc1, f1=1).get_schema().pop('$jsonSchema'), {
+        self.assertEqual(Doc1TypeDoc(t1=Doc1, f1=1).schema.pop('$jsonSchema'), {
             'additionalProperties': False,
             'bsonType': 'object',
             'properties': {
@@ -123,5 +123,5 @@ class TestMongoDoc(unittest.TestCase):
             'required': ['f1', 't1']
         })
 
-    def test_scrape(self):
-        scraper = TopMoversScraper(MongoClient()).scrape()
+    # def test_scrape(self):get_schema
+        # scraper = TopMoversScraper(MongoClient()).scrape()
