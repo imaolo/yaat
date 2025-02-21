@@ -1,6 +1,6 @@
 from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc, MongoDoc
 import unittest
-
+from yaat.yaat import MongoClient, TopMoversScraper
 class TestMongoDoc(unittest.TestCase):
     # TODO test union and optionals
 
@@ -122,3 +122,6 @@ class TestMongoDoc(unittest.TestCase):
                 't1': {'bsonType': 'str'}},
             'required': ['f1', 't1']
         })
+
+    def test_scrape(self):
+        scraper = TopMoversScraper(MongoClient()).scrape()
