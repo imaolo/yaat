@@ -1,8 +1,8 @@
 from __future__ import annotations
 from bson import Int64, ObjectId
 from datetime import datetime
-from dataclasses import dataclass, fields, asdict
-from typing import TYPE_CHECKING, get_origin, get_args, get_type_hints, Callable, Union, Any
+from dataclasses import dataclass, fields, asdict, field
+from typing import TYPE_CHECKING, get_origin, get_args, get_type_hints, Callable, Union, ClassVar, Any
 import abc
 if TYPE_CHECKING:
     from pymongo.synchronous.database import Collection, Database
@@ -29,9 +29,12 @@ DOC_DICT_T = dict[str, DOC_DICT_VALUE_T]
 
 @dataclass(frozen=True, kw_only=True)
 class MongoDoc(abc.ABC):
-    # TODO - index, time series information, etc, others class creation info
+    schema: ClassVar[SCHEMA_DICT_T]
+    collname: ClassVar[str]
+    colldoc: ClassVar[type[MongoDoc]]
+
     @classmethod
-    def __init_subclass__(cls, colldoc: MongoCollDoc | None = None, *args, **kwargs):
+    def __init_subclass__(cls, colldoc: MongoCollDoc = None, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
     
         # each sub class is the same
@@ -52,6 +55,10 @@ class MongoDoc(abc.ABC):
         cls.collname = cls.__name__
         cls.colldoc = colldoc # TODO
 
+        # set the schema
+        (schema:=Py2BSON_Schema[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
+        cls.schema = {'$jsonSchema': schema}
+
     @classmethod
     def create_collection(cls, db: Database) -> Collection:
         # schema
@@ -64,11 +71,6 @@ class MongoDoc(abc.ABC):
         # TODO index information
 
         return db[cls.collname]
-
-    @classmethod
-    def get_schema(cls) -> SCHEMA_DICT_T:
-        (schema:=Py2BSON_Schema[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
-        return {'$jsonSchema': schema}
 
     @property
     def dict(self) -> DOC_DICT_T: return asdict(self)
