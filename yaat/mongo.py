@@ -63,9 +63,9 @@ class MongoDoc(abc.ABC):
     def create_collection(cls, db: Database) -> Collection:
         # schema
         if cls.collname in db.list_collection_names():
-            db.command('collMod', cls.collname, validator=cls.get_schema())
+            db.command('collMod', cls.collname, validator=cls.schema)
         else:
-            db.create_collection(cls.collname, validator=cls.get_schema())
+            db.create_collection(cls.collname, validator=cls.schema)
 
         # TODO time series information
         # TODO index information
