@@ -123,5 +123,6 @@ class TestMongoDoc(unittest.TestCase):
             'required': ['f1', 't1']
         })
 
-    # def test_scrape(self):get_schema
-        # scraper = TopMoversScraper(MongoClient()).scrape()
+    # TODO
+    # def test_scrape(self):
+    #     scraper = TopMoversScraper(MongoClient()).scrape()
