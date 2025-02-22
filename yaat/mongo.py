@@ -61,16 +61,21 @@ class MongoDoc(abc.ABC):
 
     @classmethod
     def create_collection(cls, db: Database) -> Collection:
+        coll = db[cls.collname]
+
         # schema
         if cls.collname in db.list_collection_names():
             db.command('collMod', cls.collname, validator=cls.schema)
         else:
             db.create_collection(cls.collname, validator=cls.schema)
+        coll = db[cls.collname]
+
+        # create index
+        coll.create_index(*cls.coll.index.args, **cls.coll.index.args)
 
         # TODO time series information
-        # TODO index information
 
-        return db[cls.collname]
+        return coll
 
     @property
     def dict(self) -> DOC_DICT_T: return asdict(self)
