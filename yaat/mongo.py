@@ -79,7 +79,7 @@ class MongoDoc(abc.ABC):
 
         # create index
         if cls.colldoc:
-            coll.create_index(*cls.colldoc.index.args, **cls.colldoc.index.args)
+            coll.create_index(*cls.colldoc.index.args, **cls.colldoc.index.kwargs)
 
         # TODO time series information
 
