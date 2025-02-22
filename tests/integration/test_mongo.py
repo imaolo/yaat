@@ -1,4 +1,4 @@
-from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, IntegrationTestCase, Doc1Dict
+from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, IntegrationTestCase, Doc1Dict, Doc1EmptyIndexDoc
 from yaat.mongo import MongoDoc
 from pymongo.errors import WriteError
 
@@ -27,6 +27,12 @@ class TestMongoSchema(TestMongo):
     def setUp(self):
         super().setUp()
         self.db = self.dbc['TestMongo-db']
+
+
+    def test_simple_repeat_success(self):
+        coll = Doc1.create_collection(self.db)
+        coll = Doc1.create_collection(self.db)
+        coll.insert_one(Doc1(f1='str', f2=1).dict)
 
     def test_simple_success(self):
         coll = Doc1.create_collection(self.db)
