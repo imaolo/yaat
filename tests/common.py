@@ -59,8 +59,6 @@ class Doc1TypeDoc(MongoDoc):
     f1: int
     t1: type[MongoDoc]
 
-emptyindex = IndexDoc(args=[], kwargs={})
-emptyindexcoll = CollDoc(index=emptyindex)
-class Doc1EmptyIndexDoc(MongoDoc, colldoc=emptyindexcoll):
+class Doc1EmptyIndexDoc(MongoDoc, colldoc=CollDoc(index=IndexDoc(args=[], kwargs={}))):
     f1: int
     t1: type[Doc1]
