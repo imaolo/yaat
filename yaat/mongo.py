@@ -35,7 +35,7 @@ class MongoDoc(abc.ABC):
     typehints: ClassVar[dict[str, Any]]
 
     @classmethod
-    def __init_subclass__(cls, coll: CollDoc | None = None, *args, **kwargs):
+    def __init_subclass__(cls, colldoc: CollDoc | None = None, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
     
         # each sub class is the same
@@ -60,7 +60,7 @@ class MongoDoc(abc.ABC):
 
         # extract the collname
         cls.collname = cls.__name__
-        cls.colldoc = coll
+        cls.colldoc = colldoc
 
         # set the schema
         (schema:=Py2BSON_Schema[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
