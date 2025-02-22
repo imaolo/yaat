@@ -144,9 +144,9 @@ class _Py2BSON_Schema:
 
 Py2BSON_Schema = _Py2BSON_Schema()
 
-class CollDoc(MongoDoc):
-    index: int
-
 class IndexDoc(MongoDoc):
     args: list
     kwargs: dict
+
+class CollDoc(MongoDoc):
+    index: IndexDoc
