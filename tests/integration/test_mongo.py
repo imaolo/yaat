@@ -17,7 +17,10 @@ class Doc1Alias_b(MongoDoc):
     f1:str
     f2:int
 
-class TestMongoSchema(IntegrationTestCase, wait_yaat=False):
+class TestMongo(IntegrationTestCase, wait_yaat=False):
+    pass
+
+class TestMongoSchema(TestMongo):
     # TODO test union and optionals
     # TODO array testing
 
@@ -88,3 +91,11 @@ class TestMongoSchema(IntegrationTestCase, wait_yaat=False):
             coll.insert_one(Doc1Dict(dict1=1, f1=1).dict)
 
     # TODO test indexes
+class TestMongoIndex(TestMongo):
+
+    def setUp(self):
+        super().setUp()
+        self.db = self.dbc['TestMongo-db']
+
+    def test_simple(self):
+        pass
