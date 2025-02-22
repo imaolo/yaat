@@ -27,6 +27,8 @@ SCHEMA_DICT_T = dict[str, SCHEMA_DICT_VALUE_T]
 DOC_DICT_VALUE_T = PyBSONPrimType | list[PyBSONPrimType] | dict[str, 'DOC_DICT_VALUE_T']
 DOC_DICT_T = dict[str, DOC_DICT_VALUE_T]
 
+Mongo_Docs: dict[str, type['MongoDoc']] = {}
+
 @dataclass(frozen=True, kw_only=True)
 class MongoDoc(abc.ABC):
     schema: ClassVar[SCHEMA_DICT_T]
@@ -40,6 +42,14 @@ class MongoDoc(abc.ABC):
     
         # each sub class is the same
         dataclass(cls, kw_only=True, frozen=True)
+
+        # extract the collname
+        cls.collname = cls.__name__
+        cls.colldoc = colldoc
+
+        # no repeating names
+        if cls.collname in Mongo_Docs:
+            raise RuntimeError(f"no repeating MongoDoc class names {cls=} {Mongo_Docs[cls.collname]=}")
 
         # set the type hints (skip class vars)
         g = sys.modules[cls.__module__].__dict__
@@ -58,13 +68,12 @@ class MongoDoc(abc.ABC):
             if cls.is_mongodoc_type(th): continue
             raise RuntimeError(f"invalid MongoDoc class {cls=}, {th=}")
 
-        # extract the collname
-        cls.collname = cls.__name__
-        cls.colldoc = colldoc
-
         # set the schema
         (schema:=Py2BSON_Schema[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
         cls.schema = {'$jsonSchema': schema}
+
+        # cache the class
+        Mongo_Docs[cls.collname] = cls
 
     @classmethod
     def create_collection(cls, db: Database) -> Collection:
@@ -148,6 +157,10 @@ Py2BSON_Schema = _Py2BSON_Schema()
 class IndexDoc(MongoDoc):
     args: list
     kwargs: dict
+
+    @classmethod
+    def create(cls, *args, **kwargs) -> IndexDoc:
+        return cls(args=args, kwargs=kwargs)
 
 @final
 class CollDoc(MongoDoc):
