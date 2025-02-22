@@ -141,3 +141,15 @@ class TestMongoDocSchema(unittest.TestCase):
                 't1': {'bsonType': 'str'}},
             'required': ['f1', 't1']
         })
+
+    def test_duplicate_name(self):
+        class DocDup(MongoDoc):
+            f1: str
+        with self.assertRaises(RuntimeError):
+            class DocDup(MongoDoc):
+                f1: str
+
+    def test_duplicate_fields_failure(self):
+        with self.assertRaises(RuntimeError):
+            class Doc1Alias_a(Doc1):
+                pass
