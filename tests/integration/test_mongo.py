@@ -97,11 +97,64 @@ class TestMongoSchema(TestMongo):
             coll.insert_one(Doc1Dict(dict1=1, f1=1).dict)
 
     # TODO test indexes
-class TestMongoIndex(TestMongo):
+# class TestMongoIndex(TestMongo):
 
-    def setUp(self):
-        super().setUp()
-        self.db = self.dbc['TestMongo-db']
+#     def setUp(self):
+#         super().setUp()
+#         self.db = self.dbc[type(self).__name__]
 
-    def test_simple(self):
-        pass
+#     def test_simple_no_index_success(self):
+#         class Doc1SingleNoIndex(Doc1):
+#             pass
+#         coll = Doc1SingleNoIndex.create_collection(self.db)
+#         self.assertEqual(first=(idxinfo:=coll.index_information()), msg=idxinfo, second={
+#             '_id_': {'v': 2,'key': [('_id', 1)]}})
+
+#     def test_simple_unique_success(self):
+#         pass
+        # coll = self.dbc['db'][f'mycoll{time.perf_counter()//1}']
+        # print()
+        # print(coll.index_information(), end='\n')
+        # coll.create_index('f1')
+        # print(coll.index_information(), end='\n')
+        # class Doc1SingleDefaultUniqueIndex(Doc1, colldoc=CollDoc(index=IndexDoc(args=['f1'], kwargs=to_kwarg(unique=True)))):
+        #     pass
+        # coll = Doc1SingleDefaultUniqueIndex.create_collection(self.db)
+        # self.assertEqual(first=(idxinfo:=coll.index_information()), msg=idxinfo, second={
+        #     '_id_': {
+        #         'v': 2,
+        #         'key': [('_id', 1)]},
+        #     'f1_1_f2_1': {
+        #         'v': 2,
+        #         'key': [('f1', 1), ('f2', 1)],
+        #         'unique': True},
+        #     'f1_1': {
+        #         'v': 2,
+        #         'key': [('f1', 1)]}})
+
+
+    # def test_simple_empty_failure(self):
+    #     class Doc1EmptyIndex(Doc1, colldoc=CollDoc(index=IndexDoc.create())):
+    #         pass
+    #     with self.assertRaises(TypeError):
+    #         Doc1EmptyIndex.create_collection(self.db)
+
+    # def test_simple_default_single_success(self):
+    #     class Doc1SingleDefaultIndex(Doc1, colldoc=CollDoc(index=IndexDoc(args=['f1'], kwargs={}))):
+    #         pass
+    #     Doc1SingleDefaultIndex.create_collection(self.db)
+    #     Doc1SingleDefaultIndex.create_collection(self.db)
+    #     Doc1SingleDefaultIndex.create_collection(self.db)
+
+    # def test_simple_default_single_repeat_failure(self):
+    #     class Doc1aSingleDefaultIndex(Doc1, colldoc=CollDoc(index=IndexDoc(args=['f1'], kwargs={}))):
+    #         pass
+    #     Doc1aSingleDefaultIndex.create_collection(self.db)
+    #     # with self.assertRaises(OperationFailure):
+    #     #     Doc1aSingleDefaultIndex.create_collection(self.db)
+
+    # def test_simple_default_compound(self):
+    #     class Doc1SingleDefaultIndex(Doc1, colldoc=CollDoc(index=IndexDoc(args=[['f1', 'f2']], kwargs=to_kwarg(unique=True)))):
+    #         pass
+    #     Doc1SingleDefaultIndex.create_collection(self.db)
+    #     Doc1SingleDefaultIndex.create_collection(self.db)
