@@ -1,10 +1,30 @@
-from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc, MongoDoc
+from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc
+from yaat.mongo import MongoDoc, CollDoc, IndexDoc
 import unittest
 
+
 class TestMongoDoc(unittest.TestCase):
+
+    def test_simple(self):
+        self.assertEqual(Doc1(f1='some string', f2=1).dict, {'f1': 'some string', 'f2':1})
+
+    def test_nest(self):
+        self.assertEqual(Doc2(d1=Doc1(f1='some string', f2=1), f1=1).dict, {'d1':{'f1': 'some string', 'f2':1}, 'f1':1})
+
+    def test_nest(self):
+        self.assertEqual(Doc2(d1=Doc1(f1='some string', f2=1), f1=1).dict, {'d1':{'f1': 'some string', 'f2':1}, 'f1':1})
+
+    def test_array(self):
+        l1=['lstr1', 'lstr2']
+        l2=[[1, 2], [2, 5]]
+        doc = Doc1Array(l1=l1, l2=l2, f3=1)
+        self.assertEqual(doc.dict, {'l1': l1, 'l2':l2, 'f3':1})
+
+class TestMongoDocSchema(unittest.TestCase):
+
     # TODO test union and optionals
 
-    def test_doc(self):
+    def test_simple(self):
         self.assertEqual(Doc1.schema.pop('$jsonSchema'),{
             'bsonType': 'object',
             'properties': {
@@ -16,7 +36,7 @@ class TestMongoDoc(unittest.TestCase):
             'additionalProperties': False
         })
 
-    def test_doc_nest(self):
+    def test_nest(self):
         self.assertEqual(Doc2.schema.pop('$jsonSchema'),{
             'bsonType': 'object',
             'properties': {
@@ -112,8 +132,9 @@ class TestMongoDoc(unittest.TestCase):
         class Doc2Dict(MongoDoc):
             dict1: dict[str, str]
 
-    def test_doc_type_doc(self):
-        self.assertEqual(Doc1TypeDoc(t1=Doc1, f1=1).schema.pop('$jsonSchema'), {
+    # TODO - remove support?
+    def test_type_doc(self):
+        self.assertEqual(Doc1TypeDoc.schema.pop('$jsonSchema'), {
             'additionalProperties': False,
             'bsonType': 'object',
             'properties': {
@@ -122,3 +143,9 @@ class TestMongoDoc(unittest.TestCase):
                 't1': {'bsonType': 'str'}},
             'required': ['f1', 't1']
         })
+
+class TestMongoDocIndex(unittest.TestCase):
+
+    def test_simple(self):
+        class Doc1Index(MongoDoc, coll=CollDoc(index=IndexDoc(args=[], kwargs=[]))):
+            f1: int
