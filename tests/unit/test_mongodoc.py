@@ -142,7 +142,7 @@ class TestMongoDocSchema(unittest.TestCase):
             'required': ['f1', 't1']
         })
 
-    def test_duplicate_name(self):
+    def test_duplicate_name_failure(self):
         class DocDup(MongoDoc):
             f1: str
         with self.assertRaises(RuntimeError):
