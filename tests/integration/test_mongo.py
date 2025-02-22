@@ -1,5 +1,5 @@
 from tests.common import Doc1, Doc2, Doc1Dict, create_integration_test_class
-from yaat.mongo import MongoDoc
+from yaat.mongo import MongoDoc, CollDoc, IndexDoc
 from pymongo.errors import WriteError
 
 class Doc1a(Doc1):
@@ -84,19 +84,34 @@ class TestMongoSchema(TestMongo):
             coll.insert_one(Doc1Dict(dict1=1, f1=1).dict)
 
     # TODO test indexes
-# class TestMongoIndex(TestMongo):
+class TestMongoIndex(TestMongo):
 
-#     def setUp(self):
-#         super().setUp()
-#         self.db = self.dbc[type(self).__name__]
+    def setUp(self):
+        super().setUp()
+        self.db = self.dbc[type(self).__name__]
 
-#     def test_simple_no_index_success(self):
-#         class Doc1SingleNoIndex(Doc1):
-#             pass
-#         coll = Doc1SingleNoIndex.create_collection(self.db)
-#         self.assertEqual(first=(idxinfo:=coll.index_information()), msg=idxinfo, second={
-#             '_id_': {'v': 2,'key': [('_id', 1)]}})
+    def test_simple_no_index_success(self):
+        coll = Doc1.create_collection(self.db)
+        self.assertEqual(first=(idxinfo:=coll.index_information()), msg=idxinfo, second={
+            '_id_': {
+                'v': 2,
+                'key': [('_id', 1)]}})
 
+    def test_simple_single_default_index(self):
+        class Doc1SingleDefaultIndex(Doc1, colldoc=CollDoc(index=IndexDoc.create('new_f1'))):
+            new_f1 :int # NOTE Needed because docs cannot have the same fields
+        coll = Doc1SingleDefaultIndex.create_collection(self.db)
+        # TODO handle multiple indexes, clean collection and db?
+        self.assertEqual(first=(idxinfo:=coll.index_information()), msg=idxinfo, second={
+            '_id_': {
+                'key': [('_id', 1)],
+                'v': 2},
+            'new_f1_1': {
+                'key': [('new_f1', 1)],
+                'v': 2}})
+
+
+### Graveyard
 #     def test_simple_unique_success(self):
 #         pass
         # coll = self.dbc['db'][f'mycoll{time.perf_counter()//1}']
