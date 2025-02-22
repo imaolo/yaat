@@ -131,7 +131,7 @@ class TestMongoDocSchema(unittest.TestCase):
             dict1: dict[str, str]
 
     # TODO - remove support?
-    def test_type_doc(self):
+    def test_type(self):
         self.assertEqual(Doc1TypeDoc.schema.pop('$jsonSchema'), {
             'additionalProperties': False,
             'bsonType': 'object',
