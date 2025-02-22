@@ -1,6 +1,6 @@
 # from __future__ import annotations
 
-from yaat.mongo import MongoDoc
+from yaat.mongo import MongoDoc, CollDoc, IndexDoc
 from pymongo import MongoClient
 from abc import ABC
 import pytest, unittest, docker, time
@@ -63,7 +63,12 @@ class Doc1Dict(MongoDoc):
     dict1: dict
     f1: int
 
+class Doc1TypeDoc(MongoDoc):   
+    f1: int
+    t1: type[MongoDoc]
 
-class Doc1TypeDoc(MongoDoc):
+emptyindex = IndexDoc(args=[], kwargs={})
+emptyindexcoll = CollDoc(index=emptyindex)
+class Doc1EmptyIndexDoc(MongoDoc, colldoc=emptyindexcoll):
     f1: int
     t1: type[Doc1]
