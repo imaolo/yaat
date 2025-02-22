@@ -2,7 +2,7 @@ from __future__ import annotations
 from bson import Int64, ObjectId
 from datetime import datetime
 from dataclasses import dataclass, fields, asdict
-from typing import TYPE_CHECKING, get_origin, get_args, Callable, Union, ClassVar, Any
+from typing import TYPE_CHECKING, get_origin, get_args, Callable, Union, ClassVar, Any, final
 import abc, sys
 if TYPE_CHECKING:
     from pymongo.synchronous.database import Collection, Database
@@ -144,9 +144,11 @@ class _Py2BSON_Schema:
 
 Py2BSON_Schema = _Py2BSON_Schema()
 
+@final
 class IndexDoc(MongoDoc):
     args: list
     kwargs: dict
 
+@final
 class CollDoc(MongoDoc):
     index: IndexDoc
