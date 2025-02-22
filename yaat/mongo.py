@@ -27,14 +27,15 @@ SCHEMA_DICT_T = dict[str, SCHEMA_DICT_VALUE_T]
 DOC_DICT_VALUE_T = PyBSONPrimType | list[PyBSONPrimType] | dict[str, 'DOC_DICT_VALUE_T']
 DOC_DICT_T = dict[str, DOC_DICT_VALUE_T]
 
-Mongo_Docs: dict[str, type['MongoDoc']] = {}
+MongoDoc_Names: dict[str, type['MongoDoc']] = {}
+MongoDoc_Fields: dict[tuple[tuple[str, type]], type['MongoDoc']] = {}
 
 @dataclass(frozen=True, kw_only=True)
 class MongoDoc(abc.ABC):
     schema: ClassVar[SCHEMA_DICT_T]
     collname: ClassVar[str]
     colldoc: ClassVar[CollDoc]
-    typehints: ClassVar[dict[str, Any]]
+    fields: ClassVar[dict[str, Any]]
 
     @classmethod
     def __init_subclass__(cls, colldoc: CollDoc | None = None, *args, **kwargs):
@@ -48,19 +49,24 @@ class MongoDoc(abc.ABC):
         cls.colldoc = colldoc
 
         # no repeating names
-        if cls.collname in Mongo_Docs:
-            raise RuntimeError(f"no repeating MongoDoc class names {cls=} {Mongo_Docs[cls.collname]=}")
+        if cls.collname in MongoDoc_Names:
+            raise RuntimeError(f"repeating MongoDoc class names are disallowed {cls=} {MongoDoc_Names[cls.collname]=}")
 
         # set the type hints (skip class vars)
         g = sys.modules[cls.__module__].__dict__
-        cls.typehints = {
+        cls.fields = {
             field.name: eval(field.type, g) if isinstance(field.type, str) else field.type
             for field in fields(cls)
             if not(isinstance(field.type, str) and field.type.startswith('ClassVar'))
         }
+        fieldstup = tuple(cls.fields.items()) 
+
+        # no repeating fields
+        if fieldstup in MongoDoc_Fields:
+            raise RuntimeError(f"repeating MongoDoc class field sets are disallowed {cls=} {MongoDoc_Fields[fieldstup]=}")
 
         # check the data fields
-        for th in cls.typehints.values():
+        for th in cls.fields.values():
             if cls.is_primitive(th): continue
             if cls.is_mongodoc(th): continue
             if cls.is_list(th): continue
@@ -73,7 +79,7 @@ class MongoDoc(abc.ABC):
         cls.schema = {'$jsonSchema': schema}
 
         # cache the class
-        Mongo_Docs[cls.collname] = cls
+        MongoDoc_Names[cls.collname] = MongoDoc_Fields[fieldstup] = cls
 
     @classmethod
     def create_collection(cls, db: Database) -> Collection:
@@ -133,8 +139,8 @@ class _Py2BSON_Schema:
 
     def get_mongodoc(self, t: type[MongoDoc]) -> SCHEMA_DICT_T:
         return {'bsonType': 'object',
-                'properties': {name: self[type] for name, type in t.typehints.items()},
-                'required':  list(t.typehints.keys()),
+                'properties': {name: self[type] for name, type in t.fields.items()},
+                'required':  list(t.fields.keys()),
                 'additionalProperties': False}
 
     def get_list(self, t: type[list[PyBSONType]]) -> SCHEMA_DICT_T:
