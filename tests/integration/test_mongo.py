@@ -22,7 +22,7 @@ class TestMongo(create_integration_test_class()):
 
 class TestMongoSchema(TestMongo):
     # TODO test union and optionals
-    # TODO array testing
+    # TODO array/list testing
 
     def setUp(self):
         super().setUp()
