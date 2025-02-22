@@ -1,5 +1,5 @@
-from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc, Doc1EmptyIndexDoc
-from yaat.mongo import MongoDoc, CollDoc, IndexDoc
+from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc
+from yaat.mongo import MongoDoc
 import unittest
 
 
@@ -21,7 +21,6 @@ class TestMongoDoc(unittest.TestCase):
         self.assertEqual(doc.dict, {'l1': l1, 'l2':l2, 'f3':1})
 
 class TestMongoDocSchema(unittest.TestCase):
-
     # TODO test union and optionals
 
     def test_simple(self):
@@ -126,8 +125,7 @@ class TestMongoDocSchema(unittest.TestCase):
                 'f1': {'bsonType': 'int'}},
             'required': ['dict1', 'f1']})
 
-    # TODO failure
-    @unittest.skip("annotate dict raise runtime error. should these become docs?")
+    @unittest.skip("TODO annotate dict raises runtime error. should these become docs?")
     def test_dict2(self):
         class Doc2Dict(MongoDoc):
             dict1: dict[str, str]
@@ -143,8 +141,3 @@ class TestMongoDocSchema(unittest.TestCase):
                 't1': {'bsonType': 'str'}},
             'required': ['f1', 't1']
         })
-
-class TestMongoDocIndex(unittest.TestCase):
-
-    def test_simple(self):
-        pass
