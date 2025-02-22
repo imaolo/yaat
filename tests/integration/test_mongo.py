@@ -17,7 +17,7 @@ class Doc1Alias_b(MongoDoc):
     f1:str
     f2:int
 
-class TestMongo(IntegrationTestCase, wait_yaat=False):
+class TestMongoSchema(IntegrationTestCase, wait_yaat=False):
     # TODO test union and optionals
     # TODO array testing
 
@@ -25,64 +25,66 @@ class TestMongo(IntegrationTestCase, wait_yaat=False):
         super().setUp()
         self.db = self.dbc['TestMongo-db']
 
-    def test_doc_simple_success(self):
+    def test_simple_success(self):
         coll = Doc1.create_collection(self.db)
         coll.insert_one(Doc1(f1='str', f2=1).dict)
 
-    def test_doc_simple_failure_type(self):
+    def test_simple_failure_type(self):
         coll = Doc1.create_collection(self.db)
         with self.assertRaises(WriteError):
             coll.insert_one(Doc1(f1=1, f2=1).dict)
 
-    def test_doc_simple_failure_missing_field(self):
+    def test_simple_failure_missing_field(self):
         coll = Doc1.create_collection(self.db)
         with self.assertRaises(WriteError):
             coll.insert_one({'f1': 'str'})
 
-    def test_doc_simple_failure_extra_field(self):
+    def test_simple_failure_extra_field(self):
         coll = Doc1.create_collection(self.db)
         with self.assertRaises(WriteError):
             coll.insert_one({'f1': 'str', 'f2': 1, 'f3': 1})
 
     # NOTE succeeds
-    def test_doc_simple_alias_objs(self):
+    def test_simple_alias_objs(self):
         coll = Doc1.create_collection(self.db)
         coll.insert_one(Doc1Alias_a(f1='str', f2=1).dict)
         coll.insert_one(Doc1Alias_b(f1='str', f2=1).dict)
 
-    def test_doc_nest_success(self):
+    def test_nest_success(self):
         coll = Doc2.create_collection(self.db)
         coll.insert_one(Doc2(d1=Doc1(f1='str', f2=1), f1=1).dict)
 
-    def test_doc_nest_failure_type_prim(self):
+    def test_nest_failure_type_prim(self):
         coll = Doc2.create_collection(self.db)
         with self.assertRaises(WriteError):
             coll.insert_one(Doc2(d1=Doc1(f1=1, f2=1), f1=1).dict)
 
-    def test_doc_nest_failure_type_extra_field(self):
+    def test_nest_failure_type_extra_field(self):
         coll = Doc2.create_collection(self.db)
         with self.assertRaises(WriteError):
             coll.insert_one(Doc2(d1=Doc3(doc2_f1=1, f1='str', f2=1), f1=1).dict)
 
-    def test_doc_nest_failure_type_missing_field(self):
+    def test_nest_failure_type_missing_field(self):
         coll = Doc2.create_collection(self.db)
         with self.assertRaises(WriteError):
             coll.insert_one(Doc2(d1=Doc4(f1=1), f1=1).dict)
 
-    def test_doc_nest_failure_type_missing_field(self):
+    def test_nest_failure_type_missing_field(self):
         coll = Doc2.create_collection(self.db)
         with self.assertRaises(WriteError):
             coll.insert_one(Doc2(d1=Doc4(f1=1), f1=1).dict)
 
-    def test_doc_success_dict(self):
+    def test_success_dict(self):
         coll = Doc1Dict.create_collection(self.db)
         coll.insert_one(Doc1Dict(dict1={}, f1=1).dict)
 
-    def test_doc_success_dict2(self):
+    def test_success_dict2(self):
         coll = Doc1Dict.create_collection(self.db)
         coll.insert_one(Doc1Dict(dict1={'1':2}, f1=1).dict)
 
-    def test_doc_failure_dict(self):
+    def test_failure_dict(self):
         coll = Doc1Dict.create_collection(self.db)
         with self.assertRaises(WriteError):
             coll.insert_one(Doc1Dict(dict1=1, f1=1).dict)
+
+    # TODO test indexes
