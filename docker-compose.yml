@@ -19,8 +19,8 @@ services:
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand({ ping: 1 })"]
       interval: 30s
-      timeout: 10s
-      retries: 5
+      timeout: 3s
+      retries: 10
 
   yaat:
     <<: *yaat-common
@@ -34,5 +34,5 @@ services:
     healthcheck:
       test: ["CMD", "python", "-m", "httpie", "localhost:8000"]
       interval: 30s
-      timeout: 10s
-      retries: 5
+      timeout: 3s
+      retries: 10

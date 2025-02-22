@@ -1,4 +1,4 @@
-from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, IntegrationTestCase, Doc1Dict, Doc1EmptyIndexDoc
+from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, create_integration_test_class, Doc1Dict, Doc1EmptyIndexDoc
 from yaat.mongo import MongoDoc
 from pymongo.errors import WriteError
 
@@ -17,7 +17,7 @@ class Doc1Alias_b(MongoDoc):
     f1:str
     f2:int
 
-class TestMongo(IntegrationTestCase, wait_yaat=False):
+class TestMongo(create_integration_test_class()):
     pass
 
 class TestMongoSchema(TestMongo):
