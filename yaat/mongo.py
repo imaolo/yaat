@@ -34,7 +34,7 @@ class MongoDoc(abc.ABC):
     colldoc: ClassVar[type[MongoDoc]]
 
     @classmethod
-    def __init_subclass__(cls, colldoc: MongoCollDoc = None, *args, **kwargs):
+    def __init_subclass__(cls, colldoc: CollDoc = None, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
     
         # each sub class is the same
@@ -49,7 +49,7 @@ class MongoDoc(abc.ABC):
             if cls.is_list(th): continue
             if cls.is_optional(th): continue
             if cls.is_mongodoc_type(th): continue
-            raise RuntimeError(f"invalid MongoDoc class {cls}, {field}, {th}")
+            raise RuntimeError(f"invalid MongoDoc class {cls=}, {field=}, {th=}")
 
         # extract the collname
         cls.collname = cls.__name__
@@ -82,7 +82,7 @@ class MongoDoc(abc.ABC):
     def is_mongodoc(t: type[MongoDoc] | Any) -> bool: return get_origin(t) is None and issubclass(t, MongoDoc)
 
     @staticmethod
-    def is_list(t: type[list[PyBSONType]] | Any) -> bool: return type is list or get_origin(t) is list
+    def is_list(t: type[list[PyBSONType]] | Any) -> bool: return t is list or get_origin(t) is list
 
     @staticmethod
     def is_optional(t: type[Union[PyBSONType, None]] | Any) -> bool: return get_origin(t) is Union and type(None) in get_args(t)
@@ -116,8 +116,10 @@ class _Py2BSON_Schema:
                 'additionalProperties': False}
 
     def get_list(self, t: type[list[PyBSONType]]) -> SCHEMA_DICT_T:
-        t, = get_args(t)
-        return {'bsonType': 'array', 'items': self[t]}
+        ts = get_args(t)
+        if not ts: return {'bsonType': 'array'}
+        elif len(ts) == 1: return {'bsonType': 'array', 'items': self[ts[0]]}
+        else: RuntimeError(f"only 0 or 1 list type argumented allowed - {t=}")
 
     def get_optional(self, t: type[Union[PyBSONType, None]]) -> SCHEMA_DICT_T:
         t, nt = get_args(t)
@@ -129,6 +131,10 @@ class _Py2BSON_Schema:
 
 Py2BSON_Schema = _Py2BSON_Schema()
 
+class IndexDoc(MongoDoc):
+    args: list
+    kwargs: dict
+
 # TODO
-class MongoCollDoc(MongoDoc):
-    index_information: str
+class CollDoc(MongoDoc):
+    index: IndexDoc
