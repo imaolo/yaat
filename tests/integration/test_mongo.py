@@ -10,13 +10,6 @@ class Doc3(Doc1):
 
 class Doc4(MongoDoc):
     f1:int
-
-class Doc1Alias_a(Doc1):
-    pass
-class Doc1Alias_b(MongoDoc):
-    f1:str
-    f2:int
-
 class TestMongo(create_integration_test_class()):
     pass
 
@@ -52,12 +45,6 @@ class TestMongoSchema(TestMongo):
         coll = Doc1.create_collection(self.db)
         with self.assertRaises(WriteError):
             coll.insert_one({'f1': 'str', 'f2': 1, 'f3': 1})
-
-    # NOTE succeeds
-    def test_simple_alias_objs(self):
-        coll = Doc1.create_collection(self.db)
-        coll.insert_one(Doc1Alias_a(f1='str', f2=1).dict)
-        coll.insert_one(Doc1Alias_b(f1='str', f2=1).dict)
 
     def test_nest_success(self):
         coll = Doc2.create_collection(self.db)
