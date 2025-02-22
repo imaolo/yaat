@@ -2,8 +2,8 @@ from __future__ import annotations
 from bson import Int64, ObjectId
 from datetime import datetime
 from dataclasses import dataclass, fields, asdict
-from typing import TYPE_CHECKING, get_origin, get_args, get_type_hints, Callable, Union, ClassVar, Any
-import abc
+from typing import TYPE_CHECKING, get_origin, get_args, get_type_hints, Callable, Union, ClassVar, Any, no_type_check
+import abc, sys
 if TYPE_CHECKING:
     from pymongo.synchronous.database import Collection, Database
 
@@ -31,29 +31,36 @@ DOC_DICT_T = dict[str, DOC_DICT_VALUE_T]
 class MongoDoc(abc.ABC):
     schema: ClassVar[SCHEMA_DICT_T]
     collname: ClassVar[str]
-    colldoc: ClassVar[type[MongoDoc]]
+    colldoc: ClassVar[CollDoc]
+    typehints: ClassVar[dict[str, Any]]
 
     @classmethod
-    def __init_subclass__(cls, colldoc: CollDoc = None, *args, **kwargs):
+    def __init_subclass__(cls, coll: CollDoc | None = None, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
     
         # each sub class is the same
         dataclass(cls, kw_only=True, frozen=True)
 
-        # check that field types are valid
-        type_hints = get_type_hints(cls)
-        for field in fields(cls):
-            th = type_hints[field.name]
+        # set the type hints (skip class vars)
+        g = sys.modules[cls.__module__].__dict__
+        cls.typehints = {
+            field.name: eval(field.type, g) if isinstance(field.type, str) else field.type
+            for field in fields(cls)
+            if not(isinstance(field.type, str) and field.type.startswith('ClassVar'))
+        }
+
+        # check the data fields
+        for th in cls.typehints.values():
             if cls.is_primitive(th): continue
             if cls.is_mongodoc(th): continue
             if cls.is_list(th): continue
             if cls.is_optional(th): continue
             if cls.is_mongodoc_type(th): continue
-            raise RuntimeError(f"invalid MongoDoc class {cls=}, {field=}, {th=}")
+            raise RuntimeError(f"invalid MongoDoc class {cls=}, {th=}")
 
         # extract the collname
         cls.collname = cls.__name__
-        cls.colldoc = colldoc # TODO
+        cls.colldoc = coll
 
         # set the schema
         (schema:=Py2BSON_Schema[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
@@ -71,7 +78,8 @@ class MongoDoc(abc.ABC):
         coll = db[cls.collname]
 
         # create index
-        coll.create_index(*cls.coll.index.args, **cls.coll.index.args)
+        if cls.colldoc:
+            coll.create_index(*cls.colldoc.index.args, **cls.colldoc.index.args)
 
         # TODO time series information
 
@@ -95,6 +103,7 @@ class MongoDoc(abc.ABC):
     @staticmethod
     def is_mongodoc_type(t: type[type[MongoDoc]] | Any) -> bool: return get_origin(t) is type and issubclass(get_args(t)[0], MongoDoc)
 
+
 PyBSONType = PyBSONPrimType | type[MongoDoc] | type[list] | type[Union['PyBSONType', None]]
 class _Py2BSON_Schema:
     def __init__(self):
@@ -114,10 +123,9 @@ class _Py2BSON_Schema:
     def get_primitive(t: PyBSONPrimType) -> SCHEMA_DICT_T: return {'bsonType': pybson_prim_map[t]}
 
     def get_mongodoc(self, t: type[MongoDoc]) -> SCHEMA_DICT_T:
-        type_hints = get_type_hints(t)
         return {'bsonType': 'object',
-                'properties': {field.name: self[type_hints[field.name]] for field in fields(t)},
-                'required':  [field.name for field in fields(t)],
+                'properties': {name: self[type] for name, type in t.typehints.items()},
+                'required':  list(t.typehints.keys()),
                 'additionalProperties': False}
 
     def get_list(self, t: type[list[PyBSONType]]) -> SCHEMA_DICT_T:
@@ -136,10 +144,14 @@ class _Py2BSON_Schema:
 
 Py2BSON_Schema = _Py2BSON_Schema()
 
+# class CollDoc(MongoDoc):
+#     index: int
+
+
+@no_type_check
+class CollDoc(MongoDoc):
+    index: int
+
 class IndexDoc(MongoDoc):
     args: list
     kwargs: dict
-
-# TODO
-class CollDoc(MongoDoc):
-    index: IndexDoc
