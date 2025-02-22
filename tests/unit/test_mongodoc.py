@@ -1,4 +1,4 @@
-from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc
+from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, Doc1Dict, Doc1TypeDoc, Doc1EmptyIndexDoc
 from yaat.mongo import MongoDoc, CollDoc, IndexDoc
 import unittest
 
@@ -147,5 +147,4 @@ class TestMongoDocSchema(unittest.TestCase):
 class TestMongoDocIndex(unittest.TestCase):
 
     def test_simple(self):
-        class Doc1Index(MongoDoc, coll=CollDoc(index=IndexDoc(args=[], kwargs=[]))):
-            f1: int
+        pass
