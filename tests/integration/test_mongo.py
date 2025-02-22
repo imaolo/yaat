@@ -1,4 +1,4 @@
-from tests.common import Doc1, Doc2, Doc1Array, Doc2Array, create_integration_test_class, Doc1Dict, Doc1EmptyIndexDoc
+from tests.common import Doc1, Doc2, Doc1Dict, create_integration_test_class
 from yaat.mongo import MongoDoc
 from pymongo.errors import WriteError
 
