@@ -1,6 +1,6 @@
 from tests.common import Doc1, Doc2, Doc1Dict, create_integration_test_class
 from yaat.mongo import MongoDoc, CollDoc, IndexDoc
-from pymongo.errors import WriteError
+from pymongo.errors import WriteError, OperationFailure
 import time
 
 class Doc1a(Doc1):
@@ -102,6 +102,14 @@ class TestMongoIndex(TestMongo):
             'new_f1_1': {
                 'key': [('new_f1', 1)],
                 'v': 2}})
+
+    def test_simple_single_default_index(self):
+        class Doc1SingleDefaultIndexRepeat(Doc1, colldoc=CollDoc(index=IndexDoc.create('new_f1'))):
+            new_f2 :int # NOTE Needed because docs cannot have the same fields
+        Doc1SingleDefaultIndexRepeat.create_collection(self.db)
+        Doc1SingleDefaultIndexRepeat.colldoc = CollDoc(index=IndexDoc.create('new_f1', unique=True))
+        with self.assertRaises(OperationFailure):
+            Doc1SingleDefaultIndexRepeat.create_collection(self.db)
 
 
 ### Graveyard
