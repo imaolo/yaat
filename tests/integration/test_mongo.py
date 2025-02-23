@@ -90,11 +90,10 @@ class TestMongoIndex(TestMongo):
                 'v': 2,
                 'key': [('_id', 1)]}})
 
-    def test_simple_single_default(self):
+    def test_simple_single_default_success(self):
         class Doc1SingleDefaultIndex(Doc1, colldoc=CollDoc(index=IndexDoc.create('new_f1'))):
             new_f1 :int # NOTE Needed because docs cannot have the same fields
         coll = Doc1SingleDefaultIndex.create_collection(self.db)
-        # TODO handle multiple indexes, clean collection and db?
         self.assertEqual(first=(idxinfo:=coll.index_information()), msg=idxinfo, second={
             '_id_': {
                 'key': [('_id', 1)],
@@ -102,6 +101,19 @@ class TestMongoIndex(TestMongo):
             'new_f1_1': {
                 'key': [('new_f1', 1)],
                 'v': 2}})
+
+    def test_simple_single_unique_success(self):
+        class Doc1SingleUniqueIndex(Doc1, colldoc=CollDoc(index=IndexDoc.create('new_f4', unique=True))):
+            new_f4 :int # NOTE Needed because docs cannot have the same fields
+        coll = Doc1SingleUniqueIndex.create_collection(self.db)
+        self.assertEqual(first=(idxinfo:=coll.index_information()), msg=idxinfo, second={
+            '_id_': {
+                'key': [('_id', 1)],
+                'v': 2},
+            'new_f4_1': {
+                'key': [('new_f4', 1)],
+                'v': 2,
+                'unique': True}})
 
     def test_new_options_failure(self):
         class Doc1SingleDefaultIndexRepeat(Doc1, colldoc=CollDoc(index=IndexDoc.create('new_f1'))):
