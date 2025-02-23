@@ -93,7 +93,6 @@ class MongoDoc(abc.ABC):
         else:
             db.create_collection(cls.collname, validator=cls.schema)
         coll = db[cls.collname]
-        coll.drop_indexes() # TODO - remove
 
         # create index
         if cls.colldoc:
