@@ -1,6 +1,7 @@
 from tests.common import Doc1, Doc2, Doc1Dict, create_integration_test_class
 from yaat.mongo import MongoDoc, CollDoc, IndexDoc
 from pymongo.errors import WriteError
+import time
 
 class Doc1a(Doc1):
     f99: int
@@ -11,16 +12,12 @@ class Doc3(Doc1):
 class Doc4(MongoDoc):
     f1:int
 class TestMongo(create_integration_test_class()):
-    pass
-
+    def setUp(self):
+        super().setUp()
+        self.db = self.dbc[f"{type(self).__name__}-{int(time.perf_counter())}"]
 class TestMongoSchema(TestMongo):
     # TODO test union and optionals
     # TODO array/list testing
-
-    def setUp(self):
-        super().setUp()
-        self.db = self.dbc['TestMongo-db']
-
 
     def test_simple_repeat_success(self):
         coll = Doc1.create_collection(self.db)
@@ -85,10 +82,6 @@ class TestMongoSchema(TestMongo):
 
     # TODO test indexes
 class TestMongoIndex(TestMongo):
-
-    def setUp(self):
-        super().setUp()
-        self.db = self.dbc[type(self).__name__]
 
     def test_simple_no_index_success(self):
         coll = Doc1.create_collection(self.db)
