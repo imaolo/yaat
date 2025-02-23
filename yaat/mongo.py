@@ -87,7 +87,9 @@ class MongoDoc(abc.ABC):
 
         # schema
         if cls.collname in db.list_collection_names():
-            db.command('collMod', cls.collname, validator=cls.schema)
+            curr = db[cls.collname].options().get('validator')
+            if curr and curr != cls.schema:
+                raise RuntimeError("illegal attempt to update schema")
         else:
             db.create_collection(cls.collname, validator=cls.schema)
         coll = db[cls.collname]
