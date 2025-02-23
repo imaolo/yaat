@@ -83,14 +83,14 @@ class TestMongoSchema(TestMongo):
     # TODO test indexes
 class TestMongoIndex(TestMongo):
 
-    def test_simple_no_index_success(self):
+    def test_simple_none_success(self):
         coll = Doc1.create_collection(self.db)
         self.assertEqual(first=(idxinfo:=coll.index_information()), msg=idxinfo, second={
             '_id_': {
                 'v': 2,
                 'key': [('_id', 1)]}})
 
-    def test_simple_single_default_index(self):
+    def test_simple_single_default(self):
         class Doc1SingleDefaultIndex(Doc1, colldoc=CollDoc(index=IndexDoc.create('new_f1'))):
             new_f1 :int # NOTE Needed because docs cannot have the same fields
         coll = Doc1SingleDefaultIndex.create_collection(self.db)
@@ -103,7 +103,7 @@ class TestMongoIndex(TestMongo):
                 'key': [('new_f1', 1)],
                 'v': 2}})
 
-    def test_simple_single_default_index(self):
+    def test_new_options_failure(self):
         class Doc1SingleDefaultIndexRepeat(Doc1, colldoc=CollDoc(index=IndexDoc.create('new_f1'))):
             new_f2 :int # NOTE Needed because docs cannot have the same fields
         Doc1SingleDefaultIndexRepeat.create_collection(self.db)
