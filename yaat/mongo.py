@@ -2,10 +2,11 @@ from __future__ import annotations
 from bson import Int64, ObjectId
 from datetime import datetime
 from dataclasses import dataclass, fields, asdict
-from typing import TYPE_CHECKING, get_origin, get_args, Callable, Union, ClassVar, Any, final
-import abc, sys
-if TYPE_CHECKING:
-    from pymongo.synchronous.database import Collection, Database
+from typing import get_origin, get_args, Callable, Union, ClassVar, Any, final
+from abc import ABC
+from pymongo.synchronous.database import Collection, Database
+from pymongo import MongoClient
+import sys, inspect
 
 pybson_prim_map: dict[PyBSONPrimType, str] = {
     # TODO np.array
@@ -31,7 +32,7 @@ MongoDoc_Names: dict[str, type['MongoDoc']] = {}
 MongoDoc_Fields: dict[tuple[tuple[str, type]], type['MongoDoc']] = {}
 
 @dataclass(frozen=True, kw_only=True)
-class MongoDoc(abc.ABC):
+class MongoDoc(ABC):
     schema: ClassVar[SCHEMA_DICT_T]
     collname: ClassVar[str]
     colldoc: ClassVar[CollDoc]
@@ -65,15 +66,6 @@ class MongoDoc(abc.ABC):
         if fieldstup in MongoDoc_Fields:
             raise RuntimeError(f"repeating MongoDoc class field sets are disallowed {cls=} {MongoDoc_Fields[fieldstup]=}")
 
-        # check the data fields
-        for th in cls.fields.values():
-            if cls.is_primitive(th): continue
-            if cls.is_mongodoc(th): continue
-            if cls.is_list(th): continue
-            if cls.is_optional(th): continue
-            if cls.is_mongodoc_type(th): continue
-            raise RuntimeError(f"invalid MongoDoc class {cls=}, {th=}")
-
         # set the schema
         (schema:=Py2BSON_Schema[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
         cls.schema = {'$jsonSchema': schema}
@@ -81,29 +73,23 @@ class MongoDoc(abc.ABC):
         # cache the class
         MongoDoc_Names[cls.collname] = MongoDoc_Fields[fieldstup] = cls
 
-    @classmethod
-    def create_collection(cls, db: Database) -> Collection:
-        coll = db[cls.collname]
-
-        # schema
-        if cls.collname in db.list_collection_names():
-            curr = db[cls.collname].options().get('validator')
-            if curr and curr != cls.schema:
-                raise RuntimeError("illegal attempt to update schema")
-        else:
-            db.create_collection(cls.collname, validator=cls.schema)
-        coll = db[cls.collname]
-
-        # create index
-        if cls.colldoc:
-            coll.create_index(*cls.colldoc.index.args, **cls.colldoc.index.kwargs)
-
-        # TODO time series information
-
-        return coll
-
     @property
     def dict(self) -> DOC_DICT_T: return asdict(self)
+
+PyBSONType = PyBSONPrimType | type[MongoDoc] | type[list] | type[Union['PyBSONType', None]]
+class _Py2BSON_Schema:
+    def __init__(self):
+        self.pybson_tmap: dict[Callable[[type[Any]], bool], Callable[[type[Any]], SCHEMA_DICT_T]] = {
+            self.is_primitive: self.get_primitive,
+            self.is_mongodoc: self.get_mongodoc,
+            self.is_list: self.get_list,
+            self.is_optional: self.get_optional,
+            self.is_mongodoc_type: self.get_mongodoc_type
+        }
+
+    def __getitem__(self, T: type[Any]) -> SCHEMA_DICT_T:
+        schema, = [schema(T) for check, schema in self.pybson_tmap.items() if check(T)]
+        return schema
 
     @staticmethod
     def is_primitive(t: PyBSONPrimType | Any) -> bool: return t in pybson_prim_map
@@ -119,22 +105,6 @@ class MongoDoc(abc.ABC):
 
     @staticmethod
     def is_mongodoc_type(t: type[type[MongoDoc]] | Any) -> bool: return get_origin(t) is type and issubclass(get_args(t)[0], MongoDoc)
-
-
-PyBSONType = PyBSONPrimType | type[MongoDoc] | type[list] | type[Union['PyBSONType', None]]
-class _Py2BSON_Schema:
-    def __init__(self):
-        self.pybson_tmap: dict[Callable[[type[Any]], bool], Callable[[type[Any]], SCHEMA_DICT_T]] = {
-            MongoDoc.is_primitive: self.get_primitive,
-            MongoDoc.is_mongodoc: self.get_mongodoc,
-            MongoDoc.is_list: self.get_list,
-            MongoDoc.is_optional: self.get_optional,
-            MongoDoc.is_mongodoc_type: self.get_mongodoc_type
-        }
-
-    def __getitem__(self, T: type[Any]) -> SCHEMA_DICT_T:
-        schema, = [schema(T) for check, schema in self.pybson_tmap.items() if check(T)]
-        return schema
 
     @staticmethod
     def get_primitive(t: PyBSONPrimType) -> SCHEMA_DICT_T: return {'bsonType': pybson_prim_map[t]}
@@ -173,3 +143,46 @@ class IndexDoc(MongoDoc):
 @final
 class CollDoc(MongoDoc):
     index: IndexDoc
+
+
+class MongoCollection(Collection, ABC):
+    doc: ClassVar[type[MongoDoc]] = None
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, *kwargs)
+
+        if self.name in self.database.list_collection_names():
+            if self.options().get('validator') != self.doc.schema:
+                raise RuntimeError("illegal attempt to update schema")
+        else:
+            self.database.create_collection(self.name, validator=self.doc.schema)
+
+        if self.doc.colldoc:
+            self.create_index(self.doc.colldoc.index.args, **self.doc.colldoc.index.kwargs)
+
+        # TODO time series information
+
+    def __init_subclass__(cls, doc: type[MongoDoc]):
+        cls.doc = doc
+
+    def __class_getitem__(cls, k:Any) -> Any:
+        if not Py2BSON_Schema.is_mongodoc(k): return None
+        class MongoCollection(cls, doc=k):
+            pass
+        return MongoCollection
+
+class ImplicitClassFields(ABC):
+    def __init_subclass__(cls, subclass: Any):
+        cls.subclass = subclass
+        cls.__init_subclass__ = lambda: None
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, t in inspect.get_annotations(type(self)).items():
+            if issubclass(t, type(self).subclass):
+                setattr(self, name, t(self, name))
+
+class MongoDatabase(Database, ImplicitClassFields, ABC, subclass=MongoCollection):
+    pass
+
+class MongoInstance(MongoClient, ImplicitClassFields, ABC, subclass=MongoDatabase):
+    pass
