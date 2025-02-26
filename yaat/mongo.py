@@ -28,7 +28,7 @@ SCHEMA_DICT_T = dict[str, SCHEMA_DICT_VALUE_T]
 DOC_DICT_VALUE_T = PyBSONPrimType | list[PyBSONPrimType] | dict[str, 'DOC_DICT_VALUE_T']
 DOC_DICT_T = dict[str, DOC_DICT_VALUE_T]
 
-@dataclass(frozen=True, kw_only=True)
+@dataclass(kw_only=True)
 class MongoDoc(ABC):
     schema: ClassVar[SCHEMA_DICT_T]
     colldoc: ClassVar[CollDoc]
@@ -39,7 +39,7 @@ class MongoDoc(ABC):
         super().__init_subclass__(*args, **kwargs)
     
         # each sub class is the same
-        dataclass(cls, kw_only=True, frozen=True)
+        dataclass(cls, kw_only=True)
 
         # extract the collname
         cls.colldoc = colldoc
@@ -55,6 +55,13 @@ class MongoDoc(ABC):
         # set the schema
         (schema:=Py2BSON_Schema[cls])['properties'].update({'_id': {'bsonType': 'objectId'}})
         cls.schema = {'$jsonSchema': schema}
+
+    # type check / implicit conversion
+    def __post_init__(self):
+        for name, t in self.fields.items():
+            if Py2BSON_Schema.is_primitive(t):
+                if not isinstance(val:=getattr(self, name), t) and not isinstance(val ,type):
+                    setattr(self, name, t(val))
 
     @property
     def dict(self) -> DOC_DICT_T: return asdict(self)
@@ -152,7 +159,7 @@ class MongoCollection(Collection, ABC, metaclass=MongoCollectionMeta):
 
         if self.name in self.database.list_collection_names():
             if self.options().get('validator') != self.doct.schema:
-                raise RuntimeError("illegal attempt to update schema")
+                raise RuntimeError(f"illegal attempt to update schema {self.name}")
         else:
             self.database.create_collection(self.name, validator=self.doct.schema)
 
