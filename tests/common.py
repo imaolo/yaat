@@ -28,7 +28,7 @@ class IntegrationTestCase(unittest.TestCase, abc.ABC):
                 def check():
                     container.reload()
                     return container.health == 'healthy'
-                wait_until_true(check, 60, 0.1, msg=name)
+                wait_until_true(check, timeout=60, pause=0.1, msg=name)
 
 class Doc1(MongoDoc):
     f1: str
