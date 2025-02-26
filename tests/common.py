@@ -9,26 +9,29 @@ LISTEN_SERVICES = {
     'mongo': getenv('LISTEN_MONGO', True),
     'yaat': getenv('LISTEN_YAAT', True)
 }
-START_CONTAINERS = getenv('START_CONTAINERS', True)
+START_SERVICES = getenv('START_CONTAINERS', True)
 
-def create_integration_test_class(start_services: bool=START_CONTAINERS, listen_services: dict[str, bool]=LISTEN_SERVICES):
+def create_integration_test_class(start_services: bool=START_SERVICES, listen_services: dict[str, bool]={}):
     class IntegrationTestCase(unittest.TestCase, ABC):
         if start_services:
+            @classmethod
             @pytest.fixture(autouse=True)
-            def inject_docker_services(self, docker_ip, docker_services):
-                self.docker_ip = docker_ip
-                self.docker_services = docker_services
-        
-        def setUp(self):
+            def inject_docker_services(cls, docker_ip, docker_services):
+                cls.docker_ip = docker_ip
+                cls.docker_services = docker_services
+
+        @classmethod
+        def setUpClass(cls):
+            super().setUpClass()
             containers = docker.from_env().containers
-            for name, listen in listen_services.items():
+            for name, listen in (LISTEN_SERVICES | listen_services).items():
                 if listen:
                     container, = containers.list(filters={"label": f"com.docker.compose.service={name}"})
                     def check():
                         container.reload()
                         return container.health == 'healthy'
-                    wait_until_true(check, 60, 1, msg=name)
-            self.dbc = MongoClient(host=self.docker_ip, port=self.docker_services.port_for("mongo", 27017)) if start_services else MongoClient()
+                    wait_until_true(check, 60, 0.1, msg=name)
+            cls.dbc = MongoClient(host=cls.docker_ip, port=cls.docker_services.port_for("mongo", 27017)) if start_services else MongoClient()
     return IntegrationTestCase
 
 class Doc1(MongoDoc):
