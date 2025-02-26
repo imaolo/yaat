@@ -30,6 +30,7 @@ services:
       - "80:80"
     environment:
       - COINGECKO_KEY=${COINGECKO_KEY:-__no_key__}
+      - DOCKER=1
     command: /bin/sh -c "pip install -e . && python main.py"
     healthcheck:
       test: ["CMD", "python", "-m", "httpie", "localhost:8000"]
