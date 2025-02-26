@@ -75,7 +75,6 @@ class TestMongoSchema(TestMongo):
         with self.assertRaises(WriteError):
             MongoCollection[Doc1Dict](self.db, self.test_name).insert_one(Doc1Dict(dict1=1, f1=1).dict)
 
-    # TODO test indexes
 class TestMongoIndex(TestMongo):
 
     def test_simple_none_success(self):
