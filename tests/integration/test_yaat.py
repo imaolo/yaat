@@ -1,8 +1,8 @@
 from yaat.yaat import YaatDBInstance
 from yaat.helpers import wait_until_true
-import unittest
+from tests.common import IntegrationTestCase
 
-class TestYaat(unittest.TestCase):
+class TestYaat(IntegrationTestCase):
     def test_TopMoversScraper(self):
         coll = YaatDBInstance().scraper_db.top_movers
         wait_until_true(lambda: (coll.count_documents({}) > 0), 10, 1)
