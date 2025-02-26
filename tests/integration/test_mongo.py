@@ -12,9 +12,14 @@ class Doc3(Doc1):
 
 class Doc4(MongoDoc):
     f1:int
-class TestMongo(IntegrationTestCase, abc.ABC):
+
+test_mongo_services = {'yaat': False}
+class TestMongo(IntegrationTestCase, abc.ABC, services=test_mongo_services):
+    def __init_subclass__(cls, *args, **kwargs):
+        super().__init_subclass__(services=test_mongo_services, *args, **kwargs)
+
     _db = None
-    
+
     @property
     def db(self) -> MongoClient:
         if self._db is None: self._db = MongoClient(host=self.docker_ip)[f"{type(self).__name__}-{int(time.perf_counter())}"]
