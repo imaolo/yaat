@@ -187,11 +187,11 @@ class MongoDatabase(ImplicitClassFields, Database, ABC, superclass=MongoCollecti
         super().__init_subclass__(superclass=superclass, *args, **kwargs)
 
     @property
-    def attrs(self) -> dict[str, MongoCollection]: return super().attrs
+    def colls(self) -> dict[str, MongoCollection]: return super().attrs
 
 class MongoInstance(ImplicitClassFields, MongoClient, ABC, superclass=MongoDatabase):
     def __init_subclass__(cls, superclass: type[Any] = MongoDatabase, *args, **kwargs):
         super().__init_subclass__(superclass=superclass, *args, **kwargs)
 
     @property
-    def attrs(self) -> dict[str, MongoDatabase]: return super().attrs
+    def dbs(self) -> dict[str, MongoDatabase]: return super().attrs
