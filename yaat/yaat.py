@@ -127,7 +127,6 @@ class Yaat:
         self.dbi = dbi
 
         # create listeners
-
         _make_listener = lambda handler, port: lambda: make_server(self.ip, port, handler).serve_forever(poll_interval=0.1)
         self.listeners = [
             _make_listener(self.hb_handler, 8000),
