@@ -21,6 +21,7 @@ class CoinGecko:
 
     def __call__(self, cmd:str='', **kwargs) -> dict:
         return requests.get(self.api_url + cmd, headers=self.headers, params=kwargs).json()
+
 CG = CoinGecko()
 
 #### Abstract Scrapers ####
