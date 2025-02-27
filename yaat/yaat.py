@@ -1,6 +1,6 @@
 from yaat.mongo import MongoDoc, MongoCollection, MongoDatabase, MongoInstance
 from yaat.helpers import getenv
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.blocking import BlockingScheduler, BaseScheduler
 from abc import ABC, abstractmethod
 from datetime import datetime
 from dataclasses import field
@@ -74,9 +74,6 @@ class TopMoverDoc(ScraperDoc):
                         'usd_1y_change': 1,
                     }))]
 
-class TopMoverCollection(ScraperCollection, doct=TopMoverDoc):
-    pass
-
 class PriceDoc(ScraperDoc):
     # https://docs.coingecko.com/v3.0.1/reference/simple-token-price
 
@@ -98,14 +95,11 @@ class PriceDoc(ScraperDoc):
         result = cls.ResultDoc(**raw)
         yield [cls(query=query, result=result)]
 
-class PricesCollection(ScraperCollection, doct=PriceDoc):
-    pass
-
 #### Scraper Database ####
 
 class ScraperDB(MongoDatabase, superclass=ScraperCollection):
-    top_movers: TopMoverCollection
-    prices: PricesCollection
+    top_movers: ScraperCollection[TopMoverDoc]
+    prices: ScraperCollection[PriceDoc]
 
     def scrape(self):
         for name in self.fields.keys():
@@ -116,15 +110,15 @@ class ScraperDB(MongoDatabase, superclass=ScraperCollection):
 class YaatDBInstance(MongoInstance):
     scraper_db: ScraperDB
 
-#### Yaat App ####
+#### Scraper App ####
 
-class Yaat:
+class Scraper:
     ip = '0.0.0.0'
     header = [('Content-type', 'text/plain; charset=utf-8')]
     status = '200 OK'
 
-    def __init__(self, dbi: YaatDBInstance):
-        self.dbi = dbi
+    def __init__(self, intervals: dict[ScraperCollection: int]):
+        self.intervals: dict[ScraperCollection: int] = intervals
 
         # create listeners
         _make_listener = lambda handler, port: lambda: make_server(self.ip, port, handler).serve_forever(poll_interval=0.1)
@@ -133,27 +127,15 @@ class Yaat:
             _make_listener(self.status_handler, 80)
         ]
 
-    def __call__(self):
-        scheduler = BlockingScheduler()
-
-        # add listeners
+    def add_jobs(self, scheduler: BaseScheduler):
         for listener in self.listeners:
             scheduler.add_job(listener, 'date', run_date=datetime.now())
-
-        # add interval jobs
-        self.interval_colls = {
-            self.dbi.scraper_db.top_movers: 10**10,
-            self.dbi.scraper_db.prices: 10**10
-        }
-        for coll, interval in self.interval_colls.items():
+        for coll, interval in self.intervals.items():
             scheduler.add_job(coll.scrape, 'interval', seconds=interval)
-
-        # start schedule
-        scheduler.start()
 
     def status_handler(self, _, res):
         res(self.status, self.header)
-        msgs = [f"number of {name}({self.interval_colls[val]}s) docs: {val.count_documents({})}" for name, val in self.dbi.scraper_db.attrs.items()]
+        msgs = [f"number of {coll.name}({interval}s) docs: {coll.count_documents({})}" for coll, interval in self.intervals.items()]
         return ['\n'.join(msgs).encode()]
 
     def hb_handler(self, _, res):
@@ -163,4 +145,12 @@ class Yaat:
 ### Start Yaat App ####
 
 def run():
-    Yaat(YaatDBInstance(host='mongo' if DOCKER else None, timeoutMS=3000))()
+    ydb = YaatDBInstance(host='mongo' if DOCKER else None, timeoutMS=3000)
+    scraper = Scraper({
+        ydb.scraper_db.top_movers: 10,
+        ydb.scraper_db.prices: 10,
+    })
+
+    scheduler = BlockingScheduler()
+    scraper.add_jobs(scheduler)
+    scheduler.start()
