@@ -13,7 +13,6 @@ import requests
 COINGECKO_KEY = getenv('COINGECKO_KEY', 'CG-Qu22wC9h5anAsGR3xt4YiDgR')
 
 class CoinGecko:
-    # COINGECKO_KEY = os.environ['COINGECKO_KEY']
     api_url = "https://api.coingecko.com/api/v3/"
 
     def __init__(self, api_key:str=COINGECKO_KEY):
