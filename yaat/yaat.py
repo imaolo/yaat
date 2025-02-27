@@ -141,16 +141,19 @@ class Yaat:
             scheduler.add_job(listener, 'date', run_date=datetime.now())
 
         # add interval jobs
-        interval = 10**10
-        scheduler.add_job(self.dbi.scraper_db.top_movers.scrape, 'interval', seconds=interval)
-        scheduler.add_job(self.dbi.scraper_db.prices.scrape, 'interval', seconds=interval)
+        self.interval_colls = {
+            self.dbi.scraper_db.top_movers: 10**10,
+            self.dbi.scraper_db.prices: 10**10
+        }
+        for coll, interval in self.interval_colls.items():
+            scheduler.add_job(coll.scrape, 'interval', seconds=interval)
 
         # start schedule
         scheduler.start()
 
     def status_handler(self, _, res):
         res(self.status, self.header)
-        msgs = [f"number of {name}({val.interval}s) docs: {val.count_documents({})}" for name, val in self.dbi.scraper_db.attrs.items()]
+        msgs = [f"number of {name}({self.interval_colls[val]}s) docs: {val.count_documents({})}" for name, val in self.dbi.scraper_db.attrs.items()]
         return ['\n'.join(msgs).encode()]
 
     def hb_handler(self, _, res):
