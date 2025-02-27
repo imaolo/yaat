@@ -8,7 +8,8 @@ setup(
         'pymongo',
         'requests',
         'apscheduler',
-        'httpie'
+        'httpie',
+        'dotenv'
     ],
     extras_require={
         'test': [
