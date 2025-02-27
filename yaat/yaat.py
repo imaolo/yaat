@@ -33,6 +33,7 @@ class ScraperDoc(MongoDoc, ABC):
         pass    
 
 class ScraperCollection(MongoCollection, ABC, doct=ScraperDoc):
+    interval: ClassVar[int] = None
     def scrape(self):
         for docs in self.doct.scrape():
             self.insert_many(list(map(lambda d: d.dict, docs)))
@@ -73,7 +74,7 @@ class TopMoverDoc(ScraperDoc):
                     }))]
 
 class TopMoverCollection(ScraperCollection, doct=TopMoverDoc):
-    pass
+    interval: ClassVar[int] = 10
 
 class PriceDoc(ScraperDoc):
     # https://docs.coingecko.com/v3.0.1/reference/simple-token-price
@@ -97,7 +98,7 @@ class PriceDoc(ScraperDoc):
         yield [cls(query=query, result=result)]
 
 class PricesCollection(ScraperCollection, doct=PriceDoc):
-    pass
+    interval: ClassVar[int] = 10
 
 #### Scraper Database ####
 
@@ -117,34 +118,43 @@ class YaatDBInstance(MongoInstance):
 #### Yaat App ####
 
 class Yaat:
+    ip = '0.0.0.0'
+    header = [('Content-type', 'text/plain; charset=utf-8')]
+    status = '200 OK'
 
     def __init__(self, dbi: YaatDBInstance):
         self.dbi = dbi
-        self.scheduler = BlockingScheduler()
+
+        # create listeners
+
+        _make_listener = lambda handler, port: lambda: make_server(self.ip, port, handler).serve_forever(poll_interval=0.1)
+        self.listeners = [
+            _make_listener(self.hb_handler, 8000),
+            _make_listener(self.status_handler, 80)
+        ]
+
+    def __call__(self):
+        scheduler = BlockingScheduler()
 
         # add listeners
+        for listener in self.listeners:
+            scheduler.add_job(listener, 'date', run_date=datetime.now())
 
-        ip = '0.0.0.0'
-        header = [('Content-type', 'text/plain; charset=utf-8')]
-        status = '200 OK'
+        # add interval jobs
+        for _, val in self.dbi.scraper_db.colls.items():
+            scheduler.add_job(val.scrape, 'interval', seconds=val.interval)
 
-        hb_handler = lambda _, res: (res(status, header), [b"OK"])[1]
-        def status_handler(_, res):
-            res(status, header)
-            msgs = [f"number of {name} docs: {val.count_documents({})}" for name, val in self.dbi.scraper_db.attrs.items()]
-            return ['\n'.join(msgs).encode()]
+        # start schedule
+        scheduler.start()
 
-        hb_job = lambda:  make_server(ip, 8000, hb_handler).serve_forever(poll_interval=0.1)
-        status_job = lambda:  make_server(ip, 80, status_handler).serve_forever(poll_interval=0.1)
+    def status_handler(self, _, res):
+        res(self.status, self.header)
+        msgs = [f"number of {name}({val.interval}s) docs: {val.count_documents({})}" for name, val in self.dbi.scraper_db.attrs.items()]
+        return ['\n'.join(msgs).encode()]
 
-        self.scheduler.add_job(hb_job, 'date', run_date=datetime.now())
-        self.scheduler.add_job(status_job, 'date', run_date=datetime.now())
-
-        ## add interval jobs
-
-        self.scheduler.add_job(self.dbi.scraper_db.top_movers.scrape, 'interval', seconds=60*5)
-
-    def __call__(self): self.scheduler.start()
+    def hb_handler(self, _, res):
+        res(self.status, self.header)
+        return [b"OK"]
 
 ### Start Yaat App ####
 
