@@ -61,7 +61,7 @@ class MongoDoc(ABC):
     def __post_init__(self):
         for name, t in self.fields.items():
             if Py2BSON_Schema.is_primitive(t):
-                if not isinstance(val:=getattr(self, name), t) and not isinstance(val ,type):
+                if not isinstance(val:=getattr(self, name), t) and not isinstance(val, type):
                     setattr(self, name, t(val))
 
     @property
