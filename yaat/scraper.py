@@ -91,10 +91,8 @@ class PriceDoc(ScraperDoc):
     @classmethod
     def scrape(cls) -> Iterator[list[ScraperDoc]]:
         query = cls.QueryDoc()
-        raw = list(CG(cls.cmd, **query.dict).values())[0]
-        result = cls.ResultDoc(**raw)
+        result = cls.ResultDoc(**list(CG(cls.cmd, **query.dict).values())[0])
         yield [cls(query=query, result=result)]
-
 
 #### Scraper Database ####
 

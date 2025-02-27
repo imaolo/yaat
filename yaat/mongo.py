@@ -146,17 +146,13 @@ class MongoCollection(Collection, ABC, metaclass=MongoCollectionMeta):
 
     def __init_subclass__(cls, doct: type[MongoDoc] | None = None, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
-        if cls.doct and doct and not issubclass(doct, cls.doct):
-            raise TypeError(f"{cls.doct} - {doct}")
-        if cls.doct is None and doct is None:
-            raise TypeError()
-        if doct is not None:
-            cls.doct = doct
+        if cls.doct and doct and not issubclass(doct, cls.doct): raise TypeError(f"{cls.doct} - {doct}")
+        if cls.doct is None and doct is None: raise TypeError()
+        if doct is not None: cls.doct = doct
 
     @classmethod
     def __class_getitem__(cls, doct: type[MongoDoc]) -> type[MongoCollection] | None:
-        if not issubclass(doct, MongoDoc):
-            raise TypeError(f"{cls} [] subscript must be {MongoDoc} or a subclass")
+        if not issubclass(doct, MongoDoc): raise TypeError(f"{cls} [] subscript must be {MongoDoc} or a subclass")
 
         (new_cls:=type(f"{cls.__name__}[{doct.__name__}]", (cls,), {'doct':doct}))
         return new_cls
