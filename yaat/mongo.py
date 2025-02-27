@@ -42,10 +42,10 @@ class MongoDoc(ABC):
         # each sub class is the same
         dataclass(cls, kw_only=True)
 
-        # extract the collname
+        # extract the colldoc
         cls.colldoc = colldoc
 
-        # set the type hints (skip class vars)
+        # set the fields hints (skip class vars)
         g = sys.modules[cls.__module__].__dict__
         cls.fields = {
             field.name: eval(field.type, g) if isinstance(field.type, str) else field.type
