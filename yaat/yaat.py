@@ -37,7 +37,7 @@ class ScraperCollection(MongoCollection, ABC, doct=ScraperDoc):
         for docs in self.doct.scrape():
             self.insert_many(list(map(lambda d: d.dict, docs)))
 
-#### Scrapers ####
+#### Scraper Documents and Collections ####
 class TopMoverDoc(ScraperDoc):
     # https://docs.coingecko.com/reference/coins-top-gainers-losers
     class QueryDoc(MongoDoc):
@@ -99,6 +99,8 @@ class PriceDoc(ScraperDoc):
 class PricesCollection(ScraperCollection, doct=PriceDoc):
     pass
 
+#### Scraper Database ####
+
 class ScraperDB(MongoDatabase, superclass=ScraperCollection):
     top_movers: TopMoverCollection
     prices: PricesCollection
@@ -126,11 +128,8 @@ class Yaat:
         header = [('Content-type', 'text/plain; charset=utf-8')]
         status = '200 OK'
 
-        hb_msg = b"OK"
-        status_msg = f"# of prices doc: {self.dbi.scraper_db.prices.count_documents({})}".encode()
-
-        hb_handler = lambda _, res: (res(status, header), [hb_msg])[1]
-        status_handler = lambda _, res: (res(status, header), [status_msg])[1]
+        hb_handler = lambda _, res: (res(status, header), [b"OK"])[1]
+        status_handler = lambda _, res: (res(status, header), [f"# of prices doc: {self.dbi.scraper_db.prices.count_documents({})}".encode()])[1]
 
         hb_job = lambda:  make_server(ip, 8000, hb_handler).serve_forever(poll_interval=0.1)
         status_job = lambda:  make_server(ip, 80, status_handler).serve_forever(poll_interval=0.1)
