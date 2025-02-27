@@ -6,6 +6,7 @@ from typing import get_origin, get_args, Callable, Union, ClassVar, Any, final
 from abc import ABC, ABCMeta
 from pymongo.synchronous.database import Collection, Database
 from pymongo import MongoClient
+from pprint import pformat
 import sys, inspect
 
 pybson_prim_map: dict[PyBSONPrimType, str] = {
@@ -136,30 +137,36 @@ class CollDoc(MongoDoc):
 
 class MongoCollectionMeta(ABCMeta):
     def __subclasscheck__(cls, subclass):
-        if ABCMeta.__subclasscheck__(cls, subclass): return True
+        if super().__subclasscheck__(subclass): return True
         if not subclass.__base__ == MongoCollection: return False
         return issubclass(subclass.doct, cls.doct)
 
 class MongoCollection(Collection, ABC, metaclass=MongoCollectionMeta):
-    doct: ClassVar[type[MongoDoc]]
+    doct: ClassVar[type[MongoDoc]] = None
 
-    def __init_subclass__(cls, doct: type[MongoDoc], *args, **kwargs):
+    def __init_subclass__(cls, doct: type[MongoDoc] | None = None, *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
-        cls.doct = doct
+        if cls.doct and doct and not issubclass(doct, cls.doct):
+            raise TypeError(f"{cls.doct} - {doct}")
+        if cls.doct is None and doct is None:
+            raise TypeError()
+        if doct is not None:
+            cls.doct = doct
 
     @classmethod
-    def __class_getitem__(cls, k: type[Any]) -> type[MongoCollection] | None:
-        if not issubclass(k, MongoDoc): raise TypeError()
-        class _MongoCollection(MongoCollection, doct=k):
-            pass
-        return _MongoCollection
+    def __class_getitem__(cls, doct: type[MongoDoc]) -> type[MongoCollection] | None:
+        if not issubclass(doct, MongoDoc):
+            raise TypeError(f"{cls} [] subscript must be {MongoDoc} or a subclass")
+
+        (new_cls:=type(f"{cls.__name__}[{doct.__name__}]", (cls,), {'doct':doct}))
+        return new_cls
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, *kwargs)
 
         if self.name in self.database.list_collection_names():
-            if self.options().get('validator') != self.doct.schema:
-                raise RuntimeError(f"illegal attempt to update schema {self.name}")
+            if (old:=self.options().get('validator')) != self.doct.schema:
+                raise RuntimeError(f"illegal attempt to update schema {self.name} - \n{pformat(old)}\n - \n{pformat(self.doct.schema)}\n")
         else:
             self.database.create_collection(self.name, validator=self.doct.schema)
 
@@ -168,7 +175,7 @@ class MongoCollection(Collection, ABC, metaclass=MongoCollectionMeta):
 
         # TODO time series
 
-class ImplicitClassFields(ABC):
+class ImplicitFields(ABC):
     def __init_subclass__(cls, superclass: type[Any], *args, **kwargs):
         super().__init_subclass__(*args, **kwargs)
         cls.fields: dict[str, type[Any]] = {name: t for name, t in inspect.get_annotations(cls).items()
@@ -180,16 +187,16 @@ class ImplicitClassFields(ABC):
             setattr(self, name, t(self, name))
 
     @property
-    def attrs(self) -> dict[str, ImplicitClassFields]: return {name: getattr(self, name) for name in self.fields.keys()}
+    def attrs(self) -> dict[str, ImplicitFields]: return {name: getattr(self, name) for name in self.fields.keys()}
 
-class MongoDatabase(ImplicitClassFields, Database, ABC, superclass=MongoCollection):
+class MongoDatabase(ImplicitFields, Database, ABC, superclass=MongoCollection):
     def __init_subclass__(cls, superclass: type[Any] = MongoCollection, *args, **kwargs):
         super().__init_subclass__(superclass=superclass, *args, **kwargs)
 
     @property
     def colls(self) -> dict[str, MongoCollection]: return super().attrs
 
-class MongoInstance(ImplicitClassFields, MongoClient, ABC, superclass=MongoDatabase):
+class MongoInstance(ImplicitFields, MongoClient, ABC, superclass=MongoDatabase):
     def __init_subclass__(cls, superclass: type[Any] = MongoDatabase, *args, **kwargs):
         super().__init_subclass__(superclass=superclass, *args, **kwargs)
 
