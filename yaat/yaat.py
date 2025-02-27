@@ -129,7 +129,7 @@ class Yaat:
         status = '200 OK'
 
         hb_handler = lambda _, res: (res(status, header), [b"OK"])[1]
-        status_handler = lambda _, res: (res(status, header), [f"-- of prices doc: {self.dbi.scraper_db.prices.count_documents({})}".encode()])[1]
+        status_handler = lambda _, res: (res(status, header), [f"number of prices docs: {self.dbi.scraper_db.prices.count_documents({})}".encode()])[1]
 
         hb_job = lambda:  make_server(ip, 8000, hb_handler).serve_forever(poll_interval=0.1)
         status_job = lambda:  make_server(ip, 80, status_handler).serve_forever(poll_interval=0.1)
