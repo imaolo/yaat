@@ -1,4 +1,5 @@
 from yaat.mongo import MongoDoc, MongoCollection, MongoDatabase
+from yaat.helpers import getenv
 from typing import Iterator, ClassVar
 from datetime import datetime
 from abc import ABC, abstractmethod
@@ -9,11 +10,13 @@ import requests
 
 #### CoinGecko ####
 
+COINGECKO_KEY = getenv('COINGECKO_KEY', 'CG-Qu22wC9h5anAsGR3xt4YiDgR')
+
 class CoinGecko:
     # COINGECKO_KEY = os.environ['COINGECKO_KEY']
     api_url = "https://api.coingecko.com/api/v3/"
 
-    def __init__(self, api_key:str='CG-Qu22wC9h5anAsGR3xt4YiDgR'):
+    def __init__(self, api_key:str=COINGECKO_KEY):
         self.headers = {"accept": "application/json", "x-cg-demo-api-key": api_key}
 
     def __call__(self, cmd:str='', **kwargs) -> dict:
@@ -31,7 +34,6 @@ class ScraperDoc(MongoDoc, ABC):
         pass    
 
 class ScraperCollection(MongoCollection, ABC, doct=ScraperDoc):
-    interval: ClassVar[int] = None
     def scrape(self):
         for docs in self.doct.scrape():
             self.insert_many(list(map(lambda d: d.dict, docs)))
