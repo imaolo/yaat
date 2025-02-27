@@ -5,7 +5,6 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from dataclasses import field
 from wsgiref.simple_server import make_server
-from http.server import HTTPServer, BaseHTTPRequestHandler
 from typing import ClassVar, Iterator
 import requests
 
@@ -113,28 +112,39 @@ class ScraperDB(MongoDatabase, superclass=ScraperCollection):
 class YaatDBInstance(MongoInstance):
     scraper_db: ScraperDB
 
-### Extras ####
-class FrontEnd(BaseHTTPRequestHandler):
-    def do_GET(self):
-        self.send_response(200)
-        self.send_header("Content-type", "text/plain")
-        self.end_headers()
-        self.wfile.write(b"whaddup yaat.club")
+#### Yaat App ####
 
-### Run ####
+class Yaat:
+
+    def __init__(self, dbi: YaatDBInstance):
+        self.dbi = dbi
+        self.scheduler = BlockingScheduler()
+
+        # add listeners
+
+        ip = '0.0.0.0'
+        header = [('Content-type', 'text/plain; charset=utf-8')]
+        status = '200 OK'
+
+        hb_msg = b"OK"
+        status_msg = f"# of prices doc: {self.dbi.scraper_db.prices.count_documents({})}".encode()
+
+        hb_handler = lambda _, res: (res(status, header), [hb_msg])[1]
+        status_handler = lambda _, res: (res(status, header), [status_msg])[1]
+
+        hb_job = lambda:  make_server(ip, 8000, hb_handler).serve_forever(poll_interval=0.1)
+        status_job = lambda:  make_server(ip, 80, status_handler).serve_forever(poll_interval=0.1)
+
+        self.scheduler.add_job(hb_job, 'date', run_date=datetime.now())
+        self.scheduler.add_job(status_job, 'date', run_date=datetime.now())
+
+        ## add scraper
+
+        self.scheduler.add_job(self.dbi.scraper_db.scrape, 'interval', seconds=10)
+
+    def __call__(self): self.scheduler.start()
+
+### Start Yaat App ####
 
 def run():
-    ydb = YaatDBInstance(host='mongo' if DOCKER else None, timeoutMS=3000)
-
-    # listeners
-    web_server_job = lambda:  HTTPServer(('0.0.0.0', 80), FrontEnd).serve_forever(poll_interval=0.1)
-    heart_beat_job = lambda:  make_server("0.0.0.0", 8000, lambda env, res: (res('200 OK', [('Content-type', 'text/plain; charset=utf-8')]), [b"OK"])[1]).serve_forever(poll_interval=0.1)
-
-    # create the schedule and add the jobs. TODO - dynamic jobs
-    scheduler = BlockingScheduler()
-    scheduler.add_job(ydb.scraper_db.scrape, 'interval', seconds=1)
-    scheduler.add_job(web_server_job, 'date', run_date=datetime.now())
-    scheduler.add_job(heart_beat_job, 'date', run_date=datetime.now())
-
-    ## start the schedule
-    scheduler.start()
+    Yaat(YaatDBInstance(host='mongo' if DOCKER else None, timeoutMS=3000))()
