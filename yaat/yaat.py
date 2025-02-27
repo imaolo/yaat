@@ -11,6 +11,7 @@ import requests
 DOCKER = getenv('DOCKER', False)
 
 #### CoinGecko ####
+
 class CoinGecko:
     # COINGECKO_KEY = os.environ['COINGECKO_KEY']
     api_url = "https://api.coingecko.com/api/v3/"
