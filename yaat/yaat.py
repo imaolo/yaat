@@ -75,7 +75,7 @@ class TopMoverDoc(ScraperDoc):
                     }))]
 
 class TopMoverCollection(ScraperCollection, doct=TopMoverDoc):
-    interval: ClassVar[int] = 10
+    pass
 
 class PriceDoc(ScraperDoc):
     # https://docs.coingecko.com/v3.0.1/reference/simple-token-price
@@ -99,7 +99,7 @@ class PriceDoc(ScraperDoc):
         yield [cls(query=query, result=result)]
 
 class PricesCollection(ScraperCollection, doct=PriceDoc):
-    interval: ClassVar[int] = 10
+    pass
 
 #### Scraper Database ####
 
@@ -141,8 +141,9 @@ class Yaat:
             scheduler.add_job(listener, 'date', run_date=datetime.now())
 
         # add interval jobs
-        for _, val in self.dbi.scraper_db.colls.items():
-            scheduler.add_job(val.scrape, 'interval', seconds=val.interval)
+        interval = 10**10
+        scheduler.add_job(self.dbi.scraper_db.top_movers.scrape, 'interval', seconds=interval)
+        scheduler.add_job(self.dbi.scraper_db.prices.scrape, 'interval', seconds=interval)
 
         # start schedule
         scheduler.start()
