@@ -179,10 +179,19 @@ class ImplicitClassFields(ABC):
         for name, t in self.fields.items():
             setattr(self, name, t(self, name))
 
+    @property
+    def attrs(self) -> dict[str, ImplicitClassFields]: return {name: getattr(self, name) for name in self.fields.keys()}
+
 class MongoDatabase(ImplicitClassFields, Database, ABC, superclass=MongoCollection):
     def __init_subclass__(cls, superclass: type[Any] = MongoCollection, *args, **kwargs):
         super().__init_subclass__(superclass=superclass, *args, **kwargs)
 
+    @property
+    def attrs(self) -> dict[str, MongoCollection]: return super().attrs
+
 class MongoInstance(ImplicitClassFields, MongoClient, ABC, superclass=MongoDatabase):
     def __init_subclass__(cls, superclass: type[Any] = MongoDatabase, *args, **kwargs):
         super().__init_subclass__(superclass=superclass, *args, **kwargs)
+
+    @property
+    def attrs(self) -> dict[str, MongoDatabase]: return super().attrs
