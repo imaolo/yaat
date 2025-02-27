@@ -1,6 +1,5 @@
-from yaat.yaat import YaatDBInstance, ScraperCollection
-from yaat.mongo import MongoCollection
-from yaat.helpers import wait_until_true
+from yaat.yaat import YaatDBInstance
+from yaat.scraper import ScraperCollection
 from tests.common import IntegrationTestCase
 
 class TestYaat(IntegrationTestCase):
