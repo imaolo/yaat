@@ -129,7 +129,10 @@ class Yaat:
         status = '200 OK'
 
         hb_handler = lambda _, res: (res(status, header), [b"OK"])[1]
-        status_handler = lambda _, res: (res(status, header), [f"number of prices docs: {self.dbi.scraper_db.prices.count_documents({})}".encode()])[1]
+        def status_handler(_, res):
+            res(status, header)
+            msgs = [f"number of {name} docs: {val.count_documents({})}" for name, val in self.dbi.scraper_db.attrs.items()]
+            return ['\n'.join(msgs).encode()]
 
         hb_job = lambda:  make_server(ip, 8000, hb_handler).serve_forever(poll_interval=0.1)
         status_job = lambda:  make_server(ip, 80, status_handler).serve_forever(poll_interval=0.1)
@@ -137,9 +140,9 @@ class Yaat:
         self.scheduler.add_job(hb_job, 'date', run_date=datetime.now())
         self.scheduler.add_job(status_job, 'date', run_date=datetime.now())
 
-        ## add scraper
+        ## add interval jobs
 
-        self.scheduler.add_job(self.dbi.scraper_db.scrape, 'interval', seconds=10)
+        self.scheduler.add_job(self.dbi.scraper_db.top_movers.scrape, 'interval', seconds=60*5)
 
     def __call__(self): self.scheduler.start()
 
