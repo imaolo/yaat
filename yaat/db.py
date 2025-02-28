@@ -48,7 +48,3 @@ class InsertOnlyCacheDoc(UpdateCacheDoc, ABC, metaclass=AbstractDocMeta):
         query = {name: getattr(self, name) for name, _ in self.required_fields.items()}
         update = {"$setOnInsert": query}
         return UpdateOne(query, update, upsert=True)
-
-    @override
-    def delete(self, *args, **kwargs):
-        raise RuntimeError("insert only collection")
