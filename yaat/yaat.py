@@ -12,8 +12,8 @@ def run():
     ydb = YaatDBInstance(host='mongo' if DOCKER else None, timeoutMS=3000)
 
     scraper = Scraper({
-        ydb.scraper_db.top_movers: 10**10,
-        ydb.scraper_db.prices: 20**10,
+        ydb.scraper_db.top_movers: 10,
+        ydb.scraper_db.prices: 10,
     })
 
     scheduler = BlockingScheduler()
