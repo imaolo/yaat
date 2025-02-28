@@ -61,11 +61,11 @@ def run():
     ])
 
     # create jobs
-    TopMoverJobDoc.bulk_save([TopMoverJobDoc(interval_seconds=25, params=query) for query in TopMoverQueryDoc.objects()])
+    TopMoverJobDoc.bulk_save([TopMoverJobDoc(interval_seconds=10*10, params=query) for query in TopMoverQueryDoc.objects()])
 
     # start jobs
     schedule = BackgroundScheduler()
-    for idx, job in enumerate(TopMoverJobDoc.objects()):
-        schedule.add_job(job.interval_job, 'interval', seconds=job.interval_seconds-idx)
+    for job in TopMoverJobDoc.objects():
+        schedule.add_job(job.interval_job, 'interval', seconds=job.interval_seconds)
     schedule.add_job(lambda: print(TopMoverDoc.objects.count()), 'interval', seconds=1)
     schedule.start()
