@@ -67,5 +67,4 @@ def run():
     schedule = BackgroundScheduler()
     for job in TopMoverJobDoc.objects():
         schedule.add_job(job.interval_job, 'interval', seconds=job.interval_seconds)
-    schedule.add_job(lambda: print(TopMoverDoc.objects.count()), 'interval', seconds=1)
     schedule.start()
