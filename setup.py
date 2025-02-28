@@ -9,7 +9,8 @@ setup(
         'requests',
         'apscheduler',
         'httpie',
-        'dotenv'
+        'dotenv',
+        'mongoengine'
     ],
     extras_require={
         'test': [
