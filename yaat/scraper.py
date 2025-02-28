@@ -54,7 +54,6 @@ def run():
     from apscheduler.schedulers.background import BackgroundScheduler
 
     # create queries
-
     TopMoverQueryDoc.bulk_save([
         TopMoverQueryDoc(duration=duration, top_coin=top_coin)
             for duration in TopMoverQueryDoc.durations
@@ -62,11 +61,9 @@ def run():
     ])
 
     # create jobs
-
     TopMoverJobDoc.bulk_save([TopMoverJobDoc(interval_seconds=25, params=query) for query in TopMoverQueryDoc.objects()])
 
     # start jobs
-
     schedule = BackgroundScheduler()
     for idx, job in enumerate(TopMoverJobDoc.objects()):
         schedule.add_job(job.interval_job, 'interval', seconds=job.interval_seconds-idx)
