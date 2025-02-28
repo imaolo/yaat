@@ -18,8 +18,10 @@ def status_handler(_, res):
     return [body]
 
 def hb_handler(_, res):
-    res(status, header)
-    return [b"OK"]
+    body = b"OK"
+    headers = header + [('Content-Length', str(len(body)))]
+    res(status, headers)
+    return [body]
 
 def run():
     connect(db='yaatdb', host='mongo' if DOCKER else None, timeoutMS=3000)
