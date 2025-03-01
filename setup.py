@@ -10,7 +10,9 @@ setup(
         'apscheduler',
         'httpie',
         'dotenv',
-        'mongoengine'
+        'mongoengine',
+        'fastapi',
+        'uvicorn'
     ],
     extras_require={
         'test': [
