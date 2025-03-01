@@ -1,12 +1,20 @@
-document.addEventListener("DOMContentLoaded", function() {
-    // Select the element with id="header"
-    const header = document.getElementById("header");
-    
-    // Change its text content to confirm the JS is running
-    header.textContent = "JavaScript is working!";
-    
-    // Optionally, add a new element to the page
-    const newParagraph = document.createElement("p");
-    newParagraph.textContent = "This paragraph was added by JavaScript.";
-    document.body.appendChild(newParagraph);
-  });
+function Root() {
+  const [tabs, setTabs] = React.useState([]);
+
+  React.useEffect(() => {
+    fetch("/api/tabs")
+      .then(response => response.json())
+      .then(data => setTabs(data.tabs))
+  }, []);
+
+  return (
+      <div>
+          <h1>Minimal React App</h1>
+          <div>
+              {tabs.map(tab => (<button key={tab}>{tab}</button>))}
+          </div>
+      </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Root />);
