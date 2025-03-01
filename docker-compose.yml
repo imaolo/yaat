@@ -33,7 +33,7 @@ services:
       - DOCKER=1
     command: /bin/sh -c "pip install -e . && python main.py"
     healthcheck:
-      test: ["CMD", "python", "-m", "httpie", "localhost/heartbeat"]
+      test: ["CMD", "python", "-m", "httpie", "GET", "localhost/heartbeat"]
       interval: 30s
       timeout: 3s
       retries: 10
