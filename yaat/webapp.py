@@ -22,5 +22,5 @@ def get_number():
 def get_number():
     return {"status": "ok", "message": "Heartbeat acknowledged"}
 
-CONFIG = uvicorn.Config(app, host='0.0.0.0', port=80, log_level="info")
-WEBAPP = uvicorn.Server(CONFIG)
+def run():
+  uvicorn.run(app, host='0.0.0.0', port=80)
