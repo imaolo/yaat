@@ -1,4 +1,4 @@
-function Root() {
+function Main() {
   const [tabs, setTabs] = React.useState([]);
 
   React.useEffect(() => {
@@ -17,4 +17,4 @@ function Root() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<Root />);
+ReactDOM.createRoot(document.getElementById('main')).render(<Main />);
