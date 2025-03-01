@@ -14,9 +14,9 @@ app.mount("/client", StaticFiles(directory=CLIENT_DIR), name="client")
 def read_root():
   return FileResponse(os.path.join(CLIENT_DIR, 'index.html'))
 
-@app.get("/api/number", response_class=JSONResponse)
+@app.get("/api/tabs", response_class=JSONResponse)
 def get_number():
-    return {"number": 42}
+    return {"tabs": ['tab1', 'tab2', 'tab3']}
 
 @app.get("/heartbeat")
 def get_number():
