@@ -1,5 +1,2 @@
 storage/db/*
 !storage/db/.gitkeep
-yaat/client/build
-yaat/client/node_modules
-yaat/client/package-lock.json
