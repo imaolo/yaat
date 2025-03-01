@@ -2,6 +2,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from mongoengine import connect
 from datetime import datetime
 from wsgiref.simple_server import make_server
+from yaat.scraper import run as run_scraper
 from yaat.helpers import getenv
 from yaat.webapp import run as run_webapp
 
