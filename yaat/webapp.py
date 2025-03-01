@@ -4,15 +4,15 @@ from fastapi.staticfiles import StaticFiles
 import uvicorn, os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-client_dir = os.path.join(BASE_DIR, "client")
+CLIENT_DIR = os.path.join(BASE_DIR, "client")
 
 app = FastAPI()
 
-app.mount("/client", StaticFiles(directory=client_dir), name="client")
+app.mount("/client", StaticFiles(directory=CLIENT_DIR), name="client")
 
 @app.get("/", response_class=FileResponse)
 def read_root():
-  return FileResponse(os.path.join(client_dir, 'index.html'))
+  return FileResponse(os.path.join(CLIENT_DIR, 'index.html'))
 
 @app.get("/api/number", response_class=JSONResponse)
 def get_number():
