@@ -12,7 +12,9 @@ setup(
         'dotenv',
         'mongoengine',
         'fastapi',
-        'uvicorn'
+        'uvicorn',
+        'marshmallow_mongoengine',
+        'marshmallow_jsonschema'
     ],
     extras_require={
         'test': [
