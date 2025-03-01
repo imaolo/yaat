@@ -1,30 +1,33 @@
-from apscheduler.schedulers.blocking import BlockingScheduler
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.events import EVENT_JOB_ERROR
 from mongoengine import connect
 from datetime import datetime
-from wsgiref.simple_server import make_server
 from yaat.scraper import run as run_scraper
 from yaat.helpers import getenv
-from yaat.webapp import run as run_webapp
-
-DOCKER = getenv('DOCKER', False)
-
-header = [('Content-type', 'text/plain; charset=utf-8')]
-def hb_handler(_, res):
-    body = b"OK"
-    headers = header + [('Content-Length', str(len(body)))]
-    res('200 OK', headers)
-    return [body]
-
-def run_hb():
-    make_server('0.0.0.0', 8000, hb_handler).serve_forever(poll_interval=0.1)
+from yaat.webapp import WEBAPP
+import threading, time, sys
 
 def run():
-    connect(db='yaatdb', host='mongo' if DOCKER else None, timeoutMS=3000)
+    # create the schedule
+    scheduler = BackgroundScheduler()
 
-    scheduler = BlockingScheduler()
-
-    scheduler.add_job(run_hb, 'date', run_date=datetime.now())
-    scheduler.add_job(run_webapp, 'date', run_date=datetime.now())
+    # add the jobs    
+    scheduler.add_job(WEBAPP.run, 'date', run_date=datetime.now())
     scheduler.add_job(run_scraper, 'date', run_date=datetime.now())
 
+    # exit listener
+    shutdown_event = threading.Event()
+    def exit(event):
+        if event.exception:
+            shutdown_event.set()
+            WEBAPP.should_exit = True
+            scheduler.shutdown()
+    scheduler.add_listener(exit, EVENT_JOB_ERROR)
+
+    # connect to the database and start the app
+    connect(db='yaatdb', host='mongo' if getenv('DOCKER', False) else None, timeoutMS=3000)
     scheduler.start()
+
+    # wait for exit
+    while not shutdown_event.is_set(): time.sleep(0.1)
+    sys.exit(1)
