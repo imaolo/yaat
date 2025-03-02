@@ -1,26 +1,32 @@
+from yaat.scraper import TopMoverQueryDocSchema
+from marshmallow_jsonschema import JSONSchema
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
-import uvicorn, os
+import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-CLIENT_DIR = os.path.join(BASE_DIR, "client")
+STATIC_DIR = os.path.join(BASE_DIR, "client/dist")
 
 app = FastAPI()
 
-app.mount("/client", StaticFiles(directory=CLIENT_DIR), name="client")
+app.mount("/dist", StaticFiles(directory=STATIC_DIR), name="dist")
 
-@app.get("/", response_class=FileResponse)
-def read_root():
-  return FileResponse(os.path.join(CLIENT_DIR, 'index.html'))
+@app.get("/")
+def serve_index():
+    return FileResponse(os.path.join(STATIC_DIR, "index.html"))
 
-@app.get("/api/tabs", response_class=JSONResponse)
-def get_number():
-    return {"tabs": ['tab1', 'tab2', 'tab3']}
+@app.get("/api/schema", response_class=JSONResponse)
+def get_schema():
+    # TODO return list
+    return JSONSchema().dump(TopMoverQueryDocSchema())
 
 @app.get("/heartbeat")
-def get_number():
+# TODO test
+def GET_heartbeat():
     return {"status": "ok", "message": "Heartbeat acknowledged"}
 
 def run():
+  import uvicorn
+  # TODO connect db?
   uvicorn.run(app, host='0.0.0.0', port=80)

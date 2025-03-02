@@ -3,6 +3,7 @@ from pymongo import UpdateOne
 from datetime import datetime, timezone
 from typing import ClassVar
 from yaat.db import UpdateCacheDoc, InsertOnlyCacheDoc
+from marshmallow_mongoengine import ModelSchema, fields
 
 #### Top Mover Docs
 
@@ -12,6 +13,11 @@ class TopMoverQueryDoc(InsertOnlyCacheDoc):
 
     duration = StringField(required=True, choices=durations)
     top_coin = StringField(required=True, choices=top_coins)
+
+class TopMoverQueryDocSchema(ModelSchema):
+    class Meta:
+        model = TopMoverQueryDoc
+        exclude = ("id",)
 
 class TopMoverDoc(Document):
     # https://docs.coingecko.com/reference/coins-top-gainers-losers
@@ -24,6 +30,12 @@ class TopMoverDoc(Document):
     market_cap_rank = IntField(required=True)
     usd_24h_vol = IntField(required=True)
     usd_1y_change = IntField(required=True)
+
+class TopMoverDocSchema(ModelSchema):
+    query = fields.Nested(TopMoverQueryDocSchema) 
+    class Meta:
+        model = TopMoverDoc
+        exclude = ("id",)
 
 class TopMoverJobDoc(UpdateCacheDoc):
     meta = {'indexes': [{'fields': ['params'], 'unique': True}]}
