@@ -5,3 +5,9 @@ main app (beanie, pydantic, fastapi, swagger, typescript, react, mongodb)
         -- crud jobs (mongodbjobstore, beanie)
         -- read documents (beanie)
     -- job execution (mongodbjobstore)
+
+
+TODO
+    - swagger x typescript
+    - crud jobs
+    - tab(s): collections, crud jobs
