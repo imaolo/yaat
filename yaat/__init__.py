@@ -1,1 +1,1 @@
-from yaat.yaat import run
+from yaat.webapp import run
