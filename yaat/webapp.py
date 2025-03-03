@@ -22,11 +22,20 @@ async def lifespan(_: FastAPI):
     host = 'mongo' if getenv('DOCKER', False) else 'localhost'
     client = AsyncIOMotorClient(f"mongodb://{host}:27017")
 
-    await init_beanie(database=client['yaadb'], document_models=document_models)
+    await init_beanie(database=client['yaatdb'], document_models=document_models)
 
     jobstore = MongoDBJobStore(client=client.delegate)
     scheduler = BackgroundScheduler(jobstores={'default':jobstore})
     scheduler.start()
+
+    for duration in TopMoverQueryDoc.Duration:
+        for top_coin in TopMoverQueryDoc.TopCoins:
+            query = TopMoverQueryDoc(duration=duration, top_coin=top_coin)
+            docs = await TopMoverQueryDoc.find(query.model_dump(), limit=2).to_list()
+            match len(docs):
+                case 0: await query.create()
+                case 1: pass
+                case _: raise RuntimeError("error")
 
     yield
 
