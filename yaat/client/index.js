@@ -62,7 +62,7 @@ function Index() {
 
   return (
     <div>
-      <h1>Dynamic Form from JSON Schema</h1>
+      <h1>Dynamic Form from JSON Schema new message</h1>
       <Form schema={schema} validator={validator} onSubmit={handleSubmit}/>
       <h2>Existing Queries</h2>
       <DataTable data={queries} schema={schema} />
