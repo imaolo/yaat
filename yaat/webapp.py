@@ -5,6 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from contextlib import asynccontextmanager
 from beanie import init_beanie, Document
 from yaat.scraper import TopMoverDoc, TopMoverQueryDoc
+from yaat.helpers import getenv
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -18,7 +19,8 @@ async def lifespan(_: FastAPI):
     from apscheduler.schedulers.background import BackgroundScheduler
     from motor.motor_asyncio import AsyncIOMotorClient
 
-    client = AsyncIOMotorClient("mongodb://localhost:27017") # TODO -- correct strings
+    host = 'mongo' if getenv('DOCKER', False) else 'localhost'
+    client = AsyncIOMotorClient(f"mongodb://{host}:27017")
 
     await init_beanie(database=client['yaadb'], document_models=document_models)
 
