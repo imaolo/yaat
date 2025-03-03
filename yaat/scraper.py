@@ -61,11 +61,3 @@ class TopMoverJobDoc(Document):
     seconds: int = Field(...)
     jid: int = Field(..., description='job id')
     query: Link[TopMoverQueryDoc] = Field(...)
-
-
-
-    # @property
-    # def update_op(self) -> UpdateOne:
-    #     query = {'params': self.params.pk}
-    #     update = {"$set": {"interval_seconds": self.interval_seconds}}
-    #     return UpdateOne(query, update, upsert=True)
