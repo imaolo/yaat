@@ -37,9 +37,9 @@ services:
     environment:
       - COINGECKO_KEY=${COINGECKO_KEY:-__no_key__}
       - DOCKER=1
-    command: /bin/sh -c "pip install -e . && python main.py"
+    command: /bin/sh -c "pip install -e . && uvicorn main:app --host 0.0.0.0 --port 80 --reload"
     healthcheck:
-      test: ["CMD", "python", "-m", "httpie", "GET", "localhost/heartbeat"]
+      test: ["CMD", "python", "-m", "httpie", "localhost/hb"]
       interval: 30s
       timeout: 3s
       retries: 10
