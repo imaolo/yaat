@@ -38,7 +38,7 @@ function Index() {
       return response.json();
     })
     .then((newDoc) => {
-      setQueries([...queries, newDoc]);
+      setQueries([...(queries || []), newDoc]);
     })
     .catch((error) => {
       console.error("Error submitting form:", error);
@@ -46,15 +46,14 @@ function Index() {
   };
 
   React.useEffect(() => {
-    fetch("/schema/TopMoverDoc")
-      .then(response => response.json())
-      .then(data => {
-        setSchema(data)
-      })
-    fetch("/TopMoverDoc")
-      .then(response => response.json())
-      .then(data => {
-        setQueries(data)});
+    Promise.all([
+      fetch("/schema/TopMoverDoc").then(res => res.json()),
+      fetch("/TopMoverDoc").then(res => res.json())
+    ])
+    .then(([schemData, queriesData]) => {
+      setSchema(schemData)
+      setQueries(queriesData)
+    })
   }, [])
 
   if (!schema || !queries)
