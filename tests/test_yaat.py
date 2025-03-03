@@ -1,5 +1,6 @@
-from tests.common import IntegrationTestCase
-class TestYaat(IntegrationTestCase, services={'yaat': False}):
+# from tests.common import IntegrationTestCase
+import unittest
+class TestYaat(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         pass
