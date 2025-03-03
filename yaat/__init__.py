@@ -1,1 +1,0 @@
-from yaat.webapp import run
