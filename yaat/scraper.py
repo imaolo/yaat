@@ -50,8 +50,6 @@ class TopMoverDoc(Document):
         q['properties'].pop('_id')
         t['$defs'].update(q.pop('$defs') | {q['title']: q})
         t['properties']['query'] = {'$ref': '#/$defs/'+q['title']}
-        import pprint
-        pprint.pprint(t)
         return t
 
 class TopMoverJobDoc(Document):
