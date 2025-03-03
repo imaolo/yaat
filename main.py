@@ -1,4 +1,3 @@
-import yaat
-
+from yaat.webapp import run
 if __name__ == '__main__':
-    yaat.run()
+    run()
