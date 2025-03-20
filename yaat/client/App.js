@@ -70,6 +70,7 @@ function DocTabs() {
     );
 }
 
+// datatable and forms, and delete, ... and edit
 function DataTable({ metadata }) {
     const [rows, setRows] = React.useState([]);
     const [cols, setCols] = React.useState([]);
@@ -145,15 +146,8 @@ function DataTable({ metadata }) {
 
 export default App;
 
-// import React from "react";
-// import axios from "axios";
-// import Form from "@rjsf/core";
-// import validator from "@rjsf/validator-ajv8";
-// import { Tabs, Tab, Box, Button } from "@mui/material";
-// import { DataGrid } from "@mui/x-data-grid";
 
-
-
+// edit row stuff
 
 //   // Edit row handler (could open a modal or enable inline editing)
 //   const handleEdit = (row) => {
