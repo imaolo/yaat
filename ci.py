@@ -18,7 +18,7 @@ if __name__ == "__main__":
     if DEPLOY:
         ssh_cmd = "cd yaat && "
         ssh_cmd += f"git pull https://imaolo:{GH_PAT}@github.com/imaolo/yaat && "
-        ssh_cmd += "docker-compose up --build --force-recreate --remove-orphans -d"
+        ssh_cmd += "docker-compose up --build --force-recreate --remove-orphans -d --wait"
         runcmd('echo "$SSH_KEY" > ~/id_rsa.pem')
         os.chmod(os.path.expanduser('~/id_rsa.pem'), 0o600)
         runcmd(f'ssh -o StrictHostKeyChecking=no -i ~/id_rsa.pem {SSH_USERNAME}@{SSH_HOST} "{ssh_cmd}"')
