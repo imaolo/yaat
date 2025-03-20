@@ -12,6 +12,7 @@ setup(
         'beanie',
         'fastapi',
         'uvicorn',
+        'fastapi_paginate'
     ],
     extras_require={
         'test': [

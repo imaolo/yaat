@@ -75,10 +75,13 @@ function DataTable({ metadata }) {
     const [rows, setRows] = React.useState([]);
     const [cols, setCols] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
+    const [page, setPage] = React.useState(0);
+    const [pageSize, setPageSize] = React.useState(50);
+    const [rowCount, setRowCount] = React.useState(0);
     const controllerRef = React.useRef(null);
 
     const cleanRows = (rows) => rows.map((item, index) => ({ id: index, ...item })).map(item => flatten(item))
-    const fetchSetRows = () => {
+    const fetchSetRows = (currentPage = 1, currentSize = 50) => {
         if (controllerRef.current)
             controllerRef.current.abort();
 
@@ -88,24 +91,26 @@ function DataTable({ metadata }) {
         const signal = controller.signal;
     
         setLoading(true)
-        axios.get(`/${metadata.read.title}`, { signal })
-            .then(res => setRows(cleanRows(res.data)))
+        axios.get(`/${metadata.read.title}`, { signal, params: {page: currentPage, size: currentSize}})
+            .then(res => {
+                setRowCount(res.data.total)
+                setRows(cleanRows(res.data.items))
+            })
             .catch(err => {
                 if (axios.isCancel(err))
                     console.log("Request canceled:", err.message);
                 else
-                    console.error(err);
+                    throw err;
             })
             .finally(() => {
                 if (controllerRef.current === controller)
                     setLoading(false);
             });
     }
-    const handleSubmit = ({ formData }) => axios.post(`/${metadata.read.title}`, formData).then(res => fetchSetRows())
+    const handleSubmit = ({ formData }) => axios.post(`/${metadata.read.title}`, formData).then(res => fetchSetRows(page + 1, pageSize))
     const handleDelete = (params) => {
         axios.delete(`/${metadata.read.title}`, {params: {id: params.row._id}})
-            .then(res => fetchSetRows())
-            .catch(err => console.log(err))
+            .then(res => fetchSetRows(page + 1, pageSize))
     }
     const handleEdit = (params) => {
         console.log('TODO - edit')
@@ -138,28 +143,43 @@ function DataTable({ metadata }) {
     }
 
     React.useEffect(() => {
-        fetchSetRows();
+        fetchSetRows(page + 1, pageSize);
         derefSetCols();
 
         return () => {
             if (controllerRef.current)
                 controllerRef.current.abort();
         };
-    }, []);
+    }, [page, pageSize]);
 
     return (
         <div>
             <h2>{metadata.read.title}</h2>
-            {loading && (
-                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100px" }}>
-                    <CircularProgress />
-                </div>
-            )}
             <div style={{ height: 400, width: "100%" }}>
-                <DataGrid rows={rows} columns={cols} pageSize={5} />
+                <DataGrid
+                    rows={rows}
+                    columns={cols}
+                    loading={loading}
+                    paginationMode="server"
+                    paginationModel={{ page, pageSize }}
+                    pageSize={pageSize}
+                    rowCount={rowCount}
+                    onPaginationModelChange={(model) => {
+                        if (page != model.page)
+                            setPage(model.page);
+                        if (pageSize != model.PageSize)
+                            setPageSize(model.pageSize);
+                    }}
+                />
             </div>
             <div>
-                {metadata.create != null && <Form schema={metadata.create} validator={validator} onSubmit={handleSubmit} />}
+                {metadata.create != null && 
+                    <Form
+                        schema={metadata.create}
+                        validator={validator}
+                        onSubmit={handleSubmit}
+                    />
+                }
             </div>
         </div>
     );

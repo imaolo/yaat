@@ -2,6 +2,7 @@ from yaat.state import State
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi_paginate import Page, add_pagination
 from contextlib import asynccontextmanager
 import os
 
@@ -18,6 +19,7 @@ app.mount('/dist', StaticFiles(directory=STATIC_DIR), name='dist')
 app.add_route('/', lambda _: RedirectResponse(url="/dist/index.html"))
 app.add_route('/hb', lambda _: {'status': 'ok', 'message': "Heartbeat acknowledged"})
 app.include_router(State.get_router())
+add_pagination(app)
 
 # schema_instance = schema()
 # @router.put(prefix + "/{item_id}")

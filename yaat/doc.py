@@ -4,7 +4,8 @@ from beanie.odm.actions import Insert, Update, Replace, Delete
 from pydantic import BaseModel, create_model
 from pydantic.fields import FieldInfo
 from typing import ClassVar, Union, get_origin, get_args
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from fastapi_paginate import Page, Params, create_page
 from abc import ABC
 
 class DocUIMetadata(BaseModel):
@@ -122,11 +123,14 @@ class Doc(Document, ABC):
         await cls(**doc).create()
 
     @classmethod
-    async def crud_r(cls) -> list[Doc]:
-        docs = await cls.find().to_list()
-        for doc in docs:
-            await doc.fetch_all_links()
-        return docs
+    async def crud_r(cls, params: Params = Depends()) -> Page[Doc]:
+        docs = await cls.find().skip((params.page-1) * params.size).limit(params.size).to_list()
+        [await doc.fetch_all_links() for doc in docs]
+        return create_page(
+            items=docs,
+            total=await cls.find().count(),
+            params=params
+        )
 
     @classmethod
     async def crud_u(cls, doc: Doc) -> Doc:
@@ -150,7 +154,7 @@ class Doc(Document, ABC):
             '/'+cls.__name__+"__Flattened",
             endpoint=cls.crud_r,
             methods=["GET"],
-            response_model=list[cls]
+            response_model=Page[cls]
         )
 
         router.add_api_route(
