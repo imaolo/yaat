@@ -4,7 +4,7 @@ from yaat.doc import ReadOnlyDoc, Doc
 from beanie import Link
 from beanie.operators import Set
 from beanie.odm.actions import before_event, Insert
-from pydantic import Field
+from pydantic import Field, PositiveInt
 from enum import Enum
 from typing import ClassVar
 from itertools import product
@@ -73,13 +73,13 @@ class TopMoverResultDoc(ReadOnlyDoc):
     usd_1y_change: int
 
 class TopMoverJobDoc(JobDoc):
-    seconds: int
+    seconds: PositiveInt
     query: Link[TopMoverQueryDoc]
 
     @before_event(Insert)
     async def before_create_trg(self):
         await super().before_create_trg()
-        job = State.scheduler.add_job(self.job, 'interval', seconds=self.seconds)
+        job = State.scheduler.add_job(self.job, 'interval', seconds=self.seconds, coalesce=True, misfire_grace_time=1)
         self.apsjob = await APSJobDoc.get(job.id)
 
     @classmethod
