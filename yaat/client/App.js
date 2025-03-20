@@ -10,7 +10,7 @@ import { flatten } from 'flat';
 function App() {
     return (
         <div>
-            <h1>yaat club</h1>
+            <h1>yaat club - test ci</h1>
             <DocTabs />
         </div>
     );
