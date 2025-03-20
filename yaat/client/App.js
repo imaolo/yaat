@@ -2,16 +2,36 @@ import React from "react";
 import axios from 'axios'
 import Form from "@rjsf/core";
 import validator from "@rjsf/validator-ajv8";
-import { Tabs, Tab, Box } from "@mui/material"
+import { Tabs, Tab, Box, Button } from "@mui/material"
 import { DataGrid } from "@mui/x-data-grid";
+import $RefParser from "json-schema-ref-parser";
+import { flatten } from 'flat';
 
 function App() {
     return (
-      <div>
-        <h1>yaat club</h1>
-        <DocTabs />
-      </div>
+        <div>
+            <h1>yaat club</h1>
+            <DocTabs />
+        </div>
     );
+}
+
+function getColumnsFromSchema(schema, prefix = "", result = []) {
+    if (!schema || !schema.properties) return result;
+  
+    for (const [propName, propSchema] of Object.entries(schema.properties)) {
+        const fullPath = prefix ? `${prefix}.${propName}` : propName;
+        if (propSchema.type === "object" && propSchema.properties)
+            getColumnsFromSchema(propSchema, fullPath, result);
+        else
+            result.push({
+                field: fullPath,
+                headerName: fullPath,
+                flex: 1
+            })
+    }
+  
+    return result;
 }
 
 function DocTabs() {
@@ -20,27 +40,28 @@ function DocTabs() {
 
     const handleChange = (event, newValue) => {
         setActiveTab(newValue);
-    };
+    }
 
     React.useEffect(() => {
-        axios.get('/metadatas').then(res => setMetadatas(res.data))
+        axios.get('/metadatas')
+            .then(res => res.data)
+            .then(mds => mds.filter(md => md.read != null))
+            .then(mds => setMetadatas(mds))
     }, [])
 
     return (
         <Box sx={{ width: "100%" }}>
 
-            <Tabs value={activeTab} onChange={handleChange} aria-label="basic tabs">{
-                metadatas.map((metadata, index) => (<Tab key={index} label={metadata.schema.title} />))
-            }
+            <Tabs value={activeTab} onChange={handleChange} aria-label="basic tabs">
+                {metadatas.map((metadata, index) => (<Tab key={index} label={metadata.read.title} />))}
             </Tabs>
 
-            <Box sx={{ p: 3 }}>{
-                metadatas.map((metadata, index) => (
+            <Box sx={{ p: 3 }}>
+                {metadatas.map((metadata, index) => (
                     <div key={index} hidden={activeTab !== index}>
                         {activeTab === index && <DataTable metadata={metadata} />}
                     </div>
-                ))
-            }
+                ))}
             </Box>
 
         </Box>
@@ -49,46 +70,60 @@ function DocTabs() {
 
 function DataTable({ metadata }) {
     const [rows, setRows] = React.useState([]);
+    const [cols, setCols] = React.useState([]);
 
-    const cleanRows = (rows) => rows.map(({ _id, ...rest }) => rest).map((item, index) => ({ id: index, ...item }));
-    const fetchSetRows = () => axios.get(`/${metadata.schema.title}`).then(res => setRows(cleanRows(res.data)))
-    const handleSubmit = ({ formData }) => axios.post(`/${metadata.schema.title}`, formData).then(res => fetchSetRows())
+    const cleanRows = (rows) => rows.map((item, index) => ({ id: index, ...item })).map(item => flatten(item))
+    const fetchSetRows = () => axios.get(`/${metadata.read.title}`).then(res => setRows(cleanRows(res.data)))
+    const handleSubmit = ({ formData }) => axios.post(`/${metadata.read.title}`, formData).then(res => fetchSetRows())
+    const handleDelete = (params) => {
+        axios.delete(`/${metadata.read.title}`, {params: {id: params.row._id}})
+            .then(res => fetchSetRows())
+            .catch(err => console.log(err))
+    }
+    const handleEdit = (params) => {
+        console.log('TODO - edit')
+        console.log(params)
+    }
+    const derefSetCols = () => {
+        $RefParser.dereference(metadata.read).then(schema => {
+            let new_cols = getColumnsFromSchema(schema)
+            // action column
+            if (metadata.update != null | metadata.delete != null){
+                new_cols.push({
+                    field: "actions",
+                    headerName: "Actions",
+                    renderCell: (params) => (
+                        <div>
+                        {metadata.update != null && <Button variant="contained" color="primary" onClick={() => handleEdit(params)} style={{ marginRight: "8px" }}>
+                            Edit
+                        </Button>}
+                        {metadata.delete != null && <Button variant="contained" color="secondary" onClick={() => handleDelete(params)}>
+                            Delete
+                        </Button>}
+                        </div>
+                    ),
+                    sortable: false,
+                    flex: 1,
+                })
+            }
+            setCols(new_cols)
+            return new_cols
+        })
+    }
 
     React.useEffect(() => {
         fetchSetRows()
+        derefSetCols()      
     }, [])
-
-    const dataColumns = Object.keys(metadata.schema.properties).map((key) => ({
-        field: key,
-        headerName: key.charAt(0).toUpperCase() + key.slice(1),
-        flex: 1,
-    }));
-
-    const actionColumn = {
-        field: "actions",
-        headerName: "Actions",
-        renderCell: (params) => {
-            const row = params.row;
-            return (
-                <div>
-                    <p> yerrr </p>
-                </div>
-            )
-        },
-        sortable: false,
-        flex: 1,
-    };
-
-    const columns = [...dataColumns, actionColumn];
 
     return (
         <div>
-            <h2>{metadata.schema.title}</h2>
+            <h2>{metadata.read.title}</h2>
             <div style={{ height: 400, width: "100%" }}>
-                <DataGrid rows={rows} columns={columns} pageSize={5} />
+                <DataGrid rows={rows} columns={cols} pageSize={5} />
             </div>
             <div>
-                {metadata.createable && <Form schema={metadata.schema} validator={validator} onSubmit={handleSubmit}/>}
+                {metadata.create != null && <Form schema={metadata.create} validator={validator} onSubmit={handleSubmit} />}
             </div>
         </div>
     );
@@ -103,73 +138,8 @@ export default App;
 // import { Tabs, Tab, Box, Button } from "@mui/material";
 // import { DataGrid } from "@mui/x-data-grid";
 
-// function App() {
-//   return (
-//     <div>
-//       <h1>yaat club</h1>
-//       <DocTabs />
-//     </div>
-//   );
-// }
 
-// function DocTabs() {
-//   const [activeTab, setActiveTab] = React.useState(0);
-//   const [metadatas, setMetadatas] = React.useState([]);
 
-//   const handleChange = (event, newValue) => {
-//     setActiveTab(newValue);
-//   };
-
-//   React.useEffect(() => {
-//     axios.get("/metadatas").then((res) => setMetadatas(res.data));
-//   }, []);
-
-//   return (
-//     <Box sx={{ width: "100%" }}>
-//       <Tabs value={activeTab} onChange={handleChange} aria-label="basic tabs">
-//         {metadatas.map((metadata, index) => (
-//           <Tab key={index} label={metadata.schema.title} />
-//         ))}
-//       </Tabs>
-//       <Box sx={{ p: 3 }}>
-//         {metadatas.map((metadata, index) => (
-//           <div key={index} hidden={activeTab !== index}>
-//             {activeTab === index && <DataTable metadata={metadata} />}
-//           </div>
-//         ))}
-//       </Box>
-//     </Box>
-//   );
-// }
-
-// function DataTable({ metadata }) {
-//   const [rows, setRows] = React.useState([]);
-//   const [editRow, setEditRow] = React.useState(null);
-
-//   // Helper to clean rows and assign unique ids
-//   const cleanRows = (rows) =>
-//     rows
-//       .map(({ _id, ...rest }) => rest)
-//       .map((item, index) => ({ id: index, ...item }));
-
-//   const fetchSetRows = () =>
-//     axios.get(`/${metadata.schema.title}`).then((res) => setRows(cleanRows(res.data)));
-
-//   // Create new entry
-//   const handleSubmit = ({ formData }) =>
-//     axios.post(`/${metadata.schema.title}`, formData).then(() => fetchSetRows());
-
-//   React.useEffect(() => {
-//     fetchSetRows();
-//   }, []);
-
-//   // Delete row handler
-//   const handleDelete = (id) => {
-//     // Assuming each row has a unique identifier (replace 'id' with your actual id field if needed)
-//     axios.delete(`/${metadata.schema.title}/${id}`).then(() => {
-//       fetchSetRows();
-//     });
-//   };
 
 //   // Edit row handler (could open a modal or enable inline editing)
 //   const handleEdit = (row) => {
@@ -186,38 +156,8 @@ export default App;
 //       });
 //   };
 
-//   // Build columns based on metadata schema
-//   const columns = Object.keys(metadata.schema.properties).map((key) => ({
-//     field: key,
-//     headerName: key.charAt(0).toUpperCase() + key.slice(1),
-//     flex: 1,
-//   }));
 
 //   // Add an actions column with edit and delete buttons
-//   const actionColumn = {
-//     field: "actions",
-//     headerName: "Actions",
-//     flex: 1,
-//     renderCell: (params) => (
-//       <div>
-//         <Button
-//           variant="contained"
-//           color="primary"
-//           onClick={() => handleEdit(params.row)}
-//           style={{ marginRight: "8px" }}
-//         >
-//           Edit
-//         </Button>
-//         <Button
-//           variant="contained"
-//           color="secondary"
-//           onClick={() => handleDelete(params.row.id)}
-//         >
-//           Delete
-//         </Button>
-//       </div>
-//     ),
-//   };
 
 //   // Combine columns
 //   const allColumns = [...columns, actionColumn];
