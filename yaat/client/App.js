@@ -79,10 +79,8 @@ function DataTable({ metadata }) {
 
     const cleanRows = (rows) => rows.map((item, index) => ({ id: index, ...item })).map(item => flatten(item))
     const fetchSetRows = () => {
-        if (controllerRef.current) {
-            console.log("aborting request")
+        if (controllerRef.current)
             controllerRef.current.abort();
-        }
 
         const controller = new AbortController();
         controllerRef.current = controller
@@ -145,10 +143,7 @@ function DataTable({ metadata }) {
 
         return () => {
             if (controllerRef.current)
-            {
-                console.log("aborting request (1)")
                 controllerRef.current.abort();
-            }
         };
     }, []);
 
