@@ -10,7 +10,7 @@ import { flatten } from 'flat';
 function App() {
     return (
         <div>
-            <h1>yaat club - test ci</h1>
+            <h1>yaat club</h1>
             <DocTabs />
         </div>
     );
@@ -75,14 +75,33 @@ function DataTable({ metadata }) {
     const [rows, setRows] = React.useState([]);
     const [cols, setCols] = React.useState([]);
     const [loading, setLoading] = React.useState(true);
+    const controllerRef = React.useRef(null);
 
     const cleanRows = (rows) => rows.map((item, index) => ({ id: index, ...item })).map(item => flatten(item))
     const fetchSetRows = () => {
-        setLoading(true)
-        axios.get(`/${metadata.read.title}`)
-            .then(res => setRows(cleanRows(res.data)))
-            .finally(() => setLoading(false))
+        if (controllerRef.current) {
+            console.log("aborting request")
+            controllerRef.current.abort();
+        }
 
+        const controller = new AbortController();
+        controllerRef.current = controller
+
+        const signal = controller.signal;
+    
+        setLoading(true)
+        axios.get(`/${metadata.read.title}`, { signal })
+            .then(res => setRows(cleanRows(res.data)))
+            .catch(err => {
+                if (axios.isCancel(err))
+                    console.log("Request canceled:", err.message);
+                else
+                    console.error(err);
+            })
+            .finally(() => {
+                if (controllerRef.current === controller)
+                    setLoading(false);
+            });
     }
     const handleSubmit = ({ formData }) => axios.post(`/${metadata.read.title}`, formData).then(res => fetchSetRows())
     const handleDelete = (params) => {
@@ -97,7 +116,6 @@ function DataTable({ metadata }) {
     const derefSetCols = () => {
         $RefParser.dereference(metadata.read).then(schema => {
             let new_cols = getColumnsFromSchema(schema)
-            // action column
             if (metadata.update != null | metadata.delete != null){
                 new_cols.push({
                     field: "actions",
@@ -122,14 +140,22 @@ function DataTable({ metadata }) {
     }
 
     React.useEffect(() => {
-        fetchSetRows()
-        derefSetCols()      
-    }, [])
+        fetchSetRows();
+        derefSetCols();
+
+        return () => {
+            if (controllerRef.current)
+            {
+                console.log("aborting request (1)")
+                controllerRef.current.abort();
+            }
+        };
+    }, []);
 
     return (
         <div>
             <h2>{metadata.read.title}</h2>
-            {loading && ( // Show loading spinner when loading is true
+            {loading && (
                 <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100px" }}>
                     <CircularProgress />
                 </div>
