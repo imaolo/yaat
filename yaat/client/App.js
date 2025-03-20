@@ -2,7 +2,7 @@ import React from "react";
 import axios from 'axios'
 import Form from "@rjsf/core";
 import validator from "@rjsf/validator-ajv8";
-import { Tabs, Tab, Box, Button } from "@mui/material"
+import { Tabs, Tab, Box, Button, CircularProgress } from "@mui/material"
 import { DataGrid } from "@mui/x-data-grid";
 import $RefParser from "json-schema-ref-parser";
 import { flatten } from 'flat';
@@ -16,6 +16,7 @@ function App() {
     );
 }
 
+// helper
 function getColumnsFromSchema(schema, prefix = "", result = []) {
     if (!schema || !schema.properties) return result;
   
@@ -34,6 +35,7 @@ function getColumnsFromSchema(schema, prefix = "", result = []) {
     return result;
 }
 
+// all the tabs, gets the array of schemas
 function DocTabs() {
     const [activeTab, setActiveTab] = React.useState(0);
     const [metadatas, setMetadatas] = React.useState([]);
@@ -71,9 +73,16 @@ function DocTabs() {
 function DataTable({ metadata }) {
     const [rows, setRows] = React.useState([]);
     const [cols, setCols] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
 
     const cleanRows = (rows) => rows.map((item, index) => ({ id: index, ...item })).map(item => flatten(item))
-    const fetchSetRows = () => axios.get(`/${metadata.read.title}`).then(res => setRows(cleanRows(res.data)))
+    const fetchSetRows = () => {
+        setLoading(true)
+        axios.get(`/${metadata.read.title}`)
+            .then(res => setRows(cleanRows(res.data)))
+            .finally(() => setLoading(false))
+
+    }
     const handleSubmit = ({ formData }) => axios.post(`/${metadata.read.title}`, formData).then(res => fetchSetRows())
     const handleDelete = (params) => {
         axios.delete(`/${metadata.read.title}`, {params: {id: params.row._id}})
@@ -119,6 +128,11 @@ function DataTable({ metadata }) {
     return (
         <div>
             <h2>{metadata.read.title}</h2>
+            {loading && ( // Show loading spinner when loading is true
+                <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100px" }}>
+                    <CircularProgress />
+                </div>
+            )}
             <div style={{ height: 400, width: "100%" }}>
                 <DataGrid rows={rows} columns={cols} pageSize={5} />
             </div>
