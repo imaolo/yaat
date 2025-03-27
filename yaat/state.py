@@ -90,7 +90,7 @@ class State(ABC):
     client: ClassVar[AsyncIOMotorClient] = ClientField()
     scheduler: ClassVar[AsyncIOScheduler] = SchedulerField()
     jobstore: ClassVar[MongoDBJobStore] = JobStoreField()
-    document_models: ClassVar[set[type[Doc]]] = {APSJobDoc}
+    document_models: ClassVar[list[type[Doc]]] # NOTE: set before init()
 
     @classmethod
     async def init(cls):

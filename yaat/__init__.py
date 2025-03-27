@@ -1,9 +1,7 @@
-from yaat.state import State, APSJobDoc
-from yaat.scraper import TopMoverResultDoc, TopMoverQueryDoc, TopMoverJobDoc
+from yaat.state import State
+from yaat.scraper import TopMoverResultDoc, TopMoverJobDoc
 
-State.document_models.update({
-    APSJobDoc,
+State.document_models = [
     TopMoverResultDoc,
-    TopMoverQueryDoc,
     TopMoverJobDoc
-})
+]

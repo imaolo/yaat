@@ -4,7 +4,7 @@ from yaat.doc import ReadOnlyDoc, Doc
 from beanie import Link
 from beanie.operators import Set
 from beanie.odm.actions import before_event, Insert
-from pydantic import Field, PositiveInt
+from pydantic import BaseModel, Field, PositiveInt
 from enum import Enum
 from typing import ClassVar
 from itertools import product
@@ -13,9 +13,7 @@ from datetime import datetime, timezone
 #### Top Mover Query and Result Docs
 # https://docs.coingecko.com/reference/coins-top-gainers-losers
 
-class TopMoverQueryDoc(ReadOnlyDoc):
-    readable: ClassVar[bool] = False
-
+class TopMoverQueryDoc(BaseModel):
     class Duration(str, Enum):
         h1 = "1h"
         d24 = "24h"
@@ -35,19 +33,6 @@ class TopMoverQueryDoc(ReadOnlyDoc):
     duration: Duration = Field(..., description="duration of top movers")
     top_coin: TopCoins = Field(..., description="how many ordered coins to fetch")
 
-    async def insert(self, *args, **kwargs) -> Doc:
-        await type(self).find_one(doc:=self.model_dump(exclude=['id'])).upsert(Set(doc), on_insert=self)
-        return await type(self).find_one(doc)
-
-    @classmethod
-    async def init(cls):
-        for duration, top_coin in cls.durations_top_coins:
-            q = cls(duration=duration.value, top_coin=top_coin.value).model_dump()
-            match await cls.find(q, limit=2).count():
-                case 0: await cls.get_motor_collection().insert_one(q) # exception to rule
-                case 1: pass
-                case _: raise RuntimeError()
-
     def __call__(self) -> list[TopMoverResultDoc]:
         return [TopMoverResultDoc(
             query=self,
@@ -63,7 +48,7 @@ class TopMoverQueryDoc(ReadOnlyDoc):
 class TopMoverResultDoc(ReadOnlyDoc):
     # https://docs.coingecko.com/reference/coins-top-gainers-losers
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
-    query: Link[TopMoverQueryDoc]
+    query: TopMoverQueryDoc
     cid: str
     symbol: str
     name: str
@@ -74,10 +59,11 @@ class TopMoverResultDoc(ReadOnlyDoc):
 
 class TopMoverJobDoc(JobDoc):
     seconds: PositiveInt
-    query: Link[TopMoverQueryDoc]
+    query: TopMoverQueryDoc
 
     @before_event(Insert)
     async def before_create_trg(self):
+        print("here")
         await super().before_create_trg()
         job = State.scheduler.add_job(self.job, 'interval', seconds=self.seconds, coalesce=True, misfire_grace_time=1)
         self.apsjob = await APSJobDoc.get(job.id)
@@ -90,11 +76,11 @@ class TopMoverJobDoc(JobDoc):
         return doc
 
     async def job(self):
-        await self.fetch_all_links()
+        # await self.fetch_all_links()
         await TopMoverResultDoc.insert_many(self.query())
 
     @classmethod
     async def crud_c(cls, doc: dict):
-        query = await TopMoverQueryDoc(**doc['query']).insert()
-        return await cls(seconds=doc['seconds'], query=query.to_ref()).insert()
+        query = TopMoverQueryDoc(**doc['query'])
+        return await cls(seconds=doc['seconds'], query=query).insert()
         

@@ -4,9 +4,14 @@ from beanie.odm.actions import Insert, Update, Replace, Delete
 from pydantic import BaseModel, create_model
 from pydantic.fields import FieldInfo
 from typing import ClassVar, Union, get_origin, get_args
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from fastapi_paginate import Page, Params, create_page
 from abc import ABC
+
+
+class MyParams(Params):
+    size: int = Query(50, ge=1, le=10000, description="Page size")
+
 
 class DocUIMetadata(BaseModel):
     create: dict | None = None
@@ -96,7 +101,7 @@ class Doc(Document, ABC):
 
     @classmethod
     def get_links_embedded_schema(cls) -> dict:
-        return cls.remove_from_schema(cls.links_embedded.model_json_schema(), '_id', 'revision_id', 'id', 'apsjob')
+        return cls.remove_from_schema(cls.model_json_schema(), '_id', 'apsjob', 'job_state')
 
     @classmethod    
     def schema_create(cls) -> dict | None:
@@ -123,7 +128,7 @@ class Doc(Document, ABC):
         await cls(**doc).create()
 
     @classmethod
-    async def crud_r(cls, params: Params = Depends()) -> Page[Doc]:
+    async def crud_r(cls, params: MyParams = Depends()) -> Page[Doc]:
         docs = await cls.find().skip((params.page-1) * params.size).limit(params.size).to_list()
         [await doc.fetch_all_links() for doc in docs]
         return create_page(
@@ -145,26 +150,26 @@ class Doc(Document, ABC):
     @classmethod
     def add_crud(cls, router: APIRouter):
         router.add_api_route(
-            '/'+cls.__name__+"__Flattened",
+            '/'+cls.__name__,
             endpoint=cls.crud_c,
             methods=["POST"],
         )
 
         router.add_api_route(
-            '/'+cls.__name__+"__Flattened",
+            '/'+cls.__name__,
             endpoint=cls.crud_r,
             methods=["GET"],
             response_model=Page[cls]
         )
 
         router.add_api_route(
-            '/'+cls.__name__+"__Flattened",
+            '/'+cls.__name__,
             endpoint=cls.crud_u,
             methods=["PUT"]
         )
 
         router.add_api_route(
-            '/'+cls.__name__+"__Flattened",
+            '/'+cls.__name__,
             endpoint=cls.crud_d,
             methods=["DELETE"]
         )
