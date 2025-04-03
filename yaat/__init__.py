@@ -1,7 +1,9 @@
 from yaat.state import State
-from yaat.scraper import TopMoverResultDoc, TopMoverJobDoc
+from yaat.job import APSJobDoc
+from yaat.scraper import TopMoverJobDoc, TopMoverResultDoc
 
 State.document_models = [
-    TopMoverResultDoc,
-    TopMoverJobDoc
+    APSJobDoc,
+    TopMoverJobDoc,
+    TopMoverResultDoc
 ]
