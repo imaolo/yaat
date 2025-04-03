@@ -72,17 +72,15 @@ export default function DocTab({ metadata }){
 
     // handlers
 
-    const handleSubmit = ({ formData }) => {
+    const handleSubmit = ({ formData }) =>
         axios
             .post(`/${metadata.read.title}`, formData)
             .then(() => fetchData())
-    }
 
-    const handleDelete = ()  => {
+    const handleDelete = () =>
         axios
             .delete(`/${metadata.read.title}`, {data: selectedRows.map(row => row._id)})
             .then(() => fetchData())
-    }
 
     // hooks
 
@@ -93,9 +91,7 @@ export default function DocTab({ metadata }){
         return abortFetch
     }, [])
 
-    useEffect(() => {
-        fetchData()
-    }, [first, size, readSchema, multiSort]);
+    useEffect(() => fetchData(), [first, size, readSchema, multiSort]);
     
 
     // TODO - update
