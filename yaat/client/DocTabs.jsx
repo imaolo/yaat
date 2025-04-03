@@ -16,26 +16,31 @@ function DocTab({ metadata }){
     const [total, setTotal] = useState(0);
     const [readSchema, setReadSchema] = useState({});
     const [loading, setLoading] = useState(true)
-
-    // manage api call state
+    const [multiSort, setMultiSort] = useState([]);
     const controllerRef = useRef(null);
+
+    // helpers
+
     const abortFetch = () => {
         if (controllerRef.current)
             controllerRef.current.abort()
     }
 
-    // fetch Data helper
     const fetchData = () => {
         const page = Math.floor(first / size) + 1;
         const params = new URLSearchParams({ page, size })
         const controller = new AbortController()
         const signal = controller.signal;
 
+        // setup
         setLoading(true)
-
         abortFetch()
         controllerRef.current = controller
 
+        // add sorting parameters
+        params.append('sort', multiSort.map(item => `${item.field}:${item.order}`).join(','))
+
+        // make request
         axios
             .get(`/${metadata.read.title}`, { signal, params })
             .then(res => {
@@ -49,27 +54,6 @@ function DocTab({ metadata }){
             })
     }
 
-    // form submission
-    const handleSubmit = ({ formData }) => {
-        axios
-            .post(`/${metadata.read.title}`, formData)
-            .then(() => fetchData())
-    }
-
-    // mount hook
-    useEffect(() => {
-        $RefParser
-            .dereference(metadata.read)
-            .then(schema => setReadSchema(schema))
-        return abortFetch
-    }, [])
-
-    // paging hook
-    useEffect(() => {
-        fetchData()
-    }, [first, size, readSchema]);
-
-    // get datatable columns
     const getColsFromSchema = (schema, prefix = "", result = [])  => {
         if (!schema || !schema.properties) return result;
     
@@ -87,11 +71,33 @@ function DocTab({ metadata }){
         return result
     }
 
+    // handlers
+
+    const handleSubmit = ({ formData }) => {
+        axios
+            .post(`/${metadata.read.title}`, formData)
+            .then(() => fetchData())
+    }
+
     const handleDelete = ()  => {
         axios
             .delete(`/${metadata.read.title}`, {data: selectedRows.map(row => row._id)})
             .then(() => fetchData())
     }
+
+    // hooks
+
+    useEffect(() => {
+        $RefParser
+            .dereference(metadata.read)
+            .then(schema => setReadSchema(schema))
+        return abortFetch
+    }, [])
+
+    useEffect(() => {
+        fetchData()
+    }, [first, size, readSchema, multiSort]);
+    
 
     // TODO - update
     return (
@@ -102,7 +108,7 @@ function DocTab({ metadata }){
                 value={rows}
                 // visual
                 scrollable
-                scrollHeight="30vh"
+                scrollHeight="70vh"
                 resizableColumns
                 columnResizeMode='expand'
                 reorderableColumns
@@ -118,10 +124,13 @@ function DocTab({ metadata }){
                     setFirst(e.first)
                     setSize(e.rows)
                 }}
-                rowsPerPageOptions={[25, 50, 100]}
+                rowsPerPageOptions={[5, 25, 50, 100]}
                 paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 currentPageReportTemplate="{first} to {last} of {totalRecords}"
-                // TODO - sorting
+                // sorting
+                sortMode="multiple"
+                multiSortMeta={multiSort}
+                onSort={(e) => setMultiSort(e.multiSortMeta)}
                 // selection
                 selectionMode='checkbox'
                 selection={selectedRows}

@@ -1,11 +1,14 @@
 from __future__ import annotations
 from beanie import Document, before_event, Insert, Update, Replace, Delete 
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, Query
 from fastapi_paginate import Page, Params, create_page
-from typing import ClassVar
+from typing import ClassVar, Optional
 from dataclasses import dataclass
 from abc import ABC
+
+class PageParams(Params):
+    sort: Optional[str] = Query(None)
 
 @dataclass  
 class DocArgs:
@@ -104,8 +107,9 @@ class Doc(Document, ABC):
         await cls(**doc).create()
 
     @classmethod
-    async def crud_r(cls, params: Params = Depends()) -> Page[Doc]:
-        docs = await cls.find().skip((params.page-1) * params.size).limit(params.size).to_list()
+    async def crud_r(cls, params: PageParams = Depends()) -> Page[Doc]:
+        sorts = [((s:=sort.split(':'))[0], int(s[1])) for sort in params.sort.split(',') if ':' in sort]
+        docs = await cls.find().sort(sorts).skip((params.page-1) * params.size).limit(params.size).to_list()
         return create_page(
             items=docs,
             total=await cls.find().count(),
