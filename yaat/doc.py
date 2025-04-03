@@ -128,6 +128,7 @@ class Doc(Document, ABC):
 
     @classmethod
     def add_crud(cls, router: APIRouter):
+        # TODO gate these
         router.add_api_route(
             '/'+cls.__name__,
             endpoint=cls.crud_c,
