@@ -92,7 +92,6 @@ export default function DocTab({ metadata }){
     }, [])
 
     useEffect(() => fetchData(), [first, size, readSchema, multiSort]);
-    
 
     // TODO - update
     // TODO - filtering
