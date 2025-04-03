@@ -106,15 +106,16 @@ export default function DocTab({ metadata }){
             <DataTable
                 // data
                 value={rows}
+                // lazy loading
+                lazy
+                // TODO filters
                 // visual
                 scrollable
-                scrollHeight="70vh"
+                scrollHeight="65vh"
                 resizableColumns
                 columnResizeMode='expand'
                 reorderableColumns
                 loading={loading}
-                // lazy loading
-                lazy
                 // paging
                 paginator
                 first={first}
