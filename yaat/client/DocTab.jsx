@@ -82,6 +82,9 @@ export default function DocTab({ metadata }){
             .delete(`/${metadata.read.title}`, {data: selectedRows.map(row => row._id)})
             .then(() => fetchData())
 
+    // TODO
+    const handleUpdate = () => {}
+
     // hooks
 
     useEffect(() => {
@@ -93,10 +96,10 @@ export default function DocTab({ metadata }){
 
     useEffect(() => fetchData(), [first, size, readSchema, multiSort]);
 
-    // TODO - update
     return (
         <div>
             {metadata.delete && <Button label="Delete" onClick={handleDelete} disabled={!selectedRows.length} />}
+            {metadata.update && <Button label="Update" onClick={handleUpdate} disabled={!selectedRows.length != 1} />}
             <DataTable
                 // data
                 value={rows}
