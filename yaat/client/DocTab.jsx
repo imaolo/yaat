@@ -11,7 +11,7 @@ export default function DocTab({ metadata }){
     const [rows, setRows] = useState([]);
     const [selectedRows, setSelectedRows] = useState([]);
     const [first, setFirst] = useState(0);
-    const [size, setSize] = useState(25);
+    const [size, setSize] = useState(5);
     const [total, setTotal] = useState(0);
     const [readSchema, setReadSchema] = useState({});
     const [loading, setLoading] = useState(true)
@@ -94,7 +94,6 @@ export default function DocTab({ metadata }){
     useEffect(() => fetchData(), [first, size, readSchema, multiSort]);
 
     // TODO - update
-    // TODO - filtering
     return (
         <div>
             {metadata.delete && <Button label="Delete" onClick={handleDelete} disabled={!selectedRows.length} />}
@@ -103,7 +102,7 @@ export default function DocTab({ metadata }){
                 value={rows}
                 // lazy loading
                 lazy
-                // TODO filters
+                // TODO filter
                 // visual
                 scrollable
                 scrollHeight="65vh"
