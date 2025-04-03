@@ -82,8 +82,7 @@ export default function DocTab({ metadata }){
             .delete(`/${metadata.read.title}`, {data: selectedRows.map(row => row._id)})
             .then(() => fetchData())
 
-    // TODO
-    const handleUpdate = () => {}
+    const handleUpdate = () => {} // TODO
 
     // hooks
 
