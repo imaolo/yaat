@@ -1,3 +1,7 @@
+import 'primereact/resources/themes/viva-dark/theme.css';
+import 'primereact/resources/primereact.min.css';
+import 'primeicons/primeicons.css';
+
 import React from "react";
 import axios from 'axios'
 import DocTabs from './DocTabs'
