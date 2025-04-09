@@ -4,8 +4,8 @@ from yaat.doc import Doc, DocArgs
 from apscheduler.util import utc_timestamp_to_datetime
 from beanie.operators import Eq
 from pydantic import field_serializer, model_validator, Field, BaseModel
-from pydantic.json_schema import SkipJsonSchema
-from typing import ClassVar, Any
+from pydantic.json_schema import SkipJsonSchema, WithJsonSchema
+from typing import ClassVar, Any, Annotated
 import base64
 
 # TODO - better functions
@@ -21,7 +21,7 @@ class APSJobDoc(Doc, doc_args=aps_job_doc_args):
     # fields
 
     # TODO control schema skip but only for certain crud's
-    job_type: str | None = Field(default=None, init=False)
+    job_type: Annotated[str | None, WithJsonSchema({'type':'string'})] = Field(default=None, init=False)
     next_run_time: float | None = Field(default=None, init=False)
     id: SkipJsonSchema[str | None] = Field(default=None, init=False, alias='_id')
     job_state: SkipJsonSchema[bytes | None] = Field(default=None, init=False)
