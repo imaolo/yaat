@@ -13,9 +13,11 @@ export default function App() {
     }, [])
 
     return (
-        <div style={{ width: '90vw' }}>
-            <h1>yaat club</h1>
-            <DocTabs metadatas={metadatas}/>
+        <div style={{ height: "100%", width: "100vw", overflow: 'hidden'}}>
+            <h1 style={{ margin: 0, padding: "1rem" }}>yaat club</h1>
+            <div >
+                <DocTabs metadatas={metadatas} />
+            </div>
         </div>
     );
 }
