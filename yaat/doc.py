@@ -44,7 +44,7 @@ class AggregationPayload(BaseModel):
     limit: int = 10
 
 DocType = TypeVar('DocType')
-class CRUDReadRes(Generic[DocType], BaseModel):
+class CRUDReadRes(BaseModel, Generic[DocType]):
     items: list[DocType]
     total: int
 
