@@ -61,38 +61,41 @@ export default function DocTab({ metadata }){
             controllerRef.current.abort()
     }
 
-    // TODO - handle datatypes (converting from string)
     const getJsonQuery = (field, matchOp, str_value) => {
         const value = convertToDatatype(col2type[field], str_value)
         switch (matchOp){
-            case FilterMatchMode.STARTS_WITH:
-                return { $regex: `^${value}` }
-            case FilterMatchMode.CONTAINS:
-                return { $regex: value }
-            case FilterMatchMode.NOT_CONTAINS:
-                return { $not: { $regex: value } }
-            case FilterMatchMode.ENDS_WITH:
-                return { $regex: `${value}$` }
+            // all type match modes
             case FilterMatchMode.EQUALS:
-                return value
+                return { [field]: value }
             case FilterMatchMode.NOT_EQUALS:
-                return { "$ne": value }
+                return { [field]: { $ne: value } }
+            // string match modes
+            case FilterMatchMode.STARTS_WITH:
+                return { [field]: { $regex: `^${value}` } }
+            case FilterMatchMode.CONTAINS:
+                return { [field]: { $regex: value } }
+            case FilterMatchMode.NOT_CONTAINS:
+                return { [field]: { $not: { $regex: value } } }
+            case FilterMatchMode.ENDS_WITH:
+                return { [field]: { $regex: `${value}$` } }
+            // numeric match modes
             case FilterMatchMode.LESS_THAN:
-                return { "$lt": value }
+                return { [field]: { $lt: value } }
             case FilterMatchMode.LESS_THAN_OR_EQUAL_TO:
-                return { "$lte": value }
+                return { [field]: { $lte: value } }
             case FilterMatchMode.GREATER_THAN:
-                return { "$gt": value }
+                return { [field]: { $gt: value } }
             case FilterMatchMode.GREATER_THAN_OR_EQUAL_TO:
-                return { "$gte": value }
-            // case FilterMatchMode.DATE_IS:
-            //     return 
-            // case FilterMatchMode.DATE_IS_NOT:
-            //     return 
-            // case FilterMatchMode.DATE_BEFORE:
-            //     return 
-            // case FilterMatchMode.DATE_AFTER:
-            //     return 
+                return { [field]: { $gte: value } }
+            // date match modes
+            case FilterMatchMode.DATE_IS:
+                return { $expr : {$eq : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
+            case FilterMatchMode.DATE_IS_NOT:
+                return { $expr : {$ne : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
+            case FilterMatchMode.DATE_BEFORE:
+                return { $expr : {$lt : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
+            case FilterMatchMode.DATE_AFTER:
+                return { $expr : {$gt : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
             default:
                 throw new Error(`invalid match mode op ${matchOp}`)
         }
@@ -115,13 +118,9 @@ export default function DocTab({ metadata }){
         // create the filter
         const filter = {$and: [{$or: []},]}
         for (const filter_or of filter_ors)
-            filter.$and[0].$or.push({
-                [filter_or[0]]: getJsonQuery(filter_or[0], filter_or[1].matchMode, filter_or[1].value)
-            })
+            filter.$and[0].$or.push(getJsonQuery(filter_or[0], filter_or[1].matchMode, filter_or[1].value))
         for (const filter_and of filter_ands)
-            filter.$and.push({
-                [filter_and[0]]: getJsonQuery(filter_and[0], filter_and[1].matchMode, filter_and[1].value)
-            })
+            filter.$and.push(getJsonQuery(filter_and[0], filter_and[1].matchMode, filter_and[1].value))
 
         // pop $or if there is nothing
         if (filter.$and[0].$or.length === 0)
@@ -167,16 +166,12 @@ export default function DocTab({ metadata }){
                 if (isNaN(numericValue))
                     throw new Error(`Invalid numeric value: ${value}`);
                 return numericValue;
-            case 'date': {
-                return value
-                // TODO
+            case 'date':
                 const dateValue = new Date(value);
                 // Check if the conversion produced a valid date.
-                if (isNaN(dateValue.getTime())) {
+                if (isNaN(dateValue.getTime()))
                     throw new Error(`Invalid date value: ${value}`);
-                }
-                return dateValue;
-            }
+                return dateValue
             case 'text':
             default:
                 return value;
