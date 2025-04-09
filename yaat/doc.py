@@ -1,14 +1,11 @@
 from __future__ import annotations
 from beanie import Document, before_event, Insert, Update, Replace, Delete 
 from pydantic import BaseModel
-from fastapi import APIRouter, Depends, Body, Query
-from fastapi_paginate import Page, Params, create_page
-from typing import ClassVar, Optional
+from fastapi import APIRouter, Body
+from typing import ClassVar, TypeVar, Generic, Any
 from dataclasses import dataclass
+from bson import ObjectId
 from abc import ABC
-
-class PageParams(Params):
-    sort: Optional[str] = Query(None)
 
 @dataclass  
 class DocArgs:
@@ -39,6 +36,17 @@ class UIMetadataField:
                 delete=owner.schema_delete() if owner.doc_args.schema_deleteable else None,
             )
         return self.metadata
+
+class AggregationPayload(BaseModel):
+    filter: dict[str, Any] | None = {}
+    sort: list[tuple[str, int]] | None = []
+    skip: int = 0
+    limit: int = 10
+
+DocType = TypeVar('DocType')
+class CRUDReadRes(Generic[DocType], BaseModel):
+    items: list[DocType]
+    total: int
 
 class Doc(Document, ABC):
     ui_metadata: ClassVar[DocUIMetadata] = None # NOTE place holder
@@ -107,14 +115,10 @@ class Doc(Document, ABC):
         await cls(**doc).create()
 
     @classmethod
-    async def crud_r(cls, params: PageParams = Depends()) -> Page[Doc]:
-        sorts = [((s:=sort.split(':'))[0], int(s[1])) for sort in params.sort.split(',') if ':' in sort]
-        docs = await cls.find().sort(sorts).skip((params.page-1) * params.size).limit(params.size).to_list()
-        return create_page(
-            items=docs,
-            total=await cls.find().count(),
-            params=params
-        )
+    async def crud_r(cls, payload: AggregationPayload = Body(...)) -> CRUDReadRes:
+        return CRUDReadRes[cls](
+            items=await (d:=cls.find(payload.filter, sort=payload.sort)).clone().skip(payload.skip).limit(payload.limit).to_list(),
+            total=await d.count())
 
     @classmethod
     async def crud_u(cls, doc: Doc) -> Doc:
@@ -122,7 +126,13 @@ class Doc(Document, ABC):
 
     @classmethod
     async def crud_d(cls, ids: list[str] = Body(...)):
-        await cls.find_many({"_id": {"$in": ids}}).delete()
+        print(cls, ids, type(ids[0]))
+        print(await cls.find_many({"_id": {"$in": ids}}).count())
+        await cls.find_many({"_id": {"$in": list(map(lambda id: ObjectId(id), ids))}}).delete()
+
+    @classmethod
+    async def crud_d_all(cls) -> str:
+        return str(await cls.delete_all())
 
     # configure endpoints
 
@@ -136,10 +146,10 @@ class Doc(Document, ABC):
         )
 
         router.add_api_route(
-            '/'+cls.__name__,
+            '/read/'+cls.__name__,
             endpoint=cls.crud_r,
-            methods=["GET"],
-            response_model=Page[cls]
+            methods=["POST"],
+            response_model=CRUDReadRes[cls]
         )
 
         router.add_api_route(
@@ -153,5 +163,12 @@ class Doc(Document, ABC):
             endpoint=cls.crud_d,
             methods=["DELETE"]
         )
+
+        router.add_api_route(
+            f"/{cls.__name__}_all",
+            endpoint=cls.crud_d_all,
+            methods=["DELETE"]
+        )
+
 
 read_only_doc_args = doc_args=DocArgs(schema_createable=False, schema_deleteable=False, schema_updateable=False)

@@ -28,6 +28,7 @@ export default function DocTab({ metadata }){
     const [selectedRowsLength, setSelectedRowsLength] = useState(0);
     const controllerRef = useRef(null);
     const api = axios.create();
+    let col2type = {}
 
     // configure api interceptors
 
@@ -60,26 +61,90 @@ export default function DocTab({ metadata }){
             controllerRef.current.abort()
     }
 
-    const fetchData = () => {
-        const params = new URLSearchParams()
-        const controller = new AbortController()
-        const signal = controller.signal;
+    // TODO - handle datatypes (converting from string)
+    const getJsonQuery = (field, matchOp, str_value) => {
+        const value = convertToDatatype(col2type[field], str_value)
+        switch (matchOp){
+            case FilterMatchMode.STARTS_WITH:
+                return { $regex: `^${value}` }
+            case FilterMatchMode.CONTAINS:
+                return { $regex: value }
+            case FilterMatchMode.NOT_CONTAINS:
+                return { $not: { $regex: value } }
+            case FilterMatchMode.ENDS_WITH:
+                return { $regex: `${value}$` }
+            case FilterMatchMode.EQUALS:
+                return value
+            case FilterMatchMode.NOT_EQUALS:
+                return { "$ne": value }
+            case FilterMatchMode.LESS_THAN:
+                return { "$lt": value }
+            case FilterMatchMode.LESS_THAN_OR_EQUAL_TO:
+                return { "$lte": value }
+            case FilterMatchMode.GREATER_THAN:
+                return { "$gt": value }
+            case FilterMatchMode.GREATER_THAN_OR_EQUAL_TO:
+                return { "$gte": value }
+            // case FilterMatchMode.DATE_IS:
+            //     return 
+            // case FilterMatchMode.DATE_IS_NOT:
+            //     return 
+            // case FilterMatchMode.DATE_BEFORE:
+            //     return 
+            // case FilterMatchMode.DATE_AFTER:
+            //     return 
+            default:
+                throw new Error(`invalid match mode op ${matchOp}`)
+        }
+    }
 
-        // TODO paging and filters happening in mongo query language now
-        // params.set('$skip', first)
-        // params.set('$top', size)
-        // if (multiSort && multiSort.length)
-        //     params.set('$orderby', multiSort
-        //         .map(item => `${item.field} ${item.order === 1 ? 'asc' : 'desc'}`)
-        //         .join(','));
+    const fetchData = () => {
+        // extract ands and ors
+        let filter_ors = []
+        let filter_ands = []
+        for (const [field, field_filter] of Object.entries(tableFilters))
+            for (const constraint of field_filter.constraints)
+                if (constraint.value)
+                    if (field_filter.operator === FilterOperator.AND)
+                        filter_ands.push([field, constraint])
+                    else if (field_filter.operator === FilterOperator.OR)
+                        filter_ors.push([field, constraint])
+                    else
+                        throw new Error(`invalid filter operator ${field.filter.operator}`)
+
+        // create the filter
+        const filter = {$and: [{$or: []},]}
+        for (const filter_or of filter_ors)
+            filter.$and[0].$or.push({
+                [filter_or[0]]: getJsonQuery(filter_or[0], filter_or[1].matchMode, filter_or[1].value)
+            })
+        for (const filter_and of filter_ands)
+            filter.$and.push({
+                [filter_and[0]]: getJsonQuery(filter_and[0], filter_and[1].matchMode, filter_and[1].value)
+            })
+
+        // pop $or if there is nothing
+        if (filter.$and[0].$or.length === 0)
+            filter.$and.shift()
+
+        // construct the payload
+        const payload = {
+            filter: filter.$and.length === 0 ? {} : filter,
+            sort: multiSort.map(cur => [cur.field, cur.order]),
+            skip: first,
+            limit: size
+        }
         
-        // setup
+        // abort previous request
         abortFetch()
-        controllerRef.current = controller
+
+        // create new abort controller
+        const controller = new AbortController();
+        controllerRef.current = controller;
 
         // make request
         api
-            .get(`/${metadata.read.title}`, { signal, params })
+            .post(`/read/${metadata.read.title}`, payload, { signal:  controller.signal})
             .then(res => {
                 process
                 setRows(res.data.items)
@@ -92,6 +157,32 @@ export default function DocTab({ metadata }){
             })
     }
 
+    const convertToDatatype = (dataType, value) => {
+        // Default to 'text' if no dataType is provided.
+        const type = (dataType || 'text').toLowerCase();
+    
+        switch (type) {
+            case 'numeric':
+                const numericValue = Number(value)
+                if (isNaN(numericValue))
+                    throw new Error(`Invalid numeric value: ${value}`);
+                return numericValue;
+            case 'date': {
+                return value
+                // TODO
+                const dateValue = new Date(value);
+                // Check if the conversion produced a valid date.
+                if (isNaN(dateValue.getTime())) {
+                    throw new Error(`Invalid date value: ${value}`);
+                }
+                return dateValue;
+            }
+            case 'text':
+            default:
+                return value;
+        }
+    };
+
     const getColsFromSchema = (schema, prefix = "", result = [])  => {
         if (!schema || !schema.properties) return result;
     
@@ -101,6 +192,7 @@ export default function DocTab({ metadata }){
                 getColsFromSchema(propSchema, fullPath, result);
             else {
                 const prime_t = jsonSchema2PrimeType(propSchema)
+                col2type[fullPath] = prime_t
                 result.push(
                     <Column
                         field={fullPath}
@@ -190,7 +282,6 @@ export default function DocTab({ metadata }){
             .dereference(metadata.read)
             .then(schema => {
                 setReadSchema(schema)
-                console.log(initFiltersFromSchema(schema))
                 setTableFilters(initFiltersFromSchema(schema))
             })
         return abortFetch
@@ -208,7 +299,16 @@ export default function DocTab({ metadata }){
     const header = (
         <div>
             <div style={{ display: "flex", gap: "1rem", minHeight: "3rem" } }>
-                {<Button label="Refresh" icon="pi pi-refresh" onClick={fetchData}/>}
+                {
+                    <Button
+                        label="Refresh"
+                        icon="pi pi-refresh"
+                        onClick={() => {
+                            setMultiSort([])
+                            setTableFilters(initFiltersFromSchema(readSchema))
+                            fetchData()
+                        }}/>
+                }
                 {metadata.delete && <Button label="Delete" onClick={handleDelete} disabled={selectedRowsLength < 1} />}
                 {metadata.create && <Button label="Create" icon="pi pi-plus" onClick={() => setDisplayForm(true)} />}
                 {metadata.update && <Button label="Update" onClick={() => {}}  disabled={selectedRowsLength != 1}/>}
@@ -300,119 +400,3 @@ export default function DocTab({ metadata }){
         </BlockUI>
     );
 }
-
-
-
-// class FilterOptions {
-//     constructor({ options, buildFunc }) {
-//         this.options = options;
-//         this.buildFunc = buildFunc;
-//     }
-
-//     generate(field, value) {
-//         return this.buildFunc(field, value);
-//     }
-// }
-
-// const jsonTypeFilterMongoMap = {
-//     string: [
-//         new FilterOptions({
-//             options: { label: "equals", value: FilterMatchMode.EQUALS },
-//             buildFunc: (field, value) => ({ [field]: { $eq: value } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "not equals", value: FilterMatchMode.NOT_EQUALS },
-//             buildFunc: (field, value) => ({ [field]: { $ne: value } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "contains", value: FilterMatchMode.CONTAINS },
-//             buildFunc: (field, value) => ({ [field]: { $regex: `.*${value}.*`, $options: "i" } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "not contains", value: FilterMatchMode.NOT_CONTAINS },
-//             buildFunc: (field, value) => ({ [field]: { $not: { $regex: `.*${value}.*`, $options: "i" } } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "starts with", value: FilterMatchMode.STARTS_WITH },
-//             buildFunc: (field, value) => ({ [field]: { $regex: `^${value}`, $options: "i" } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "ends with", value: FilterMatchMode.ENDS_WITH },
-//             buildFunc: (field, value) => ({ [field]: { $regex: `${value}$`, $options: "i" } })
-//         }),
-//     ],
-//     number: [
-//         new FilterOptions({
-//             options: { label: "equals", value: FilterMatchMode.EQUALS },
-//             buildFunc: (field, value) => ({ [field]: { $eq: Number(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "not equals", value: FilterMatchMode.NOT_EQUALS },
-//             buildFunc: (field, value) => ({ [field]: { $ne: Number(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "greater than", value: FilterMatchMode.GREATER_THAN },
-//             buildFunc: (field, value) => ({ [field]: { $gt: Number(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "greater or equal", value: FilterMatchMode.GREATER_THAN_OR_EQUAL },
-//             buildFunc: (field, value) => ({ [field]: { $gte: Number(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "less than", value: FilterMatchMode.LESS_THAN },
-//             buildFunc: (field, value) => ({ [field]: { $lt: Number(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "less or equal", value: FilterMatchMode.LESS_THAN_OR_EQUAL },
-//             buildFunc: (field, value) => ({ [field]: { $lte: Number(value) } })
-//         }),
-//     ],
-//     date: [
-//         new FilterOptions({
-//             options: { label: "equals", value: FilterMatchMode.EQUALS },
-//             buildFunc: (field, value) => ({ [field]: { $eq: new Date(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "before", value: FilterMatchMode.LESS_THAN },
-//             buildFunc: (field, value) => ({ [field]: { $lt: new Date(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "on or before", value: FilterMatchMode.LESS_THAN_OR_EQUAL },
-//             buildFunc: (field, value) => ({ [field]: { $lte: new Date(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "after", value: FilterMatchMode.GREATER_THAN },
-//             buildFunc: (field, value) => ({ [field]: { $gt: new Date(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "on or after", value: FilterMatchMode.GREATER_THAN_OR_EQUAL },
-//             buildFunc: (field, value) => ({ [field]: { $gte: new Date(value) } })
-//         }),
-//         new FilterOptions({
-//             options: { label: "between", value: "BETWEEN" },
-//             buildFunc: (field, valueArray) => ({
-//                 [field]: { $gte: new Date(valueArray[0]), $lte: new Date(valueArray[1]) }
-//             })
-//         }),
-//     ]
-// };
-
-// const dateBodyTemplate = (rowData) => {
-//     return formatDate(rowData.date);
-// };
-
-
-    // const appendFiltersToParams = (params, filters) => {
-    //     // NOTE: This is a basic conversion.
-    //     // For more complex logic (like multiple constraints or different matchModes) additional work will be needed.
-    //     for (const f in filters) {
-    //         const filterMeta = filters[f];
-    //         if (filterMeta && filterMeta.value != null && filterMeta.value !== '') {
-    //             // Append filter as field=<value> or field__matchMode=<mode>
-    //             params.append(f, filterMeta.value);
-    //             // Optionally, send match mode if needed. Here we assume 'contains' for strings and 'equals' for others.
-    //             params.append(`${f}__matchMode`, filterMeta.matchMode || (typeof filterMeta.value === "number" ? "equals" : "contains"));
-    //         }
-    //     }
-    // }
-
