@@ -1,4 +1,4 @@
 storage/db/*
 !storage/db/.gitkeep
-yaat/client/dist/*
-!yaat/client/dist/.gitkeep
+/client/dist/*
+!/client/dist/.gitkeep

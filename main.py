@@ -4,7 +4,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 import os, fastapi_paginate, contextlib
 
-STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'yaat/client/dist')
+STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'client/dist')
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
