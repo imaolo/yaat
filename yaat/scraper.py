@@ -6,6 +6,7 @@ from typing import ClassVar
 from itertools import product
 from datetime import datetime, timezone
 from yaat.job import IntervalJobDoc
+import random
 
 #### Top Mover Query and Result Docs
 # https://docs.coingecko.com/reference/coins-top-gainers-losers
@@ -36,13 +37,13 @@ class TopMoverQueryDoc(BaseModel):
             cid='fdsafdsa',
             symbol='btc',
             name='bitcoin',
-            usd=100.0,
-            market_cap_rank=1,
-            usd_24h_vol=1,
-            usd_1y_change=1
+            usd=random.uniform(1000.0, 1000000.0),
+            market_cap_rank=random.randint(1, int(self.top_coin) if self.top_coin != 'all' else 2**31),
+            usd_24h_vol=random.randint(100, 100000),
+            usd_1y_change=random.randint(-2**31, 2**31)
         )])
 
-class TopMoverResultDoc(Doc, doc_args=read_only_doc_args):
+class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_updateable=False)):
     # https://docs.coingecko.com/reference/coins-top-gainers-losers
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     query: TopMoverQueryDoc
