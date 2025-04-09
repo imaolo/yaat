@@ -1,0 +1,228 @@
+// 1. INSTALLATION INSTRUCTIONS
+// ------------------------------
+// npm install -D tailwindcss postcss autoprefixer
+// npx tailwindcss init -p
+// npm install class-variance-authority clsx lucide-react tailwind-variants
+// npm install @tanstack/react-tabs
+// npm install @rjsf/core @rjsf/validator-ajv8 json-schema-ref-parser axios
+// npm install ag-grid-react ag-grid-enterprise ag-grid-community
+// npx shadcn-ui@latest init (choose Tailwind and default config)
+// npx shadcn-ui@latest add button
+// npx shadcn-ui@latest add input
+// npx shadcn-ui@latest add dialog
+// npx shadcn-ui@latest add tabs
+// npx shadcn-ui@latest add calendar
+
+
+// 2. APP.JSX (PORTED)
+// -------------------
+import React from "react";
+import axios from 'axios';
+import DocTabs from './DocTabs';
+import './index.css'; // Ensure Tailwind is loaded
+
+export default function App() {
+  const [metadatas, setMetadatas] = React.useState([]);
+
+  React.useEffect(() => {
+    axios.get('/metadatas')
+      .then(res => res.data)
+      .then(mds => mds.filter(md => md.read != null))
+      .then(mds => setMetadatas(mds));
+  }, []);
+
+  return (
+    <div className="min-h-screen w-full overflow-hidden bg-background text-foreground">
+      <h1 className="text-2xl font-bold p-4">yaat club</h1>
+      <DocTabs metadatas={metadatas} />
+    </div>
+  );
+}
+
+
+// 3. DOCTABS.JSX (PORTED)
+// ------------------------
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { useState } from "react";
+import DocTab from "./DocTab";
+
+export default function DocTabs({ metadatas }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  return (
+    <div className="w-full overflow-x-auto">
+      <Tabs value={String(activeIndex)} onValueChange={(v) => setActiveIndex(Number(v))}>
+        <TabsList className="flex gap-2 flex-wrap">
+          {metadatas.map((metadata, idx) => (
+            <TabsTrigger key={idx} value={String(idx)}>
+              {metadata.read.title}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {metadatas.map((metadata, idx) => (
+          <TabsContent key={idx} value={String(idx)}>
+            <DocTab metadata={metadata} />
+          </TabsContent>
+        ))}
+      </Tabs>
+    </div>
+  );
+}
+
+
+// 4. DOCTAB.JSX (PORTED)
+// ------------------------
+import { useEffect, useRef, useState, useTransition } from "react";
+import { AgGridReact } from "ag-grid-react";
+import { ModuleRegistry } from "ag-grid-community";
+import { ServerSideRowModelModule } from "ag-grid-enterprise";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ProgressSpinner } from "primereact/progressspinner";
+import { Calendar } from "primereact/calendar";
+import axios from "axios";
+import $RefParser from "json-schema-ref-parser";
+import Form from "@rjsf/core";
+import validator from "@rjsf/validator-ajv8";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine-dark.css";
+
+ModuleRegistry.registerModules([ServerSideRowModelModule]);
+
+export default function DocTab({ metadata }) {
+  const [rows, setRows] = useState([]);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [first, setFirst] = useState(0);
+  const [size, setSize] = useState(5);
+  const [total, setTotal] = useState(0);
+  const [readSchema, setReadSchema] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [multiSort, setMultiSort] = useState([]);
+  const [tableFilters, setTableFilters] = useState({});
+  const [displayForm, setDisplayForm] = useState(false);
+  const [isPending, startTransition] = useTransition();
+  const controllerRef = useRef(null);
+  const api = axios.create();
+
+  const fetchData = (params) => {
+    const payload = {
+      filter: {},
+      sort: multiSort.map((cur) => [cur.field, cur.sort]),
+      skip: params.request.startRow,
+      limit: params.request.endRow - params.request.startRow
+    };
+
+    abortFetch();
+    const controller = new AbortController();
+    controllerRef.current = controller;
+
+    api.post(`/read/${metadata.read.title}`, payload, { signal: controller.signal })
+      .then((res) => {
+        setRows(res.data.items);
+        setTotal(res.data.total);
+        params.successCallback(res.data.items, res.data.total);
+      })
+      .catch((err) => {
+        if (!axios.isCancel(err)) throw err;
+        params.failCallback();
+      });
+  };
+
+  const abortFetch = () => {
+    if (controllerRef.current) controllerRef.current.abort();
+  };
+
+  useEffect(() => {
+    $RefParser.dereference(metadata.read).then((schema) => {
+      setReadSchema(schema);
+    });
+    return abortFetch;
+  }, []);
+
+  const datasource = {
+    getRows: fetchData
+  };
+
+  const columnDefs = readSchema.properties ? Object.entries(readSchema.properties).map(([key]) => ({
+    field: key,
+    headerName: key,
+    sortable: true,
+    filter: true,
+    resizable: true,
+    flex: 1
+  })) : [];
+
+  return (
+    <div className="w-full h-[80vh] ag-theme-alpine-dark">
+      <div className="flex items-center gap-4 p-2">
+        <Button
+          variant="default"
+          onClick={() => {
+            setMultiSort([]);
+            setTableFilters({});
+          }}
+        >
+          Refresh
+        </Button>
+        {metadata.delete && (
+          <Button
+            variant="destructive"
+            onClick={() => {
+              const ids = selectedRows.map((r) => r._id);
+              api.delete(`/${metadata.read.title}`, { data: ids }).then(() => fetchData({ request: { startRow: first, endRow: first + size } }));
+            }}
+          >
+            Delete
+          </Button>
+        )}
+        {metadata.create && (
+          <Button onClick={() => setDisplayForm(true)}>Create</Button>
+        )}
+      </div>
+
+      <AgGridReact
+        columnDefs={columnDefs}
+        rowModelType="serverSide"
+        serverSideDatasource={datasource}
+        paginationPageSize={size}
+        rowSelection="multiple"
+        onSelectionChanged={(e) => setSelectedRows(e.api.getSelectedRows())}
+        defaultColDef={{ sortable: true, filter: true, resizable: true }}
+        animateRows={true}
+        suppressAggFuncInHeader
+      />
+
+      <Dialog open={displayForm} onOpenChange={setDisplayForm}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Record</DialogTitle>
+          </DialogHeader>
+          <Form
+            schema={metadata.create}
+            validator={validator}
+            onSubmit={({ formData }) => {
+              api.post(`/${metadata.read.title}`, formData).then(() => {
+                fetchData({ request: { startRow: first, endRow: first + size } });
+                setDisplayForm(false);
+              });
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// npm install -D tailwindcss postcss autoprefixer
+// npx tailwindcss init -p
+// npm install class-variance-authority clsx lucide-react tailwind-variants
+// npm install @tanstack/react-tabs
+// npm install @rjsf/core @rjsf/validator-ajv8 json-schema-ref-parser axios
+// npm install ag-grid-react ag-grid-enterprise ag-grid-community
+// npx shadcn-ui@latest init (choose Tailwind and default config)
+// npx shadcn-ui@latest add button
+// npx shadcn-ui@latest add input
+// npx shadcn-ui@latest add dialog
+// npx shadcn-ui@latest add tabs
+// npx shadcn-ui@latest add calendar
+c
