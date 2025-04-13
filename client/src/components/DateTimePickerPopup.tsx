@@ -47,7 +47,7 @@ export default function DateTimePickerPopup({ onChange }: any) {
     if (!rect) return
   
     // Estimate or hardcode the popup's height
-    const estimatedPopupHeight = 300 // adjust if needed
+    const estimatedPopupHeight = 325 // adjust if needed
     const spaceBelow = window.innerHeight - rect.bottom
     const spaceAbove = rect.top
   
@@ -147,13 +147,13 @@ useEffect(() => {
 
 
       
-      {showPicker && (
+{showPicker && (
         <div
           ref={popupRef}
           style={{ position: "fixed", top: popupPosition.top, left: popupPosition.left }}
           className={cn(
-            "max-w-[300px] w-[280px] border rounded-md shadow-md bg-white p-3",
-            "ag-custom-component-popup ag-popup z-[9999]"
+            "max-w-[300px] w-[280px] border rounded-md shadow-md bg-white p-3 z-[9999]",
+            "ag-popup ag-custom-component-popup"
           )}
         >
           <Calendar
