@@ -180,50 +180,129 @@ export default function DocTab({ metadata }: Props) {
     }
   }
 
-  const mongoConvert = (trg_t: string, value: string): any => {
-    switch (trg_t){
-      case 'text': return value
-      case 'date': return {'$dateFromString': value}
-      case 'number': return {'$numberFromString': value}
-      default: throw Error(`${trg_t} -  ${value}`)
+  const convertToDatatype = (dataType: string, value: string): string | Date | Number => {
+    const type = (dataType || 'text').toLowerCase();
+
+    switch (type) {
+        case 'numeric':
+          const numericValue = Number(value)
+          if (isNaN(numericValue))
+            throw new Error(`Invalid numeric value: ${value}`);
+          return numericValue;
+        case 'date':
+          const dateValue = new Date(value[0]);
+          if (isNaN(dateValue.getTime()))
+            throw new Error(`Invalid date value: ${value[0]}`);
+          return dateValue
+        case 'text':
+        default:
+          return value;
+    }
+};
+
+
+  const getMongoFilterValue = (dataType: string, value: string): Record<string, any> | string | Date | number => {
+    const new_value = convertToDatatype(dataType, value)
+  
+    switch (dataType){
+      case 'number':
+      case 'text':
+        return new_value
+      case 'date':
+        return { $dateFromString: { dateString: new_value } }
+      default:
+        throw new Error(dataType)
     }
   }
 
-  const mongoSingleFilter = (filter: SingleFilter): Record<string, any> => {
-      switch (filter.filterType){
-        case 'text': return mongoConvert(filter.filterType, filter.filter)
-        case 'date': return mongoConvert(filter.filterType, filter.filter)
-        case 'number': return mongoConvert(filter.filterType, filter.filter)
-        default: throw Error(filter.filterType)
-      }
-
-      // TODO - handle type
+  // export type TextAdvancedFilterModelType = 'equals' | 'notEqual' | 'contains' | 'notContains' | 'startsWith' | 'endsWith' | 'blank' | 'notBlank';
+  // export type ScalarAdvancedFilterModelType = 'equals' | 'notEqual' | 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' | 'blank' | 'notBlank';
+  
+  const mongoSingleFilter = (field: string, filter: SingleFilter): Record<string, any> => {
+    let value = getMongoFilterValue(filter.filterType, filter.filter)
+    switch (filter.filterType){
+      case 'text':
+        switch (filter.type){
+          case 'equals':
+            return {[field]: value}
+          case 'notEqual': 
+            return { [field]: { $ne:  value } }
+          case 'contains':
+            return { [field]: { $regex: value } }
+          case 'notContains':
+            return { [field]: { $not: { $regex: value } } }
+          case 'startsWith':
+            return { [field]: { $regex: `^${value}` } }
+          case 'endsWith':
+            return { [field]: { $regex: `${value}$` } }
+          case 'blank':
+          case 'notBlank':
+          default:
+            throw new Error(filter.type)
+        }
+      case 'number':
+        switch (filter.type){
+          case 'equals':
+            return {[field]: value}
+          case 'notEqual': 
+            return { [field]: { $ne:  value } }
+          case 'lessThan':
+            return { [field]: { $lt: value } }
+          case 'lessThanOrEqual':
+            return { [field]: { $lte: value } }
+          case 'greaterThan':
+            return { [field]: { $gt: value } }
+          case 'greaterThanOrEqual':
+            return { [field]: { $gte: value } }
+          case 'blank':
+          case 'notBlank':
+          default:
+            throw new Error(filter.type)
+        }
+      case 'date':
+        switch (filter.type){
+          case 'after':
+            return { $expr : {$gt : [ `$${field}`, value ] } }
+          case 'before':
+            return { $expr : {$lt : [ `$${field}`, value ] } }
+          case 'is':
+          case 'isNot':
+          case 'between':
+          default:
+            return {[field]: getMongoFilterValue(filter.filterType, filter.filter)}
+        }
+      default:
+        throw new Error(filter.filterType)
+    }
   }
 
   const mongoFilter = (filter: Record<string , Filter>): Record<string, any>  => {
-    console.log(filter)
     const new_filter: Record<string, any> = {$and: [{$or: []},]}
 
-    // TODO implement these
-
+    // helpers
     const addOrFilter = (single_filter_field: string, single_filter: SingleFilter) => {
-      new_filter.$and[0].$or.push({[single_filter_field] : mongoSingleFilter(single_filter)})
+      new_filter.$and[0].$or.push(mongoSingleFilter(single_filter_field, single_filter))
     }
-
     const addAndFilter = (single_filter_field: string, single_filter: SingleFilter) => {
-      new_filter.$and.push({[single_filter_field] : mongoSingleFilter(single_filter)})
+      new_filter.$and.push(mongoSingleFilter(single_filter_field, single_filter))
     }
 
     // main construction logic
-
     for (const [field, field_filter] of Object.entries(filter))
       if ('operator' in field_filter)
         for (const condition of field_filter.conditions)
           (field_filter.operator === 'AND' ? addAndFilter : addOrFilter)(field, condition)
       else
         addAndFilter(field, field_filter)
+  
+    // pop OR if empty
+    if (new_filter.$and[0].$or.length === 0)
+      new_filter.$and.shift()
+  
+    console.log(new_filter)
 
-    return {}
+    // pop and if empty
+    return new_filter.$and.length > 0 ? new_filter : {}
   }
 
   // data source
