@@ -13,15 +13,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-const DATE_TIME_OPTIONS = ['equals', 'notEqual', 'greaterThan', 'lessThan', 'inRange'] as const;
+const DATE_TIME_OPTIONS = ['is', 'isNot', 'after', 'before', 'between'] as const;
 type DateTimeModelType = typeof DATE_TIME_OPTIONS[number];
 
 const LABELS: Record<DateTimeModelType, string> = {
-  equals: 'Equals',
-  notEqual: 'Not Equal',
-  greaterThan: 'After',
-  lessThan: 'Before',
-  inRange: 'In Range',
+  is: 'Is',
+  isNot: 'Is Not',
+  after: 'After',
+  before: 'Before',
+  between: 'Between',
 };
 
 type SingleDateFilter = SingleFilter & {
@@ -49,7 +49,7 @@ const DateTimeFilterPopup = forwardRef<unknown, CustomFilterProps<any, any, Date
   ({ model, onModelChange, api}, _ref) => {
     const initialFilters: SingleDateFilter[] = model?.conditions?.length
       ? model.conditions
-      : [{ filterType: 'date', type: 'greaterThan', filter: ['', '']}];
+      : [{ filterType: 'date', type: 'after', filter: ['', '']}];
 
     const [op, setOp] = useState<'AND' | 'OR'>(model?.operator ?? 'AND');
     const [filters, setFilters] = useState<SingleDateFilter[]>(initialFilters);
@@ -85,7 +85,7 @@ useEffect(() => {
   if (last.filter[0] && !filters.some(f => f.filter[0] === '')) {
     setFilters(prev => [
       ...prev,
-      { filterType: 'date', type: 'greaterThan', filter: ['', '']},
+      { filterType: 'date', type: 'after', filter: ['', '']},
     ]);
   }
 }, [filters]);
@@ -98,9 +98,8 @@ useEffect(() => {
         // Check if current was cleared, and next is empty
         // const current = next[index];
         const after = next[index + 1];
-        if (updated.filter[0] === '' && after && after.filter[0] === '') {
+        if (updated?.filter && updated?.filter[0] === '' && after?.filter&& after?.filter[0] === '')
           next.splice(index + 1, 1); // remove next
-        }
     
         return next;
       });
@@ -144,7 +143,7 @@ useEffect(() => {
               onChange={(val: string) => updateFilter(i, { filter: [val, ''] })}
             />
 
-            {filter.type === "inRange" && (
+            {filter.type === "between" && (
               <DateTimePickerPopup
                 onChange={(val: string) => updateFilter(i, { filter: ['', val] })}
               />
