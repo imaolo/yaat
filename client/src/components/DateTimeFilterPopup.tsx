@@ -101,7 +101,7 @@ useEffect(() => {
     };
 
     return (
-      <div className="flex flex-col gap-2 p-2 max-w-[300px]">
+      <div className="flex flex-col gap-2 p-2 max-w-[300px] max-h-[60vh] overflow-y-auto">
         <Select
           value={op}
           onValueChange={(val: 'AND' | 'OR') => setOp(val)}
