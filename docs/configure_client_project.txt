@@ -1,0 +1,53 @@
+// Step 1: Create Vite + React + TypeScript project
+npm create vite@latest . -- --template react-ts
+
+// Step 2: Install Tailwind CSS and supporting tools
+npm install -D postcss autoprefixer
+npm install -D tailwindcss@3.4.1
+
+// Step 3: Initialize Tailwind CSS (creates tailwind.config.js and postcss.config.js)
+npx tailwindcss init -p
+
+// If npx fails, use:
+// ./node_modules/.bin/tailwindcss init -p
+// OR create files manually (see Step 8/9)
+
+// Step 4: Manually create src/index.css and add:
+// @tailwind base;
+// @tailwind components;
+// @tailwind utilities;
+
+// Step 5: Manually edit tailwind.config.js:
+// module.exports = {
+//   content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+//   theme: { extend: {} },
+//   plugins: [],
+// }
+
+// Step 10: Edit tsconfig.json and add paths alias:
+// "compilerOptions": {
+//   "baseUrl": ".",
+//   "paths": {
+//     "@/*": ["src/*"]
+//   }
+// }
+
+// Step 6: Install Shadcn CLI and initialize
+npx shadcn@latest init
+
+// Step 7: Add required Shadcn components
+npx shadcn@latest add button
+npx shadcn@latest add input
+npx shadcn@latest add dialog
+npx shadcn@latest add tabs
+npx shadcn@latest add calendar
+
+// Step 8: Install AG Grid and its styles
+npm install ag-grid-react ag-grid-enterprise ag-grid-community  --legacy-peer-deps
+
+// Step 9: Install app dependencies
+npm install @rjsf/core @rjsf/validator-ajv8 json-schema-ref-parser axios clsx lucide-react class-variance-authority tailwind-variants --legacy-peer-deps
+
+// Step 11: Start dev server
+npm run dev
+
