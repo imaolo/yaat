@@ -125,10 +125,9 @@ class Doc(Document, ABC):
         raise RuntimeError("TODO not implemented")
 
     @classmethod
-    async def crud_d(cls, ids: list[str] = Body(...)):
-        print(cls, ids, type(ids[0]))
-        print(await cls.find_many({"_id": {"$in": ids}}).count())
-        await cls.find_many({"_id": {"$in": list(map(lambda id: ObjectId(id), ids))}}).delete()
+    async def crud_d(cls, payload: AggregationPayload = Body(...)) -> str:
+        docs = await cls.find(payload.filter, projection={'_id': 1}).skip(payload.skip).limit(payload.limit).to_list()
+        return str(await cls.find_many({"_id": {"$in": [doc.id for doc in docs]}}).delete())
 
     @classmethod
     async def crud_d_all(cls) -> str:
@@ -159,9 +158,9 @@ class Doc(Document, ABC):
         )
 
         router.add_api_route(
-            '/'+cls.__name__,
+            '/delete/'+cls.__name__,
             endpoint=cls.crud_d,
-            methods=["DELETE"]
+            methods=["POST"]
         )
 
         router.add_api_route(
