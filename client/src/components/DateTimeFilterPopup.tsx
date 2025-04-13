@@ -62,20 +62,40 @@ const DateTimeFilterPopup = forwardRef<unknown, CustomFilterProps<any, any, Date
     }, [filters, op]);
 
     // Ensure a blank filter exists at the end once a value is entered
-    useEffect(() => {
-      const last = filters[filters.length - 1];
-      if (last.dateFrom && !filters.some(f => !f.dateFrom)) {
-        setFilters(prev => [
-          ...prev,
-          { type: 'greaterThan', dateFrom: '', dateTo: '' },
-        ]);
-      }
-    }, [filters]);
+useEffect(() => {
+  const last = filters[filters.length - 1];
+
+  // Remove extra trailing blanks beyond the last
+  const hasTrailingBlanks =
+    filters.length > 1 &&
+    filters[filters.length - 1].dateFrom === '' &&
+    filters[filters.length - 2].dateFrom === '';
+
+  if (hasTrailingBlanks) {
+    setFilters(prev => prev.slice(0, -1)); // remove last blank
+    return;
+  }
+
+  if (last.dateFrom && !filters.some(f => f.dateFrom === '')) {
+    setFilters(prev => [
+      ...prev,
+      { type: 'greaterThan', dateFrom: '', dateTo: '' },
+    ]);
+  }
+}, [filters]);
 
     const updateFilter = (index: number, updated: Partial<SingleFilter>) => {
       setFilters(prev => {
         const next = [...prev];
         next[index] = { ...next[index], ...updated };
+    
+        // Check if current was cleared, and next is empty
+        // const current = next[index];
+        const after = next[index + 1];
+        if (updated.dateFrom === '' && after && after.dateFrom === '') {
+          next.splice(index + 1, 1); // remove next
+        }
+    
         return next;
       });
     };
