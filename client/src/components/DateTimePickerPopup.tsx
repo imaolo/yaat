@@ -44,11 +44,30 @@ export default function DateTimePickerPopup({ onChange }: any) {
 
   const showPopup = () => {
     const rect = inputRef.current?.getBoundingClientRect()
-    if (rect) {
-      setPopupPosition({ top: rect.bottom + window.scrollY + 4, left: rect.left + window.scrollX })
-      setShowPicker(true)
+    if (!rect) return
+  
+    // Estimate or hardcode the popup's height
+    const estimatedPopupHeight = 300 // adjust if needed
+    const spaceBelow = window.innerHeight - rect.bottom
+    const spaceAbove = rect.top
+  
+    let top: number
+    if (spaceBelow >= estimatedPopupHeight || spaceBelow > spaceAbove) {
+      // Place below input
+      top = rect.bottom + window.scrollY + 4
+    } else {
+      // Place above input
+      top = rect.top + window.scrollY - estimatedPopupHeight - 4
     }
+  
+    setPopupPosition({
+      top,
+      left: rect.left + window.scrollX
+    })
+  
+    setShowPicker(true)
   }
+  
 
 // useEffect(() => {
 //   const handleClickOutside = (event: MouseEvent) => {
