@@ -87,25 +87,34 @@ export default function DateTimePickerPopup({ onChange }: any) {
 // }, [showPicker]);
 
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node
-      if (
-        !inputRef.current?.contains(target) &&
-        !popupRef.current?.contains(target)
-      ) {
-        setShowPicker(false)
-      }
+useEffect(() => {
+  const handleClickOutside = (event: MouseEvent) => {
+    const target = event.target as Node
+    if (
+      !inputRef.current?.contains(target) &&
+      !popupRef.current?.contains(target)
+    ) {
+      setShowPicker(false)
     }
+  }
 
-    if (showPicker) {
-      document.addEventListener("mousedown", handleClickOutside)
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === "Enter") {
+      setShowPicker(false)
     }
+  }
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside)
-    }
-  }, [showPicker])
+  if (showPicker) {
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("keydown", handleKeyDown)
+  }
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside)
+    document.removeEventListener("keydown", handleKeyDown)
+  }
+}, [showPicker])
+
 
   return (
     <>
