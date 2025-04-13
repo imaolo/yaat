@@ -154,7 +154,9 @@ useEffect(() => {
 
         <Button
           onClick={() => {
-            onModelChange({ operator: op, conditions: filters, filterType: 'date'})
+            let new_filters = filters.filter(f => f.filter[0] !== '')
+            if (new_filters.length > 0)
+              onModelChange({ operator: op, conditions: new_filters, filterType: 'date'})
             api.hidePopupMenu()
           }}
           className="mt-2 w-full"
