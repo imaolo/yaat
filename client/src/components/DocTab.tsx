@@ -31,49 +31,6 @@ type Props = {
   metadata: Metadata
 }
 
-// function DateTimeFilter(props: IFilterParams) {
-//   const [value, setValue] = useState<string>("");
-
-//   useEffect(() => {
-//     props.filterChangedCallback(); // notify AG Grid on mount
-//   }, []);
-
-//   const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-//     setValue(e.target.value);
-//     props.filterChangedCallback(); // tells AG Grid to re-run filtering
-//   };
-
-//   // Required by AG Grid
-//   const isFilterActive = () => value !== "";
-
-//   // @ts-expect-error TS6133: getModel is used by AG Grid at runtime
-//   const doesFilterPass = (params: IDoesFilterPassParams) => {
-//     const cellValue = new Date(params.data[props.colDef.field!]).getTime();
-//     const filterTime = new Date(value).getTime();
-//     return cellValue >= filterTime;
-//   };
-
-//   // @ts-expect-error TS6133: getModel is used by AG Grid at runtime
-//   const getModel = () => (isFilterActive() ? { value } : null);
-//   // @ts-expect-error TS6133: getModel is used by AG Grid at runtime
-//   const setModel = (model: any) => {
-//     setValue(model?.value ?? "");
-//   };
-
-//   return (
-//     <div style={{ padding: '4px' }}>
-//       <label>After:</label>
-//       <input
-//         type="datetime-local"
-//         value={value}
-//         onChange={onChange}
-//         style={{ width: '100%' }}
-//       />
-//     </div>
-//   );
-// }
-
-
 export type SingleFilter = {
   filterType: 'text' | string;
   type: string
@@ -109,8 +66,6 @@ export default function DocTab({ metadata }: Props) {
 
   const getObjVal = (obj: Record<string, any>, path: string): any => path.split('.').reduce((acc, key) => acc?.[key], obj)
 
-  // filter: `agNumberColumnFilter`, `agTextColumnFilter`, `agDateColumnFilter`, `agMultiColumnFilter`, `agSetColumnFilter`
-  // `'text'`, `'number'`,  `'boolean'`,  `'date'`,  `'dateString'` or  `'object'`,
   const jsonSchema2AGT = (schema: any) => {
     if (schema.type === 'string' && schema.format === 'date-time')
       return 'date'
@@ -239,67 +194,24 @@ export default function DocTab({ metadata }: Props) {
         case 'text': return mongoConvert(filter.filterType, filter.filter)
         case 'date': return mongoConvert(filter.filterType, filter.filter)
         case 'number': return mongoConvert(filter.filterType, filter.filter)
-        default:
-          console.log(filter)
-          throw Error(filter.filterType)
+        default: throw Error(filter.filterType)
       }
 
       // TODO - handle type
   }
 
-//   const getJsonQuery = (field: any, matchOp, str_value) => {
-//     const value = getMongoTypeConvertClause(col2type[field], str_value)
-//     switch (matchOp){
-//         // all type match modes
-//         case FilterMatchMode.EQUALS:
-//             return { [field]: value }
-//         case FilterMatchMode.NOT_EQUALS:
-//             return { [field]: { $ne: value } }
-//         // string match modes
-//         case FilterMatchMode.STARTS_WITH:
-//             return { [field]: { $regex: `^${value}` } }
-//         case FilterMatchMode.CONTAINS:
-//             return { [field]: { $regex: value } }
-//         case FilterMatchMode.NOT_CONTAINS:
-//             return { [field]: { $not: { $regex: value } } }
-//         case FilterMatchMode.ENDS_WITH:
-//             return { [field]: { $regex: `${value}$` } }
-//         // numeric match modes
-//         case FilterMatchMode.LESS_THAN:
-//             return { [field]: { $lt: value } }
-//         case FilterMatchMode.LESS_THAN_OR_EQUAL_TO:
-//             return { [field]: { $lte: value } }
-//         case FilterMatchMode.GREATER_THAN:
-//             return { [field]: { $gt: value } }
-//         case FilterMatchMode.GREATER_THAN_OR_EQUAL_TO:
-//             return { [field]: { $gte: value } }
-//         // date match modes
-//         case FilterMatchMode.DATE_IS:
-//             return { $expr : {$eq : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
-//         case FilterMatchMode.DATE_IS_NOT:
-//             return { $expr : {$ne : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
-//         case FilterMatchMode.DATE_BEFORE:
-//             return { $expr : {$lt : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
-//         case FilterMatchMode.DATE_AFTER:
-//             return { $expr : {$gt : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
-//         default:
-//             throw new Error(`invalid match mode op ${matchOp}`)
-//     }
-// }
-
   const mongoFilter = (filter: Record<string , Filter>): Record<string, any>  => {
     console.log(filter)
-    type mongo_filter_t = string | number | boolean | { [key: string]: mongo_filter_t | mongo_filter_t[]};
-    const new_filter: mongo_filter_t = {$and: [{$or: []},]}
+    const new_filter: Record<string, any> = {$and: [{$or: []},]}
 
     // TODO implement these
 
     const addOrFilter = (single_filter_field: string, single_filter: SingleFilter) => {
-      new_filter[single_filter_field] = mongoSingleFilter(single_filter)
+      new_filter.$and[0].$or.push({[single_filter_field] : mongoSingleFilter(single_filter)})
     }
 
     const addAndFilter = (single_filter_field: string, single_filter: SingleFilter) => {
-      new_filter[single_filter_field] = mongoSingleFilter(single_filter)
+      new_filter.$and.push({[single_filter_field] : mongoSingleFilter(single_filter)})
     }
 
     // main construction logic
