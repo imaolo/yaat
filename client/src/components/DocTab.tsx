@@ -126,7 +126,7 @@ export default function DocTab({ metadata }: Props) {
           filterParams : { 
             maxNumConditions: 10,
             buttons: ['apply'],
-            closeOnApply: false,
+            closeOnApply: true,
             key: `${Date.now()}`
           },
           flex: 1,
