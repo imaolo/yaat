@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
-export default function DateTimePickerPopup() {
+export default function DateTimePickerPopup({ onChange }: any) {
   const [dateTime, setDateTime] = useState<Date | null>(null)
   const [inputValue, setInputValue] = useState("")
   const [showPicker, setShowPicker] = useState(false)
@@ -16,6 +16,7 @@ export default function DateTimePickerPopup() {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value
     setInputValue(val)
+    onChange(val)
     const parsed = new Date(val)
     if (!isNaN(parsed.getTime())) setDateTime(parsed)
   }
@@ -25,8 +26,9 @@ export default function DateTimePickerPopup() {
     const time = dateTime ?? new Date()
     const newDate = new Date(date)
     newDate.setHours(time.getHours(), time.getMinutes())
-    setDateTime(newDate)
-    setInputValue(format(newDate, "yyyy-MM-dd'T'HH:mm"))
+    let val = format(newDate, "yyyy-MM-dd'T'HH:mm")
+    setInputValue(val)
+    onChange(val)
   }
 
   const handleTimeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,7 +37,9 @@ export default function DateTimePickerPopup() {
     const newDate = dateTime ? new Date(dateTime) : new Date()
     newDate.setHours(h, m)
     setDateTime(newDate)
-    setInputValue(format(newDate, "yyyy-MM-dd'T'HH:mm"))
+    let val = format(newDate, "yyyy-MM-dd'T'HH:mm")
+    setInputValue(val)
+    onChange(val)
   }
 
   const showPopup = () => {
