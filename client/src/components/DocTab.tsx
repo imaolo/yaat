@@ -74,6 +74,20 @@ type Props = {
 // }
 
 
+export type SingleFilter = {
+  filterType: 'text' | string;
+  type: string
+  filter: any
+}
+
+export type MultiFilter = {
+  filterType: 'text' | string
+  operator: 'AND' | 'OR'
+  conditions: SingleFilter[]
+}
+
+export type Filter = SingleFilter | MultiFilter
+
 export default function DocTab({ metadata }: Props) {
   const gridRef = useRef<AgGridReact>(null)
   const [gridCols, setGridCols] = useState<ColDef[]>([])
@@ -211,6 +225,95 @@ export default function DocTab({ metadata }: Props) {
     }
   }
 
+  const mongoConvert = (trg_t: string, value: string): any => {
+    switch (trg_t){
+      case 'text': return value
+      case 'date': return {'$dateFromString': value}
+      case 'number': return {'$numberFromString': value}
+      default: throw Error(`${trg_t} -  ${value}`)
+    }
+  }
+
+  const mongoSingleFilter = (filter: SingleFilter): Record<string, any> => {
+      switch (filter.filterType){
+        case 'text': return mongoConvert(filter.filterType, filter.filter)
+        case 'date': return mongoConvert(filter.filterType, filter.filter)
+        case 'number': return mongoConvert(filter.filterType, filter.filter)
+        default:
+          console.log(filter)
+          throw Error(filter.filterType)
+      }
+
+      // TODO - handle type
+  }
+
+//   const getJsonQuery = (field: any, matchOp, str_value) => {
+//     const value = getMongoTypeConvertClause(col2type[field], str_value)
+//     switch (matchOp){
+//         // all type match modes
+//         case FilterMatchMode.EQUALS:
+//             return { [field]: value }
+//         case FilterMatchMode.NOT_EQUALS:
+//             return { [field]: { $ne: value } }
+//         // string match modes
+//         case FilterMatchMode.STARTS_WITH:
+//             return { [field]: { $regex: `^${value}` } }
+//         case FilterMatchMode.CONTAINS:
+//             return { [field]: { $regex: value } }
+//         case FilterMatchMode.NOT_CONTAINS:
+//             return { [field]: { $not: { $regex: value } } }
+//         case FilterMatchMode.ENDS_WITH:
+//             return { [field]: { $regex: `${value}$` } }
+//         // numeric match modes
+//         case FilterMatchMode.LESS_THAN:
+//             return { [field]: { $lt: value } }
+//         case FilterMatchMode.LESS_THAN_OR_EQUAL_TO:
+//             return { [field]: { $lte: value } }
+//         case FilterMatchMode.GREATER_THAN:
+//             return { [field]: { $gt: value } }
+//         case FilterMatchMode.GREATER_THAN_OR_EQUAL_TO:
+//             return { [field]: { $gte: value } }
+//         // date match modes
+//         case FilterMatchMode.DATE_IS:
+//             return { $expr : {$eq : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
+//         case FilterMatchMode.DATE_IS_NOT:
+//             return { $expr : {$ne : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
+//         case FilterMatchMode.DATE_BEFORE:
+//             return { $expr : {$lt : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
+//         case FilterMatchMode.DATE_AFTER:
+//             return { $expr : {$gt : [ `$${field}`, { $dateFromString: { dateString: value } } ] } }
+//         default:
+//             throw new Error(`invalid match mode op ${matchOp}`)
+//     }
+// }
+
+  const mongoFilter = (filter: Record<string , Filter>): Record<string, any>  => {
+    console.log(filter)
+    type mongo_filter_t = string | number | boolean | { [key: string]: mongo_filter_t | mongo_filter_t[]};
+    const new_filter: mongo_filter_t = {$and: [{$or: []},]}
+
+    // TODO implement these
+
+    const addOrFilter = (single_filter_field: string, single_filter: SingleFilter) => {
+      new_filter[single_filter_field] = mongoSingleFilter(single_filter)
+    }
+
+    const addAndFilter = (single_filter_field: string, single_filter: SingleFilter) => {
+      new_filter[single_filter_field] = mongoSingleFilter(single_filter)
+    }
+
+    // main construction logic
+
+    for (const [field, field_filter] of Object.entries(filter))
+      if ('operator' in field_filter)
+        for (const condition of field_filter.conditions)
+          (field_filter.operator === 'AND' ? addAndFilter : addOrFilter)(field, condition)
+      else
+        addAndFilter(field, field_filter)
+
+    return {}
+  }
+
   // data source
 
   const datasource: IServerSideDatasource = {
@@ -219,7 +322,7 @@ export default function DocTab({ metadata }: Props) {
         skip: params.request.startRow,
         limit: (!params.request.endRow || !params.request.startRow) ? 100 : (params.request.endRow - params.request.startRow),
         sort: (params.request.sortModel ?? []).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1]),
-        filter: {}, // TODO
+        filter: mongoFilter(params.request.filterModel as Record<string, Filter>)
       }
 
       try {

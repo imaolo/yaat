@@ -4,6 +4,7 @@ import type { CustomFilterProps } from "ag-grid-react";
 import { useGridFilter } from "ag-grid-react";
 import { Button } from "@/components/ui/button";
 import DateTimePickerPopup from "@/components/DateTimePickerPopup";
+import { MultiFilter, SingleFilter } from "@/components/DocTab"
 import {
   Select,
   SelectContent,
@@ -23,25 +24,35 @@ const LABELS: Record<DateTimeModelType, string> = {
   inRange: 'In Range',
 };
 
-type SingleFilter = {
-  type: DateTimeModelType;
-  dateFrom: string;
-  dateTo: string;
-};
+type SingleDateFilter = SingleFilter & {
+  type: DateTimeModelType
+  filterType: 'date'
+  filter: string[]
+}
 
-type DateTimeModel = {
-  op: 'AND' | 'OR';
-  filters: SingleFilter[];
-};
+type DateMultiFilter = MultiFilter & {
+  conditions: SingleDateFilter[]
+}
 
-const DateTimeFilterPopup = forwardRef<unknown, CustomFilterProps<any, any, DateTimeModel>>(
+// type SingleFilter = {
+//   type: DateTimeModelType;
+//   dateFrom: string;
+//   dateTo: string;
+// };
+
+// type DateTimeModel = {
+//   op: 'AND' | 'OR';
+//   filters: SingleFilter[];
+// };
+
+const DateTimeFilterPopup = forwardRef<unknown, CustomFilterProps<any, any, DateMultiFilter>>(
   ({ model, onModelChange, api}, _ref) => {
-    const initialFilters: SingleFilter[] = model?.filters?.length
-      ? model.filters
-      : [{ type: 'greaterThan', dateFrom: '', dateTo: '' }];
+    const initialFilters: SingleDateFilter[] = model?.conditions?.length
+      ? model.conditions
+      : [{ filterType: 'date', type: 'greaterThan', filter: ['', '']}];
 
-    const [op, setOp] = useState<'AND' | 'OR'>(model?.op ?? 'AND');
-    const [filters, setFilters] = useState<SingleFilter[]>(initialFilters);
+    const [op, setOp] = useState<'AND' | 'OR'>(model?.operator ?? 'AND');
+    const [filters, setFilters] = useState<SingleDateFilter[]>(initialFilters);
 
     const refInput = useRef<HTMLInputElement>(null);
 
@@ -63,23 +74,23 @@ useEffect(() => {
   // Remove extra trailing blanks beyond the last
   const hasTrailingBlanks =
     filters.length > 1 &&
-    filters[filters.length - 1].dateFrom === '' &&
-    filters[filters.length - 2].dateFrom === '';
+    filters[filters.length - 1].filter[0] === '' &&
+    filters[filters.length - 2].filter[0] === '';
 
   if (hasTrailingBlanks) {
     setFilters(prev => prev.slice(0, -1)); // remove last blank
     return;
   }
 
-  if (last.dateFrom && !filters.some(f => f.dateFrom === '')) {
+  if (last.filter[0] && !filters.some(f => f.filter[0] === '')) {
     setFilters(prev => [
       ...prev,
-      { type: 'greaterThan', dateFrom: '', dateTo: '' },
+      { filterType: 'date', type: 'greaterThan', filter: ['', '']},
     ]);
   }
 }, [filters]);
 
-    const updateFilter = (index: number, updated: Partial<SingleFilter>) => {
+    const updateFilter = (index: number, updated: Partial<SingleDateFilter>) => {
       setFilters(prev => {
         const next = [...prev];
         next[index] = { ...next[index], ...updated };
@@ -87,7 +98,7 @@ useEffect(() => {
         // Check if current was cleared, and next is empty
         // const current = next[index];
         const after = next[index + 1];
-        if (updated.dateFrom === '' && after && after.dateFrom === '') {
+        if (updated.filter[0] === '' && after && after.filter[0] === '') {
           next.splice(index + 1, 1); // remove next
         }
     
@@ -100,7 +111,7 @@ useEffect(() => {
         <Select
           value={op}
           onValueChange={(val: 'AND' | 'OR') => setOp(val)}
-          disabled={filters.filter(f => f.dateFrom).length < 2}
+          disabled={filters.filter(f => f.filter[0]).length < 2}
         >
           <SelectTrigger className="w-full">
             <SelectValue placeholder="AND / OR" />
@@ -130,12 +141,12 @@ useEffect(() => {
             </Select>
 
             <DateTimePickerPopup
-              onChange={(val: string) => updateFilter(i, { dateFrom: val })}
+              onChange={(val: string) => updateFilter(i, { filter: [val, ''] })}
             />
 
             {filter.type === "inRange" && (
               <DateTimePickerPopup
-                onChange={(val: string) => updateFilter(i, { dateTo: val })}
+                onChange={(val: string) => updateFilter(i, { filter: ['', val] })}
               />
             )}
           </div>
@@ -143,7 +154,7 @@ useEffect(() => {
 
         <Button
           onClick={() => {
-            onModelChange({ op, filters: filters.filter(f => f.dateFrom) })
+            onModelChange({ operator: op, conditions: filters, filterType: 'date'})
             api.hidePopupMenu()
           }}
           className="mt-2 w-full"
