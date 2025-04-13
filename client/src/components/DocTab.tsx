@@ -13,7 +13,7 @@ import axios from "axios"
 import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams} from "ag-grid-community"
 import type { IChangeEvent } from "@rjsf/core"
 import type { Metadata } from "@/App"
-import DateTimePopupFilter from "@/components/DateTimePopupFilter"
+import DateTimeFilterPopup from "@/components/DateTimeFilterPopup"
 
 ModuleRegistry.registerModules([
   ServerSideRowModelModule,
@@ -121,7 +121,7 @@ export default function DocTab({ metadata }: Props) {
           field: path,
           headerName: path,
           sortable: true,
-          filter: agt !== 'date' ? true : DateTimePopupFilter,
+          filter: agt !== 'date' ? true : DateTimeFilterPopup,
           cellDataType: agt,
           filterParams : { 
             maxNumConditions: 10,

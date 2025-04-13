@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input"
 import { format } from "date-fns"
 import { cn } from "@/lib/utils"
 
-export default function InlineDateTimePicker() {
+export default function DateTimePickerPopup() {
   const [dateTime, setDateTime] = useState<Date | null>(null)
   const [inputValue, setInputValue] = useState("")
   const [showPicker, setShowPicker] = useState(false)

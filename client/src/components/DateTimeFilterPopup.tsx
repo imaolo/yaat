@@ -4,7 +4,7 @@ import type { IDoesFilterPassParams } from "ag-grid-community";
 import type { CustomFilterProps } from "ag-grid-react";
 import { useGridFilter } from "ag-grid-react";
 import { Button } from "@/components/ui/button";
-import InlineDateTimePicker from "@/components/InlineDateTimePicker"
+import DateTimePickerPopup from "@/components/DateTimePickerPopup"
 import {
   Select,
   SelectContent,
@@ -38,7 +38,7 @@ type DateTimeModel = {
   dateTo: string;
 };
 
-const DateTimePopupFilter = forwardRef<unknown, CustomFilterProps<any, any, DateTimeModel>>(
+const DateTimeFilterPopup = forwardRef<unknown, CustomFilterProps<any, any, DateTimeModel>>(
   ({ model, onModelChange }, _ref) => {
     const type = model?.type ?? 'greaterThan';
     const dateFrom = model?.dateFrom ?? getNowAsLocalDateTime();
@@ -82,7 +82,7 @@ const DateTimePopupFilter = forwardRef<unknown, CustomFilterProps<any, any, Date
           </SelectContent>
         </Select>
 
-        <InlineDateTimePicker/>
+        <DateTimePickerPopup/>
 
         {type === 'inRange' && (
           <input
@@ -104,4 +104,4 @@ const DateTimePopupFilter = forwardRef<unknown, CustomFilterProps<any, any, Date
   }
 );
 
-export default DateTimePopupFilter;
+export default DateTimeFilterPopup;
