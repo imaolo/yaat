@@ -56,11 +56,6 @@ const DateTimeFilterPopup = forwardRef<unknown, CustomFilterProps<any, any, Date
       },
     });
 
-    // Inform grid about filter change
-    useEffect(() => {
-      onModelChange({ op, filters: filters.filter(f => f.dateFrom) });
-    }, [filters, op]);
-
     // Ensure a blank filter exists at the end once a value is entered
 useEffect(() => {
   const last = filters[filters.length - 1];
