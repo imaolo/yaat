@@ -118,28 +118,7 @@ class Doc(Document, ABC):
     async def crud_c(cls, doc: dict) -> None:
         await cls(**doc).create()
 
-
-# [
-#   {
-#     $group: {
-#       _id: { sport: "$sport", rating: "$rating" },
-#       items: { $push: "$$ROOT" }
-#     }
-#   },
-#   {
-#     $group: {
-#       _id: "$_id.sport",
-#       items: {
-#         $push: {
-#           _id: "$_id.rating",
-#           items: "$items"
-#         }
-#       }
-#     }
-#   }
-# ]
-
-    # read helper
+    # crud read helper
     @staticmethod
     def generate_group_stages(groupbys: list[tuple[str, int | float | None]]) -> list[dict]:
         # get the fields in reverse order
@@ -181,7 +160,6 @@ class Doc(Document, ABC):
                 "total": { "$ifNull": [{ "$arrayElemAt": ["$total.count", 0] }, 0] }
             }}
         ]
-
         return (await cls.aggregate(pipeline).to_list(1))[0]
 
     @classmethod
