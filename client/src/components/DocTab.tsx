@@ -51,7 +51,7 @@ export default function DocTab({ metadata }: Props) {
   const gridRef = useRef<AgGridReact>(null)
   const [gridCols, setGridCols] = useState<ColDef[]>([])
   const [displayForm, setDisplayForm] = useState(false)
-  const [rowsSelected, setRowsSelected] = useState(0)
+  const [selectedRowsCount, setSelectedRowsCount] = useState(0)
   const api = axios.create()
 
   // mount hook
@@ -144,31 +144,19 @@ export default function DocTab({ metadata }: Props) {
     return gridapi
   }
 
-  const getCurrentPageRows = () => {
+  const getSelectedRowsCount = (): number => {
     const gridapi = getGridApi()
-    const size   = gridapi.paginationGetPageSize();
-    const index  = gridapi.paginationGetCurrentPage();
-    const total  = gridapi.getDisplayedRowCount();
-  
-    const rows: any[] = [];
-    const start = index * size;
-    const end   = Math.min(start + size, total);
-  
-    for (let i = start; i < end; i++)
-      rows.push(gridapi.getDisplayedRowAtIndex(i)!.data);
-    return rows;
-  }
+    const state = gridapi.getServerSideSelectionState()
 
-  const getSelectedRows = () => {
-    const state = getGridApi().getServerSideSelectionState()
     if (!state)
       throw Error()
 
     if (state.toggledNodes && state.toggledNodes.length > 1)
-      return state.toggledNodes
-    else if ('selectAll' in state)
-      return state.selectAll ? getCurrentPageRows() : []
-  
+      return state.toggledNodes.length
+
+    if ('selectAll' in state)
+      return gridapi.getDisplayedRowCount();
+
     throw Error()
   }
 
@@ -322,7 +310,7 @@ export default function DocTab({ metadata }: Props) {
         limit: (!params.request.endRow || !params.request.startRow) ? 100 : (params.request.endRow - params.request.startRow),
         sort: (params.request.sortModel ?? []).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1]),
         filter: mongoFilter(params.request.filterModel as Record<string, Filter>),
-        groupby: []
+        groupby: params.request.rowGroupCols.map(group => [group.field, 1])
       }
 
       try {
@@ -341,14 +329,11 @@ export default function DocTab({ metadata }: Props) {
 
   const handleDelete = () => {
     const gridapi = getGridApi()
-    const currentPage = gridapi.paginationGetCurrentPage();
-    const pageSize = gridapi.paginationGetPageSize();
-    const skip = currentPage * pageSize;
     const filterModel = gridapi.getFilterModel() as Record<string, Filter>
   
     const payload: QueryParams = {
-      skip,
-      limit: pageSize,
+      skip: 0,
+      limit: 10**10,
       sort: [],
       filter: mongoFilter(filterModel),
       groupby: []
@@ -366,9 +351,9 @@ export default function DocTab({ metadata }: Props) {
       <div className="flex items-center gap-2 p-2">
         <Button onClick={() => getGridApi().refreshServerSide()}>Refresh</Button>
         {metadata.create && <Button onClick={() => setDisplayForm(true)}>Create</Button>}
-        {metadata.delete && <Button onClick={handleDelete} disabled={rowsSelected <= 0}>Delete</Button>}
-        {metadata.update && <Button disabled={rowsSelected != 1}>Update</Button>}
-        <span className="ml-auto text-sm">Rows Selected: {rowsSelected}</span>
+        {metadata.delete && <Button onClick={handleDelete} disabled={selectedRowsCount <= 0}>Delete</Button>}
+        {metadata.update && <Button disabled={selectedRowsCount != 1}>Update</Button>}
+        <span className="ml-auto text-sm">Rows Selected: {selectedRowsCount}</span>
       </div>
 
       <div className="ag-theme-alpine w-full h-full border border-gray-600 rounded">
@@ -387,14 +372,14 @@ export default function DocTab({ metadata }: Props) {
             mode: 'multiRow',
             enableClickSelection: false,
           }}
-          onSelectionChanged={() => setRowsSelected(getSelectedRows().length)}
+          onSelectionChanged={() => setSelectedRowsCount(getSelectedRowsCount())}
 
           // visual
-          animateRows={true}
+          animateRows={false}
 
           // pagination and memory management
           pagination={true}
-          paginationPageSizeSelector={[20, 50, 100, 1000, 10000]}
+          paginationPageSizeSelector={[20, 50, 10**2, 10**3]}
           paginationPageSize={20}
           cacheBlockSize={25}
           maxBlocksInCache={10000*25}
