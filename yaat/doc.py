@@ -45,6 +45,7 @@ class AggregationPayload(BaseModel):
     sort: list[tuple[str, int]] | None = []
     skip: int = 0
     limit: int = 10
+    groupby: list[tuple[str, int | float | None]] = []
 
 DocType = TypeVar('DocType')
 class CRUDReadRes(BaseModel, Generic[DocType]):
@@ -117,14 +118,55 @@ class Doc(Document, ABC):
     async def crud_c(cls, doc: dict) -> None:
         await cls(**doc).create()
 
+
+# [
+#   {
+#     $group: {
+#       _id: { sport: "$sport", rating: "$rating" },
+#       items: { $push: "$$ROOT" }
+#     }
+#   },
+#   {
+#     $group: {
+#       _id: "$_id.sport",
+#       items: {
+#         $push: {
+#           _id: "$_id.rating",
+#           items: "$items"
+#         }
+#       }
+#     }
+#   }
+# ]
+
+    # read helper
+    @staticmethod
+    def generate_group_stages(groupbys: list[tuple[str, int | float | None]]) -> list[dict]:
+        # get the fields in reverse order
+        fields = list(map(lambda g: g[0], groupbys))[::-1]
+
+        pipe = []
+        for i in range(len(fields)):
+            unprocessed_fields, processed_fields = fields[i:], fields[:i]
+            pipe.append({'$group': {
+                '_id': {upf: f"${upf}" for upf in unprocessed_fields},
+                'items': { '$push': "$$ROOT" if not processed_fields else {
+                                        '_id': f"$_id.{processed_fields[-1]}",
+                                        'items': "$items"
+                                    }
+                }
+            }})
+        return pipe
+
     @classmethod
     async def crud_r(cls, payload: dict = Body(...)) -> dict:
-        filter_, skip, limit = payload['filter'], payload['skip'], payload['limit']
+        filter_, skip, limit, groupby = payload['filter'], payload['skip'], payload['limit'], payload['groupby']
         sort_ = [tuple(pair) for pair in payload['sort']]
 
         pipeline = [
             {'$match': filter_},
             *([{ "$sort": dict(sort_) }] if sort_ else []),
+            *cls.generate_group_stages(groupby),
             {"$facet": {
                 "items": [
                     {"$skip": skip},

@@ -179,6 +179,7 @@ export default function DocTab({ metadata }: Props) {
     limit: any | number;
     sort: any | [string, 1 | -1][];
     filter: any | Record<string, unknown>;
+    groupby: any[]
   }
 
   async function fetchData ( payload:  QueryParams) {
@@ -320,7 +321,8 @@ export default function DocTab({ metadata }: Props) {
         skip: params.request.startRow,
         limit: (!params.request.endRow || !params.request.startRow) ? 100 : (params.request.endRow - params.request.startRow),
         sort: (params.request.sortModel ?? []).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1]),
-        filter: mongoFilter(params.request.filterModel as Record<string, Filter>)
+        filter: mongoFilter(params.request.filterModel as Record<string, Filter>),
+        groupby: []
       }
 
       try {
@@ -348,7 +350,8 @@ export default function DocTab({ metadata }: Props) {
       skip,
       limit: pageSize,
       sort: [],
-      filter: mongoFilter(filterModel)
+      filter: mongoFilter(filterModel),
+      groupby: []
     }
 
     api
