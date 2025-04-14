@@ -1,6 +1,6 @@
 from __future__ import annotations
 from yaat.doc import Doc, DocArgs, read_only_doc_args
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_serializer
 from enum import Enum
 from typing import ClassVar
 from itertools import product
@@ -54,6 +54,14 @@ class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_update
     market_cap_rank: int
     usd_24h_vol: int
     usd_1y_change: int
+
+    @field_serializer('created_at')
+    def serialize_created_at(self, dt: datetime, _info) -> str:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
+        return dt.isoformat().replace("+00:00", "Z")
 
 class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
     query: TopMoverQueryDoc
