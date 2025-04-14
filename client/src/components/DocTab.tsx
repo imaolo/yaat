@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import {  ModuleRegistry, TextFilterModule, ValidationModule, RowApiModule, CustomFilterModule,
           NumberFilterModule, DateFilterModule
         } from 'ag-grid-community'; 
-import { ServerSideRowModelModule, ServerSideRowModelApiModule, PaginationModule } from 'ag-grid-enterprise'; 
+import { ServerSideRowModelModule, ServerSideRowModelApiModule, PaginationModule, RowGroupingModule, RowGroupingPanelModule } from 'ag-grid-enterprise'; 
 import Form from "@rjsf/core"
 import validator from "@rjsf/validator-ajv8"
 import Dereferencer from "@json-schema-tools/dereferencer";
@@ -24,7 +24,9 @@ ModuleRegistry.registerModules([
   NumberFilterModule,
   DateFilterModule,
   CustomFilterModule,
-  ValidationModule
+  ValidationModule,
+  RowGroupingModule,
+  RowGroupingPanelModule
 ]); 
 
 type Props = {
@@ -78,7 +80,7 @@ export default function DocTab({ metadata }: Props) {
     }
   }
 
-  const getColsFromSchema = (schema: any, prefix = "", result: ColDef[] = []) => {
+  const getColsFromSchema = (schema: any, prefix = "", result: ColDef[] = []): ColDef[] => {
     if (!schema?.properties) return result
     for (const [key, propSchema] of Object.entries(schema.properties) as [string, any][]) {
       const path = prefix ? `${prefix}.${key}` : key
@@ -90,6 +92,7 @@ export default function DocTab({ metadata }: Props) {
           field: path,
           headerName: path,
           sortable: true,
+          enableRowGroup: true,
           filter: agt !== 'date' ? true : DateTimeFilterPopup,
           cellDataType: agt,
           filterParams : { 
@@ -395,6 +398,12 @@ export default function DocTab({ metadata }: Props) {
 
           // sort
           multiSortKey='ctrl'
+
+          // // grouping
+          rowGroupPanelShow="always"
+          // rowGroupPanelShow="always"
+          // // enableRowGroupPanel={true}
+          // // enableRowGroup={true}
         />
       </div>
 
