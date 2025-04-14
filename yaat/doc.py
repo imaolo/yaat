@@ -118,10 +118,29 @@ class Doc(Document, ABC):
         await cls(**doc).create()
 
     @classmethod
-    async def crud_r(cls, payload: AggregationPayload = Body(...)) -> CRUDReadRes:
-        return CRUDReadRes[cls](
-            items=await (d:=cls.find(payload.filter, sort=payload.sort)).clone().skip(payload.skip).limit(payload.limit).to_list(),
-            total=await d.count())
+    async def crud_r(cls, payload: dict = Body(...)) -> dict:
+        filter_, skip, limit = payload['filter'], payload['skip'], payload['limit']
+        sort_ = [tuple(pair) for pair in payload['sort']]
+
+        pipeline = [
+            {'$match': filter_},
+            *([{ "$sort": dict(sort_) }] if sort_ else []),
+            {"$facet": {
+                "items": [
+                    {"$skip": skip},
+                    {"$limit": limit},
+                ],
+                "total": [
+                    {"$count": "count"}
+                ]
+            }},
+            {"$project": {
+                "items": 1,
+                "total": { "$ifNull": [{ "$arrayElemAt": ["$total.count", 0] }, 0] }
+            }}
+        ]
+
+        return (await cls.aggregate(pipeline).to_list(1))[0]
 
     @classmethod
     async def crud_u(cls, doc: Doc) -> Doc:
