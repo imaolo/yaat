@@ -1,11 +1,14 @@
 from __future__ import annotations
-from beanie import Document, before_event, Insert, Update, Replace, Delete 
-from pydantic import BaseModel
+from beanie import Document, before_event, Insert, Update, Replace, Delete, PydanticObjectId
+from pydantic import BaseModel, Field
 from fastapi import APIRouter, Body
 from typing import ClassVar, TypeVar, Generic, Any
 from dataclasses import dataclass
 from bson import ObjectId
 from abc import ABC
+
+class IdView(BaseModel):
+    id: PydanticObjectId = Field(alias='_id')
 
 @dataclass  
 class DocArgs:
@@ -126,7 +129,7 @@ class Doc(Document, ABC):
 
     @classmethod
     async def crud_d(cls, payload: AggregationPayload = Body(...)) -> str:
-        docs = await cls.find(payload.filter, projection={'_id': 1}).skip(payload.skip).limit(payload.limit).to_list()
+        docs = await cls.find(payload.filter).project(IdView).skip(payload.skip).limit(payload.limit).to_list()
         return str(await cls.find_many({"_id": {"$in": [doc.id for doc in docs]}}).delete())
 
     @classmethod
