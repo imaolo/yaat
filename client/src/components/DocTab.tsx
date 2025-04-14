@@ -116,10 +116,16 @@ export default function DocTab({ metadata }: Props) {
             if (agt !== 'date')
               return val
             else {
-              let d = new Date(val)
-              if (isNaN(d.getTime()))
-                throw Error(val)
-              return d.toISOString()
+              const d = new Date(val);
+              if (isNaN(d.getTime())) throw Error(val);
+              return d.toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true,
+              });
             }
           }
         })
@@ -298,8 +304,6 @@ export default function DocTab({ metadata }: Props) {
     // pop OR if empty
     if (new_filter.$and[0].$or.length === 0)
       new_filter.$and.shift()
-  
-    console.log(new_filter)
 
     // pop and if empty
     return new_filter.$and.length > 0 ? new_filter : {}
@@ -335,12 +339,13 @@ export default function DocTab({ metadata }: Props) {
     const currentPage = gridapi.paginationGetCurrentPage();
     const pageSize = gridapi.paginationGetPageSize();
     const skip = currentPage * pageSize;
+    const filterModel = gridapi.getFilterModel() as Record<string, Filter>
   
     const payload: QueryParams = {
       skip,
       limit: pageSize,
       sort: [],
-      filter: {}, // TODO
+      filter: mongoFilter(filterModel)
     }
 
     api
