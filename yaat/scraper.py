@@ -65,7 +65,7 @@ class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_update
 
     class Settings:
         indexes = [
-            [("created_at", -1)],  # descending index for latest-first sorting
+            [("created_at", -1), ('query.duration', 1), ('query.top_coin', 1)]
         ]
 
 class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
