@@ -44,7 +44,8 @@ class AggregationPayload(BaseModel):
     sort: list[tuple[str, int]] | None = []
     skip: int = 0
     limit: int = 10
-    groupby: list[tuple[str, int | float | None]] = []
+    rowGroupCols: list[str] = []
+    groupKeys: list[str]
 
 DocType = TypeVar('DocType')
 class CRUDReadRes(BaseModel, Generic[DocType]):
@@ -119,36 +120,51 @@ class Doc(Document, ABC):
 
     # crud read helper
     @staticmethod
-    def generate_group_stages(groupbys: list[tuple[str, int | float | None]]) -> list[dict]:
-        # get the fields in reverse order
-        fields = list(map(lambda g: g[0], groupbys))[::-1]
-
+    def generate_group_stages(cols: list[str], keys: list[str]) -> list[dict]:
         pipe = []
-        for i in range(len(fields)):
-            unprocessed_fields, processed_fields = fields[i:], fields[:i]
-            pipe.append({'$group': {
-                '_id': {upf: f"${upf}" for upf in unprocessed_fields},
-                'items': { '$push': "$$ROOT" if not processed_fields else {
-                                        '_id': f"$_id.{processed_fields[-1]}",
-                                        'items': "$items"
-                                    }
+        if not cols and not keys:
+            return pipe
+
+        if (d := (lcols:=len(cols)) - len(keys)) > 0:
+            distinct_field = cols[lcd:=(lcols - d)]
+            pipe.append({
+                '$group':{
+                    '_id': f"${distinct_field}"
                 }
-            }})
+            })
+            pipe.append({
+                '$project':{
+                    distinct_field: "$_id",
+                    **{of:ov for (of, ov) in zip(cols[:lcd], keys)},
+                    'group': {'$literal': True},
+                    '_id': {
+                        '$function': {
+                            'body': 'function() { return new ObjectId(); }',
+                            'args': [],
+                            'lang': 'js'
+                        }
+                    }
+                }
+            })
+        elif d == 0:
+            pipe.append({
+                '$match': {k:v for k, v in zip(cols, keys)}
+            })
+        else:
+            raise RuntimeError(cols, keys)
+
         return pipe
 
     @classmethod
-    async def crud_r(cls, payload: dict = Body(...)) -> dict:
-        filter_, skip, limit, groupby = payload['filter'], payload['skip'], payload['limit'], payload['groupby']
-        sort_ = [tuple(pair) for pair in payload['sort']]
-
+    async def crud_r(cls, payload: AggregationPayload = Body(...)) -> dict:
         pipeline = [
-            {'$match': filter_},
-            *([{ "$sort": dict(sort_) }] if sort_ else []),
-            *cls.generate_group_stages(groupby),
+            {'$match': payload.filter},
+            *([{ "$sort": dict(payload.sort) }] if payload.sort else []),
+            *cls.generate_group_stages(payload.rowGroupCols, payload.groupKeys),
             {"$facet": {
                 "items": [
-                    {"$skip": skip},
-                    {"$limit": limit},
+                    {"$skip": payload.skip},
+                    {"$limit": payload.limit},
                 ],
                 "total": [
                     {"$count": "count"}
@@ -160,13 +176,16 @@ class Doc(Document, ABC):
             }}
         ]
 
-        # HACK - hardcode 'items'
+        # HACK - hardcode 'items' and 'group'
         def project_nested_documents(docs: list[dict]) -> dict:
             for i, doc in enumerate(docs):
                 if 'items' in doc:
                     doc['items'] = project_nested_documents(doc['items'])
                 else:
-                    docs[i] = cls(**doc)
+                    if '_id' in doc:
+                        docs[i]['_id'] = str(doc['_id'])
+                    if 'group' not in doc:
+                        docs[i] = cls(**doc)
             return docs
 
         # TODO custom validation/projection

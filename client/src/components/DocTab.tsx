@@ -105,7 +105,7 @@ export default function DocTab({ metadata }: Props) {
           minWidth: 100,
           valueGetter: (params) => {
             let val = getObjVal(params.data, path)
-            if (agt !== 'date')
+            if (agt !== 'date' ||  !val)
               return val
             else {
               let d = new Date(val)
@@ -116,7 +116,7 @@ export default function DocTab({ metadata }: Props) {
           },
           valueFormatter: (params) => {
             let val = getObjVal(params.data, path)
-            if (agt !== 'date')
+            if (agt !== 'date' || !val)
               return val
             else {
               const d = new Date(val);
@@ -167,7 +167,8 @@ export default function DocTab({ metadata }: Props) {
     limit: any | number;
     sort: any | [string, 1 | -1][];
     filter: any | Record<string, unknown>;
-    groupby: any[]
+    rowGroupCols: string[]
+    groupKeys: string[]
   }
 
   async function fetchData ( payload:  QueryParams) {
@@ -305,12 +306,14 @@ export default function DocTab({ metadata }: Props) {
 
   const datasource: IServerSideDatasource = {
     getRows: async (params: IServerSideGetRowsParams) => {
+      const req = params.request
       const payload: QueryParams = {
-        skip: params.request.startRow,
-        limit: (!params.request.endRow || !params.request.startRow) ? 100 : (params.request.endRow - params.request.startRow),
-        sort: (params.request.sortModel ?? []).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1]),
-        filter: mongoFilter(params.request.filterModel as Record<string, Filter>),
-        groupby: params.request.rowGroupCols.map(group => [group.field, 1])
+        skip: req.startRow,
+        limit: (!req.endRow || !req.startRow) ? 100 : (req.endRow - req.startRow),
+        sort: (req.sortModel ?? []).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1]),
+        filter: mongoFilter(req.filterModel as Record<string, Filter>),
+        rowGroupCols: req.rowGroupCols.map(group => group.id),
+        groupKeys: req.groupKeys
       }
 
       try {
@@ -336,7 +339,8 @@ export default function DocTab({ metadata }: Props) {
       limit: 10**10,
       sort: [],
       filter: mongoFilter(filterModel),
-      groupby: []
+      rowGroupCols: [],
+      groupKeys: [],
     }
 
     api
