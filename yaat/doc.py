@@ -1,11 +1,9 @@
 from __future__ import annotations
 from beanie import Document, before_event, Insert, Update, Replace, Delete, PydanticObjectId
-from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Body
 from typing import ClassVar, TypeVar, Generic, Any
 from dataclasses import dataclass
-from bson import ObjectId
 from abc import ABC
 
 class IdView(BaseModel):
@@ -138,7 +136,6 @@ class Doc(Document, ABC):
             }})
         return pipe
 
-    _read_json_encode: ClassVar = {ObjectId : str}
     @classmethod
     async def crud_r(cls, payload: dict = Body(...)) -> dict:
         filter_, skip, limit, groupby = payload['filter'], payload['skip'], payload['limit'], payload['groupby']
@@ -162,7 +159,19 @@ class Doc(Document, ABC):
                 "total": { "$ifNull": [{ "$arrayElemAt": ["$total.count", 0] }, 0] }
             }}
         ]
-        return jsonable_encoder((await cls.aggregate(pipeline).to_list(1))[0], custom_encoder=cls._read_json_encode)
+
+        def project_nested_documents(docs: list[dict]) -> dict:
+            for i, doc in enumerate(docs):
+                if 'items' in doc:
+                    doc['items'] = project_nested_documents(doc['items'])
+                else:
+                    docs[i] = cls(**doc)
+            return docs
+
+        # TODO custom validation/projection
+        ret, = await cls.aggregate(pipeline).to_list()
+        ret['items'] = project_nested_documents(ret['items'])
+        return ret
 
     @classmethod
     async def crud_u(cls, doc: Doc) -> Doc:
