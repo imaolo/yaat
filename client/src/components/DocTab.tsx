@@ -34,11 +34,16 @@ type Props = {
   metadata: Metadata
 }
 
-export type SingleFilter = {
-  filterType: 'text' | string;
+type SingleFilterScalar = {
   type: string
   filter: any
 }
+
+type SingleFilterArray = {
+  values: string[]
+}
+
+export type SingleFilter = {filterType: string} & (SingleFilterScalar | SingleFilterArray)
 
 export type MultiFilter = {
   filterType: 'text' | string
@@ -222,18 +227,18 @@ export default function DocTab({ metadata }: Props) {
 };
 
 
-  const getMongoFilterValue = (dataType: string, value: string): Record<string, any> | string | Date | number => {
-    const new_value = convertToDatatype(dataType, value)
-  
+const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string | Date | number => {
+  const dataType = filter.filterType
+  const value = (filter as SingleFilterScalar).filter ?? (filter as SingleFilterArray).values
+  const new_value = convertToDatatype(dataType, value)
+
     switch (dataType){
       case 'number':
       case 'text':
+      case 'set':
         return new_value
       case 'date':
         return { $dateFromString: { dateString: new_value } }
-      case 'set':
-        console.log(new_value)
-        throw new Error(`${new_value}`)
       default:
         throw new Error(dataType)
     }
@@ -243,59 +248,68 @@ export default function DocTab({ metadata }: Props) {
   // export type ScalarAdvancedFilterModelType = 'equals' | 'notEqual' | 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' | 'blank' | 'notBlank';
   
   const mongoSingleFilter = (field: string, filter: SingleFilter): Record<string, any> => {
-    let value = getMongoFilterValue(filter.filterType, filter.filter)
+    let value = getMongoFilterValue(filter)
     switch (filter.filterType){
       case 'text':
-        switch (filter.type){
-          case 'equals':
-            return {[field]: value}
-          case 'notEqual': 
-            return { [field]: { $ne:  value } }
-          case 'contains':
-            return { [field]: { $regex: value } }
-          case 'notContains':
-            return { [field]: { $not: { $regex: value } } }
-          case 'startsWith':
-            return { [field]: { $regex: `^${value}` } }
-          case 'endsWith':
-            return { [field]: { $regex: `${value}$` } }
-          case 'blank':
-          case 'notBlank':
-          default:
-            throw new Error(filter.type)
-        }
       case 'number':
-        switch (filter.type){
-          case 'equals':
-            return {[field]: value}
-          case 'notEqual': 
-            return { [field]: { $ne:  value } }
-          case 'lessThan':
-            return { [field]: { $lt: value } }
-          case 'lessThanOrEqual':
-            return { [field]: { $lte: value } }
-          case 'greaterThan':
-            return { [field]: { $gt: value } }
-          case 'greaterThanOrEqual':
-            return { [field]: { $gte: value } }
-          case 'blank':
-          case 'notBlank':
+      case 'date': {
+        const scalar_filter = filter as SingleFilterScalar
+        switch (filter.filterType) {
+          case 'text':
+            switch (scalar_filter.type){
+              case 'equals':
+                return {[field]: value}
+              case 'notEqual': 
+                return { [field]: { $ne:  value } }
+              case 'contains':
+                return { [field]: { $regex: value } }
+              case 'notContains':
+                return { [field]: { $not: { $regex: value } } }
+              case 'startsWith':
+                return { [field]: { $regex: `^${value}` } }
+              case 'endsWith':
+                return { [field]: { $regex: `${value}$` } }
+              case 'blank':
+              case 'notBlank':
+              default:
+                throw new Error(scalar_filter.type)
+            }
+          case 'number':
+            switch (scalar_filter.type){
+              case 'equals':
+                return {[field]: value}
+              case 'notEqual': 
+                return { [field]: { $ne:  value } }
+              case 'lessThan':
+                return { [field]: { $lt: value } }
+              case 'lessThanOrEqual':
+                return { [field]: { $lte: value } }
+              case 'greaterThan':
+                return { [field]: { $gt: value } }
+              case 'greaterThanOrEqual':
+                return { [field]: { $gte: value } }
+              case 'blank':
+              case 'notBlank':
+              default:
+                throw new Error(scalar_filter.type)
+            }
+          case 'date':
+            switch (scalar_filter.type){
+              case 'after':
+                return { $expr : {$gt : [ `$${field}`, value ] } }
+              case 'before':
+                return { $expr : {$lt : [ `$${field}`, value ] } }
+              case 'is':
+              case 'isNot':
+              case 'between':
+                return {[field]: getMongoFilterValue(filter)}
+              default:
+                throw new Error(scalar_filter.type)
+            }
           default:
-            throw new Error(filter.type)
+            throw new Error(filter.filterType)
         }
-      case 'date':
-        switch (filter.type){
-          case 'after':
-            return { $expr : {$gt : [ `$${field}`, value ] } }
-          case 'before':
-            return { $expr : {$lt : [ `$${field}`, value ] } }
-          case 'is':
-          case 'isNot':
-          case 'between':
-            return {[field]: getMongoFilterValue(filter.filterType, filter.filter)}
-          default:
-            throw new Error(filter.type)
-        }
+      }
       case 'set':
         return { [field]: { $in: value } }
       default:
