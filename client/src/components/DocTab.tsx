@@ -3,7 +3,7 @@ import { AgGridReact } from "ag-grid-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {  ModuleRegistry, TextFilterModule, ValidationModule, RowApiModule, CustomFilterModule,
-          NumberFilterModule, DateFilterModule
+          NumberFilterModule, DateFilterModule, SelectionChangedEvent
         } from 'ag-grid-community'; 
 import { ServerSideRowModelModule, ServerSideRowModelApiModule, PaginationModule, RowGroupingModule, RowGroupingPanelModule } from 'ag-grid-enterprise'; 
 import Form from "@rjsf/core"
@@ -144,18 +144,22 @@ export default function DocTab({ metadata }: Props) {
     return gridapi
   }
 
-  const getSelectedRowsCount = (): number => {
-    const gridapi = getGridApi()
-    const state = gridapi.getServerSideSelectionState()
-
-    if (!state)
+  const getSelectedRowsCount = (e: SelectionChangedEvent): number => {
+    if (!e.serverSideState)
       throw Error()
 
-    if (state.toggledNodes && state.toggledNodes.length > 1)
-      return state.toggledNodes.length
+    if (e.selectedNodes && e.selectedNodes.length > 1)
+      return e.selectedNodes.length
 
-    if ('selectAll' in state)
-      return gridapi.getDisplayedRowCount();
+    if ('selectAll' in e.serverSideState){
+      if (e.serverSideState.selectAll)
+        return getGridApi().getDisplayedRowCount();
+      else{
+        if (e.serverSideState.toggledNodes.length > 0)
+          throw new Error()
+        return 0
+      }
+    }
 
     throw Error()
   }
@@ -376,7 +380,7 @@ export default function DocTab({ metadata }: Props) {
             mode: 'multiRow',
             enableClickSelection: false,
           }}
-          onSelectionChanged={() => setSelectedRowsCount(getSelectedRowsCount())}
+          onSelectionChanged={(e: SelectionChangedEvent) => setSelectedRowsCount(getSelectedRowsCount(e))}
 
           // visual
           animateRows={false}
