@@ -143,4 +143,6 @@ class IntervalJobDoc(APSJobDoc, doc_args=DocArgs(schema_readable=False)):
     def set_add_job_args(cls, vals):
         vals['add_job_args'] = ['interval']
         vals['add_job_kwargs'] = {'seconds': vals['seconds']}
+        vals['coalesce'] = True
+        vals['misfire_grace_time'] = 0
         return vals
