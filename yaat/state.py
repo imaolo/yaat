@@ -5,7 +5,6 @@ from motor.motor_asyncio import AsyncIOMotorClient
 from apscheduler.jobstores.mongodb import MongoDBJobStore
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from beanie import init_beanie
-from pydantic import BaseModel
 from typing import ClassVar, Generic, TypeVar
 from abc import ABC, abstractmethod
 from fastapi import APIRouter
