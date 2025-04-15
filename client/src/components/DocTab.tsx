@@ -338,6 +338,7 @@ export default function DocTab({ metadata }: Props) {
     const gridapi = getGridApi()
     const filterModel = gridapi.getFilterModel() as Record<string, Filter>
   
+    // NOTE um deletes all on selects that arent select all?
     const payload: QueryParams = {
       skip: 0,
       limit: 10**10,
