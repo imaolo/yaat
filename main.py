@@ -13,8 +13,6 @@ async def lifespan(app: FastAPI):
     State.terminate()
 
 app = FastAPI(title='Title', lifespan=lifespan)
-import os
-assert False, (os.listdir('/'), os.listdir('/repo'))
 app.mount('/dist', StaticFiles(directory=STATIC_DIR), name='dist')
 app.add_route('/', lambda _: RedirectResponse(url="/dist/index.html"))
 app.add_route('/hb', lambda _: {'status': 'ok', 'message': "Heartbeat acknowledged"})
