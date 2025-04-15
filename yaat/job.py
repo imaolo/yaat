@@ -6,6 +6,7 @@ from beanie.operators import Eq
 from pydantic import field_serializer, model_validator, Field, BaseModel
 from pydantic.json_schema import SkipJsonSchema, WithJsonSchema
 from typing import ClassVar, Any, Annotated
+from datetime import datetime, timezone
 import base64
 
 # TODO - better functions
@@ -27,6 +28,7 @@ class APSJobDoc(Doc, doc_args=aps_job_doc_args):
     job_state: SkipJsonSchema[bytes | None] = Field(default=None, init=False)
     add_job_args: SkipJsonSchema[list[Any] | None] = Field(default=None, exclude=True)
     add_job_kwargs: SkipJsonSchema[dict[str, Any] | None] = Field(default=None, exclude=True)
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # field descriptors
 
@@ -52,6 +54,14 @@ class APSJobDoc(Doc, doc_args=aps_job_doc_args):
     def serialize_job_state(self, job_state: bytes) -> str:
         return base64.b64encode(job_state).decode("ascii")
 
+    @field_serializer('created_at')
+    def serialize_created_at(self, dt: datetime, _info) -> str:
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
+        return dt.isoformat().replace("+00:00", "Z")
+
     # json schema
 
     @classmethod
@@ -64,7 +74,7 @@ class APSJobDoc(Doc, doc_args=aps_job_doc_args):
 
     @classmethod
     def schema_create(cls, *args, **kwargs):
-        return cls.model_json_schema(exclude=set(cls.aps_fields + ['job_type']))
+        return cls.model_json_schema(exclude=set(cls.aps_fields + ['job_type', 'created_at']))
 
     @classmethod
     def schema_read(cls) -> dict:
