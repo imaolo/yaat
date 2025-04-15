@@ -63,6 +63,11 @@ class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_update
             dt = dt.astimezone(timezone.utc)
         return dt.isoformat().replace("+00:00", "Z")
 
+    class Settings:
+        indexes = [
+            [("created_at", -1)],  # descending index for latest-first sorting
+        ]
+
 class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
     query: TopMoverQueryDoc
 
