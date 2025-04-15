@@ -22,7 +22,7 @@ services:
 
   build-frontend:
     <<: *mount
-    working_dir: /repo/yaat/client
+    working_dir: /repo/client
     image: node:18
     command: ["/bin/sh", "-c", "npm install && npm run build"]
 
