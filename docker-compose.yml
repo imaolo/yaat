@@ -24,7 +24,7 @@ services:
     <<: *mount
     working_dir: /repo/client
     image: node:18
-    command: ["/bin/sh", "-c", "npm install && npm run build"]
+    command: ["/bin/sh", "-c", "npm install --legacy-peer-deps && npm run build"]
 
   yaat:
     <<: *mount
