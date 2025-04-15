@@ -69,7 +69,7 @@ export default function DocTab({ metadata }: Props) {
 
   const getObjVal = (obj: Record<string, any>, path: string): any => path.split('.').reduce((acc, key) => acc?.[key], obj)
 
-  const jsonSchema2AGT = (schema: any) => {
+  const jsonSchema2AGT = (schema: any): 'date' | 'number' | 'text' => {
     if (schema.type === 'string' && schema.format === 'date-time')
       return 'date'
 
@@ -78,6 +78,22 @@ export default function DocTab({ metadata }: Props) {
       case 'integer': return 'number'
       case 'string': return 'text'
       default: return 'text'
+    }
+  }
+
+  const jsonSchema2AgFilter = (schema: any): any => {
+    if (schema.type === 'string' && schema.format === 'date-time')
+      return DateTimeFilterPopup
+
+    if ('enum' in schema)
+      return 'agSetColumnFilter'
+
+    switch (schema.type){
+      case 'number':
+      case 'integer':
+        return 'agNumberColumnFilter'
+      case 'string':
+        return 'agTextColumnFilter'
     }
   }
 
@@ -94,7 +110,7 @@ export default function DocTab({ metadata }: Props) {
           headerName: path,
           sortable: true,
           enableRowGroup: true,
-          filter: agt === 'date' ? DateTimeFilterPopup : 'enum' in propSchema ? 'agSetColumnFilter': agt,
+          filter: jsonSchema2AgFilter(propSchema),
           cellDataType: agt,
           filterParams : { 
             maxNumConditions: 10,
@@ -215,6 +231,9 @@ export default function DocTab({ metadata }: Props) {
         return new_value
       case 'date':
         return { $dateFromString: { dateString: new_value } }
+      case 'set':
+        console.log(new_value)
+        throw new Error(`${new_value}`)
       default:
         throw new Error(dataType)
     }
@@ -273,9 +292,12 @@ export default function DocTab({ metadata }: Props) {
           case 'is':
           case 'isNot':
           case 'between':
-          default:
             return {[field]: getMongoFilterValue(filter.filterType, filter.filter)}
+          default:
+            throw new Error(filter.type)
         }
+      case 'set':
+        return { [field]: { $in: value } }
       default:
         throw new Error(filter.filterType)
     }
