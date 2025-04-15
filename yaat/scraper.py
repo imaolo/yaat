@@ -38,10 +38,10 @@ class TopMoverQueryDoc(BaseModel):
             symbol='btc',
             name='bitcoin',
             usd=random.uniform(1000.0, 1000000.0),
-            market_cap_rank=random.randint(1, int(self.top_coin) if self.top_coin != 'all' else 2**31),
+            market_cap_rank=mcr,
             usd_24h_vol=random.randint(100, 100000),
             usd_1y_change=random.randint(-2**31, 2**31)
-        )])
+        ) for mcr in range(1, int(self.top_coin.value if self.top_coin.value != 'all' else 2000)+1)])
 
 class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_updateable=False)):
     # https://docs.coingecko.com/reference/coins-top-gainers-losers
