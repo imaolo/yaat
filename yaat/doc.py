@@ -160,6 +160,7 @@ class Doc(Document, ABC):
             }}
         ]
 
+        # HACK - hardcode 'items'
         def project_nested_documents(docs: list[dict]) -> dict:
             for i, doc in enumerate(docs):
                 if 'items' in doc:
