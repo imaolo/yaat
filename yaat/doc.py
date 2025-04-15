@@ -1,5 +1,6 @@
 from __future__ import annotations
 from beanie import Document, before_event, Insert, Update, Replace, Delete, PydanticObjectId
+from fastapi.encoders import jsonable_encoder
 from pydantic import BaseModel, Field
 from fastapi import APIRouter, Body
 from typing import ClassVar, TypeVar, Generic, Any
@@ -137,6 +138,7 @@ class Doc(Document, ABC):
             }})
         return pipe
 
+    _read_json_encode: ClassVar = {ObjectId : str}
     @classmethod
     async def crud_r(cls, payload: dict = Body(...)) -> dict:
         filter_, skip, limit, groupby = payload['filter'], payload['skip'], payload['limit'], payload['groupby']
@@ -160,7 +162,7 @@ class Doc(Document, ABC):
                 "total": { "$ifNull": [{ "$arrayElemAt": ["$total.count", 0] }, 0] }
             }}
         ]
-        return (await cls.aggregate(pipeline).to_list(1))[0]
+        return jsonable_encoder((await cls.aggregate(pipeline).to_list(1))[0], custom_encoder=cls._read_json_encode)
 
     @classmethod
     async def crud_u(cls, doc: Doc) -> Doc:
@@ -190,7 +192,7 @@ class Doc(Document, ABC):
             '/read/'+cls.__name__,
             endpoint=cls.crud_r,
             methods=["POST"],
-            response_model=CRUDReadRes[cls]
+            response_model=dict
         )
 
         router.add_api_route(
