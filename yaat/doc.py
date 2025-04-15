@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from abc import ABC
 
 class IdView(BaseModel):
-    id: PydanticObjectId = Field(alias='_id')
+    id: PydanticObjectId | str = Field(alias='_id')
 
 @dataclass  
 class DocArgs:
