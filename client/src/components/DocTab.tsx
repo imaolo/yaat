@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import {  ModuleRegistry, TextFilterModule, ValidationModule, RowApiModule, CustomFilterModule,
           NumberFilterModule, DateFilterModule, SelectionChangedEvent
         } from 'ag-grid-community'; 
-import { ServerSideRowModelModule, ServerSideRowModelApiModule, PaginationModule, RowGroupingModule, RowGroupingPanelModule } from 'ag-grid-enterprise'; 
+import { ServerSideRowModelModule, ServerSideRowModelApiModule, PaginationModule, RowGroupingModule, RowGroupingPanelModule, SetFilterModule} from 'ag-grid-enterprise'; 
 import Form from "@rjsf/core"
 import validator from "@rjsf/validator-ajv8"
 import Dereferencer from "@json-schema-tools/dereferencer";
@@ -26,7 +26,8 @@ ModuleRegistry.registerModules([
   CustomFilterModule,
   ValidationModule,
   RowGroupingModule,
-  RowGroupingPanelModule
+  RowGroupingPanelModule,
+  SetFilterModule
 ]); 
 
 type Props = {
@@ -93,13 +94,14 @@ export default function DocTab({ metadata }: Props) {
           headerName: path,
           sortable: true,
           enableRowGroup: true,
-          filter: agt !== 'date' ? true : DateTimeFilterPopup,
+          filter: agt === 'date' ? DateTimeFilterPopup : 'enum' in propSchema ? 'agSetColumnFilter': agt,
           cellDataType: agt,
           filterParams : { 
             maxNumConditions: 10,
             buttons: ['apply'],
             closeOnApply: true,
-            key: `${Date.now()}`
+            key: `${Date.now()}`,
+            ...('enum' in propSchema && { values: propSchema['enum'] })
           },
           flex: 1,
           minWidth: 100,
