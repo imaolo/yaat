@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useMemo } from "react"
 import { AgGridReact } from "ag-grid-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -304,7 +304,7 @@ export default function DocTab({ metadata }: Props) {
 
   // data source
 
-  const datasource: IServerSideDatasource = {
+  const datasource = useMemo<IServerSideDatasource>(() => ({
     getRows: async (params: IServerSideGetRowsParams) => {
       const req = params.request
       const payload: QueryParams = {
@@ -315,14 +315,14 @@ export default function DocTab({ metadata }: Props) {
         rowGroupCols: req.rowGroupCols.map(group => group.id),
         groupKeys: req.groupKeys
       }
-
+  
       try {
         params.success(await fetchData(payload))
       } catch (e) {
         params.fail()
       }
-    },
-  }
+    }
+  }), [metadata])
 
   // event handlers
 
