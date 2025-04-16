@@ -199,7 +199,6 @@ class Doc(Document, ABC):
 
     @classmethod
     async def crud_d(cls, payload: AggregationPayload = Body(...)) -> str:
-        raise 
         docs = await cls.find(payload.filter).project(IdView).skip(payload.skip).limit(payload.limit).to_list()
         return str(await cls.find_many({"_id": {"$in": [doc.id for doc in docs]}}).delete())
 
