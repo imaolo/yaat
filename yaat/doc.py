@@ -199,12 +199,9 @@ class Doc(Document, ABC):
 
     @classmethod
     async def crud_d(cls, payload: AggregationPayload = Body(...)) -> str:
+        raise 
         docs = await cls.find(payload.filter).project(IdView).skip(payload.skip).limit(payload.limit).to_list()
         return str(await cls.find_many({"_id": {"$in": [doc.id for doc in docs]}}).delete())
-
-    @classmethod
-    async def crud_d_all(cls) -> str:
-        return str(await cls.delete_all())
 
     # configure endpoints
 
@@ -234,12 +231,6 @@ class Doc(Document, ABC):
             '/delete/'+cls.__name__,
             endpoint=cls.crud_d,
             methods=["POST"]
-        )
-
-        router.add_api_route(
-            f"/{cls.__name__}_all",
-            endpoint=cls.crud_d_all,
-            methods=["DELETE"]
         )
 
 
