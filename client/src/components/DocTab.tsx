@@ -3,7 +3,7 @@ import { AgGridReact } from "ag-grid-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import {  ModuleRegistry, TextFilterModule, ValidationModule, RowApiModule, CustomFilterModule,
-          NumberFilterModule, DateFilterModule, SelectionChangedEvent
+          NumberFilterModule, DateFilterModule, SelectionChangedEvent, IServerSideSelectionState
         } from 'ag-grid-community'; 
 import { ServerSideRowModelModule, ServerSideRowModelApiModule, PaginationModule, RowGroupingModule, RowGroupingPanelModule, SetFilterModule} from 'ag-grid-enterprise'; 
 import Form from "@rjsf/core"
@@ -174,15 +174,11 @@ export default function DocTab({ metadata }: Props) {
     if (e.selectedNodes && e.selectedNodes.length > 1)
       return e.selectedNodes.length
 
-    if ('selectAll' in e.serverSideState){
+    if ('selectAll' in e.serverSideState)
       if (e.serverSideState.selectAll)
-        return getGridApi().getDisplayedRowCount();
-      else{
-        if (e.serverSideState.toggledNodes.length > 0)
-          throw new Error()
-        return 0
-      }
-    }
+        return getGridApi().getDisplayedRowCount() - e.serverSideState.toggledNodes.length;
+      else
+        return e.serverSideState.toggledNodes.length
 
     throw Error()
   }
@@ -247,7 +243,7 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
   // export type TextAdvancedFilterModelType = 'equals' | 'notEqual' | 'contains' | 'notContains' | 'startsWith' | 'endsWith' | 'blank' | 'notBlank';
   // export type ScalarAdvancedFilterModelType = 'equals' | 'notEqual' | 'lessThan' | 'lessThanOrEqual' | 'greaterThan' | 'greaterThanOrEqual' | 'blank' | 'notBlank';
   
-  const mongoSingleFilter = (field: string, filter: SingleFilter): Record<string, any> => {
+  const mongoSingleFilter = (field: string, filter: SingleFilter, not: boolean = false): Record<string, any> => {
     let value = getMongoFilterValue(filter)
     switch (filter.filterType){
       case 'text':
@@ -311,21 +307,25 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
         }
       }
       case 'set':
-        return { [field]: { $in: value } }
+        return not ? { [field]: { $nin: value } } : { [field]: { $in: value } }
       default:
         throw new Error(filter.filterType)
     }
   }
 
-  const mongoFilter = (filter: Record<string , Filter>): Record<string, any>  => {
+  const mongoFilter = (filter: Record<string , Filter>, include_ids: string[] = [], exclude_ids: string[] = []): Record<string, any>  => {
     const new_filter: Record<string, any> = {$and: [{$or: []},]}
+
+    // cannot include both include and exclude ids
+    if (include_ids.length > 0 && exclude_ids.length > 0)
+      throw new Error(`${include_ids} - ${exclude_ids}`)
 
     // helpers
     const addOrFilter = (single_filter_field: string, single_filter: SingleFilter) => {
       new_filter.$and[0].$or.push(mongoSingleFilter(single_filter_field, single_filter))
     }
-    const addAndFilter = (single_filter_field: string, single_filter: SingleFilter) => {
-      new_filter.$and.push(mongoSingleFilter(single_filter_field, single_filter))
+    const addAndFilter = (single_filter_field: string, single_filter: SingleFilter, not:boolean = false) => {
+      new_filter.$and.push(mongoSingleFilter(single_filter_field, single_filter, not))
     }
 
     // main construction logic
@@ -335,6 +335,12 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
           (field_filter.operator === 'AND' ? addAndFilter : addOrFilter)(field, condition)
       else
         addAndFilter(field, field_filter)
+
+    // add include/exclude ids
+    if (include_ids.length > 0)
+      addAndFilter('_id', { filterType: 'set', values: include_ids})
+    if (exclude_ids.length > 0)
+      addAndFilter('_id', { filterType: 'set', values: exclude_ids}, true)
   
     // pop OR if empty
     if (new_filter.$and[0].$or.length === 0)
@@ -375,13 +381,29 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
   const handleDelete = () => {
     const gridapi = getGridApi()
     const filterModel = gridapi.getFilterModel() as Record<string, Filter>
+    const selectionState = gridapi.getServerSideSelectionState() as IServerSideSelectionState
+
+    if (!selectionState)
+      throw new Error()
+
+    let include_ids: string[] = []
+    let exclude_ids: string[] = []
+    if (selectionState.selectAll) {
+      if (selectionState.toggledNodes.length > 0)
+        exclude_ids = selectionState.toggledNodes
+    }
+    else {
+      if (!selectionState.toggledNodes)
+        throw new Error()
+      include_ids = selectionState.toggledNodes
+    }
   
     // NOTE um deletes all on selects that arent select all?
     const payload: QueryParams = {
       skip: 0,
       limit: 10**10,
       sort: [],
-      filter: mongoFilter(filterModel),
+      filter: mongoFilter(filterModel, include_ids, exclude_ids),
       rowGroupCols: [],
       groupKeys: [],
     }
@@ -389,6 +411,10 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
     api
       .post(`/delete/${metadata.read.title}`, payload)
       .then((_) => getGridApi().refreshServerSide())
+  }
+
+  const handleSelectionChanged = (e: SelectionChangedEvent) => {
+    setSelectedRowsCount(getSelectedRowsCount(e))
   }
 
   // DocTab component
@@ -419,7 +445,7 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
             mode: 'multiRow',
             enableClickSelection: false,
           }}
-          onSelectionChanged={(e: SelectionChangedEvent) => setSelectedRowsCount(getSelectedRowsCount(e))}
+          onSelectionChanged={handleSelectionChanged}
 
           // visual
           animateRows={false}
