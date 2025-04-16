@@ -1,15 +1,10 @@
 from __future__ import annotations
-from yaat.doc import Doc, DocArgs, read_only_doc_args
+from yaat.doc import Doc, DocArgs
 from pydantic import BaseModel, Field, field_serializer
 from enum import Enum
-from typing import ClassVar
-from itertools import product
 from datetime import datetime, timezone
 from yaat.job import IntervalJobDoc
 import random
-
-#### Top Mover Query and Result Docs
-# https://docs.coingecko.com/reference/coins-top-gainers-losers
 
 class TopMoverQueryDoc(BaseModel):
     class Duration(str, Enum):
@@ -26,22 +21,8 @@ class TopMoverQueryDoc(BaseModel):
         coins_1000 = "1000"
         coins_all = "all"
 
-    durations_top_coins: ClassVar[tuple[Duration, TopCoins]] = list(product(Duration, TopCoins))
-
     duration: Duration = Field(..., description="duration of top movers")
     top_coin: TopCoins = Field(..., description="how many ordered coins to fetch")
-
-    async def __call__(self) -> list[TopMoverResultDoc]:
-        return await TopMoverResultDoc.insert_many([TopMoverResultDoc(
-            query=self,
-            cid='fdsafdsa',
-            symbol='btc',
-            name='bitcoin',
-            usd=random.uniform(1000.0, 1000000.0),
-            market_cap_rank=mcr,
-            usd_24h_vol=random.randint(100, 100000),
-            usd_1y_change=random.randint(-2**31, 2**31)
-        ) for mcr in range(1, int(self.top_coin.value if self.top_coin.value != 'all' else 2000)+1)])
 
 class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_updateable=False)):
     # https://docs.coingecko.com/reference/coins-top-gainers-losers
@@ -54,6 +35,7 @@ class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_update
     market_cap_rank: int
     usd_24h_vol: int
     usd_1y_change: int
+    # TODO add a % change column
 
     @field_serializer('created_at')
     def serialize_created_at(self, dt: datetime, _info) -> str:
@@ -76,4 +58,19 @@ class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
         await cls(query=TopMoverQueryDoc(**doc.pop('query')), **doc).create()
 
     async def func(self):
-        await self.query()
+        await top_mover_func(self.query)
+
+async def top_mover_func(query: TopMoverQueryDoc):
+    url = "https://pro-api.coingecko.com/api/v3"
+    # https://docs.coingecko.com/reference/coins-top-gainers-losers
+    # TODO get the % change
+    await TopMoverResultDoc.insert_many([TopMoverResultDoc(
+        query=query,
+        cid='fdsafdsa',
+        symbol='btc',
+        name='bitcoin',
+        usd=random.uniform(1000.0, 1000000.0),
+        market_cap_rank=mcr,
+        usd_24h_vol=random.randint(100, 100000),
+        usd_1y_change=random.randint(-2**31, 2**31)
+    ) for mcr in range(1, int(query.top_coin.value if query.top_coin.value != 'all' else 2000)+1)])
