@@ -156,3 +156,6 @@ class IntervalJobDoc(APSJobDoc, doc_args=DocArgs(schema_readable=False)):
         vals['coalesce'] = True
         vals['misfire_grace_time'] = 0
         return vals
+
+    async def func(self):
+        raise NotImplementedError()
