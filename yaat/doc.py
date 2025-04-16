@@ -1,10 +1,11 @@
 from __future__ import annotations
 from beanie import Document, before_event, Insert, Update, Replace, Delete, PydanticObjectId
 from pydantic import BaseModel, Field
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, HTTPException, Body
 from typing import ClassVar, TypeVar, Generic, Any
 from dataclasses import dataclass
 from abc import ABC
+import functools, traceback
 
 class IdView(BaseModel):
     id: PydanticObjectId | str = Field(alias='_id')
@@ -199,36 +200,50 @@ class Doc(Document, ABC):
 
     @classmethod
     async def crud_d(cls, payload: AggregationPayload = Body(...)) -> str:
-        docs = await cls.find(payload.filter).project(IdView).skip(payload.skip).limit(payload.limit).to_list()
-        return str(await cls.find_many({"_id": {"$in": [doc.id for doc in docs]}}).delete())
+        # NOTE - ignore everything except filter
+        # TODO - handle groups
+        return str(await cls.find(payload.filter).delete_many())
 
     # configure endpoints
 
     @classmethod
     def add_crud(cls, router: APIRouter):
+
+        def wrap_endpoint(func):
+            @functools.wraps(func)
+            async def async_wrapper(*args, **kwargs):
+                try:
+                    return await func(*args, **kwargs)
+                except HTTPException:
+                    raise
+                except Exception as e:
+                    traceback.print_exc()
+                    raise HTTPException(status_code=500, detail=str(e))
+            return async_wrapper
+
         # TODO gate these
         router.add_api_route(
             '/'+cls.__name__,
-            endpoint=cls.crud_c,
+            endpoint=wrap_endpoint(cls.crud_c),
             methods=["POST"],
         )
 
         router.add_api_route(
             '/read/'+cls.__name__,
-            endpoint=cls.crud_r,
+            endpoint=wrap_endpoint(cls.crud_r),
             methods=["POST"],
             response_model=dict
         )
 
         router.add_api_route(
             '/'+cls.__name__,
-            endpoint=cls.crud_u,
+            endpoint=wrap_endpoint(cls.crud_u),
             methods=["PUT"]
         )
 
         router.add_api_route(
             '/delete/'+cls.__name__,
-            endpoint=cls.crud_d,
+            endpoint=wrap_endpoint(cls.crud_d),
             methods=["POST"]
         )
 
