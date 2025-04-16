@@ -246,6 +246,3 @@ class Doc(Document, ABC):
             endpoint=wrap_endpoint(cls.crud_d),
             methods=["POST"]
         )
-
-
-read_only_doc_args = doc_args=DocArgs(schema_createable=False, schema_deleteable=False, schema_updateable=False)
