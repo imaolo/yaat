@@ -62,7 +62,6 @@ function FloatingPanel() {
   const dragStart = useRef({ x: 0, y: 0 });
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
-  // Only center once on mount
   useEffect(() => {
     const vw = window.innerWidth;
     setPosition({ x: Math.floor((vw - size.width) / 2), y: 80 });
@@ -156,7 +155,7 @@ function FloatingPanel() {
 
       {isOpen && (
         <div style={{ flex: 1, padding: '1rem' }}>
-          {/* Panel content goes here */}
+          <h1>whaddup whaddup</h1>
         </div>
       )}
 
@@ -179,7 +178,7 @@ function FloatingPanel() {
         />
       )}
     </div>
-  );
+  )
 }
 
 
