@@ -59,17 +59,7 @@ export default function DocTab({ metadata }: Props) {
   const [gridCols, setGridCols] = useState<ColDef[]>([])
   const [displayForm, setDisplayForm] = useState(false)
   const [selectedRowsCount, setSelectedRowsCount] = useState(0)
-  const panelRef = useRef<HTMLDivElement>(null);
-  const resizeHandleRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState(false);
-  const [position, setPosition] = useState({ x: 0, y: 80 });
-  const [size, setSize] = useState({ width: 300, height: 400 });
   const [content, setContent] = useState(0)
-  const isDragging = useRef(false);
-  const hasMoved = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
-
   const api = axios.create()
 
   // mount hook
@@ -432,6 +422,15 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
   // sub - components
 
   function FloatingPanel() {
+    const panelRef = useRef<HTMLDivElement>(null);
+    const resizeHandleRef = useRef<HTMLDivElement>(null);
+    const [isOpen, setIsOpen] = useState(false);
+    const [position, setPosition] = useState({ x: 0, y: 80 });
+    const [size, setSize] = useState({ width: 300, height: 400 });
+    const isDragging = useRef(false);
+    const hasMoved = useRef(false);
+    const dragStart = useRef({ x: 0, y: 0 });
+    const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
   
     useEffect(() => {
       const vw = window.innerWidth;
