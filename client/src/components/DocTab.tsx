@@ -51,6 +51,138 @@ export type MultiFilter = {
   conditions: SingleFilter[]
 }
 
+function FloatingPanel() {
+  const panelRef = useRef<HTMLDivElement>(null);
+  const resizeHandleRef = useRef<HTMLDivElement>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [position, setPosition] = useState({ x: 0, y: 80 });
+  const [size, setSize] = useState({ width: 300, height: 400 });
+  const isDragging = useRef(false);
+  const hasMoved = useRef(false);
+  const dragStart = useRef({ x: 0, y: 0 });
+  const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
+
+  // Only center once on mount
+  useEffect(() => {
+    const vw = window.innerWidth;
+    setPosition({ x: Math.floor((vw - size.width) / 2), y: 80 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleHeaderMouseDown = (e: React.MouseEvent) => {
+    dragStart.current = { x: e.clientX, y: e.clientY };
+    isDragging.current = true;
+    hasMoved.current = false;
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - dragStart.current.x;
+      const dy = moveEvent.clientY - dragStart.current.y;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        hasMoved.current = true;
+        setPosition((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+        dragStart.current = { x: moveEvent.clientX, y: moveEvent.clientY };
+      }
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      if (!hasMoved.current) setIsOpen((prev) => !prev);
+      isDragging.current = false;
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
+  const handleResizeMouseDown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    resizeStart.current = {
+      x: e.clientX,
+      y: e.clientY,
+      width: size.width,
+      height: size.height,
+    };
+
+    const onMouseMove = (moveEvent: MouseEvent) => {
+      const dx = moveEvent.clientX - resizeStart.current.x;
+      const dy = moveEvent.clientY - resizeStart.current.y;
+      setSize({
+        width: Math.max(150, resizeStart.current.width + dx),
+        height: Math.max(100, resizeStart.current.height + dy),
+      });
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  };
+
+  return (
+    <div
+      ref={panelRef}
+      style={{
+        position: 'fixed',
+        top: position.y,
+        left: position.x,
+        backgroundColor: '#f8f9fa',
+        border: '1px solid #ccc',
+        borderRadius: '6px',
+        boxShadow: '0 2px 10px rgba(0, 0, 0, 0.2)',
+        display: 'flex',
+        flexDirection: 'column',
+        zIndex: 1000,
+        userSelect: 'none',
+        overflow: 'hidden',
+        width: isOpen ? `${size.width}px` : 'auto',
+        height: isOpen ? `${size.height}px` : 'auto',
+      }}
+    >
+      <div
+        onMouseDown={handleHeaderMouseDown}
+        style={{
+          padding: '8px 12px',
+          cursor: 'move',
+          backgroundColor: '#e2e8f0',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        📊 Metrics
+      </div>
+
+      {isOpen && (
+        <div style={{ flex: 1, padding: '1rem' }}>
+          {/* Panel content goes here */}
+        </div>
+      )}
+
+      {isOpen && (
+        <div
+          ref={resizeHandleRef}
+          onMouseDown={handleResizeMouseDown}
+          style={{
+            width: '16px',
+            height: '16px',
+            position: 'absolute',
+            right: 0,
+            bottom: 0,
+            cursor: 'nwse-resize',
+            background: 'linear-gradient(135deg, #ccc 25%, transparent 25%), linear-gradient(225deg, #ccc 25%, transparent 25%)',
+            backgroundSize: '8px 8px',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'right bottom',
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+
 export type Filter = SingleFilter | MultiFilter
 
 export default function DocTab({ metadata }: Props) {
@@ -428,6 +560,8 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
         {metadata.update && <Button disabled={selectedRowsCount != 1}>Update</Button>}
         <span className="ml-auto text-sm">Rows Selected: {selectedRowsCount}</span>
       </div>
+
+      <FloatingPanel/>
 
       <div className="ag-theme-alpine w-full h-full border border-gray-600 rounded">
         <AgGridReact
