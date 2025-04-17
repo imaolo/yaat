@@ -194,14 +194,11 @@ export default function DocTab({ metadata }: Props) {
     filter: any | Record<string, unknown>;
     rowGroupCols: string[]
     groupKeys: string[]
+    count: boolean
   }
 
   async function fetchData ( payload:  QueryParams) {
-    const { data } = await api.post(`/read/${metadata.read.title}`, payload);
-    return {
-      rowData: data.items,
-      rowCount: data.total
-    }
+    return (await api.post(`/read/${metadata.read.title}`, payload)).data
   }
 
   const convertToDatatype = (dataType: string, value: string): string | Date | Number => {
@@ -363,11 +360,16 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
         sort: (req.sortModel ?? []).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1]),
         filter: mongoFilter(req.filterModel as Record<string, Filter>),
         rowGroupCols: req.rowGroupCols.map(group => group.id),
-        groupKeys: req.groupKeys
+        groupKeys: req.groupKeys,
+        count: false
       }
   
       try {
-        params.success(await fetchData(payload))
+        const data = await fetchData(payload)
+        params.success({rowData: data})
+        payload.count = true
+        // @ts-ignore 
+        params.success({rowCount: await fetchData(payload) as number, rowData: data})
       } catch (e) {
         params.fail()
       }
@@ -408,6 +410,7 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
       filter: mongoFilter(filterModel, include_ids, exclude_ids),
       rowGroupCols: [],
       groupKeys: [],
+      count: false
     }
 
     api

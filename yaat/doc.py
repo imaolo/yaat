@@ -47,6 +47,7 @@ class AggregationPayload(BaseModel):
     limit: int = 10
     rowGroupCols: list[str] = []
     groupKeys: list[str]
+    count: bool = False
 
 DocType = TypeVar('DocType')
 class CRUDReadRes(BaseModel, Generic[DocType]):
@@ -157,42 +158,26 @@ class Doc(Document, ABC):
         return pipe
 
     @classmethod
-    async def crud_r(cls, payload: AggregationPayload = Body(...)) -> dict:
+    async def crud_r(cls, payload: AggregationPayload = Body(...)) -> list[Doc] | int :
         pipeline = [
             {'$match': payload.filter},
-            *([{ "$sort": dict(payload.sort) }] if payload.sort else []),
-            *cls.generate_group_stages(payload.rowGroupCols, payload.groupKeys),
-            {"$facet": {
-                "items": [
-                    {"$skip": payload.skip},
-                    {"$limit": payload.limit},
-                ],
-                "total": [
-                    {"$count": "count"}
-                ]
-            }},
-            {"$project": {
-                "items": 1,
-                "total": { "$ifNull": [{ "$arrayElemAt": ["$total.count", 0] }, 0] }
-            }}
+            *([{ "$sort": dict(payload.sort) }] if payload.sort and not payload.count else []),
+            *cls.generate_group_stages(payload.rowGroupCols, payload.groupKeys)
         ]
 
-        # HACK - hardcode 'items' and 'group'
-        def project_nested_documents(docs: list[dict]) -> dict:
-            for i, doc in enumerate(docs):
-                if 'items' in doc:
-                    doc['items'] = project_nested_documents(doc['items'])
-                else:
-                    if '_id' in doc:
-                        docs[i]['_id'] = str(doc['_id'])
-                    if 'group' not in doc:
-                        docs[i] = cls(**doc)
-            return docs
+        # docs vs count
+        if not payload.count:
+            pipeline.extend([
+                {"$skip": payload.skip},
+                {"$limit": payload.limit},
+            ])
+        else:
+            pipeline.append({'$count': 'total'})
+
 
         # TODO custom validation/projection
-        ret, = await cls.aggregate(pipeline).to_list()
-        ret['items'] = project_nested_documents(ret['items'])
-        return ret
+        data = await cls.aggregate(pipeline).to_list()
+        return data[0]['total'] if payload.count else list(map(lambda d: cls(**d), data))
 
     @classmethod
     async def crud_u(cls, doc: Doc) -> Doc:
@@ -232,7 +217,7 @@ class Doc(Document, ABC):
             '/read/'+cls.__name__,
             endpoint=wrap_endpoint(cls.crud_r),
             methods=["POST"],
-            response_model=dict
+            response_model=list[cls] | int
         )
 
         router.add_api_route(
