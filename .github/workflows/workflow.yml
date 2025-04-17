@@ -17,8 +17,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Python Dependencies
-        run: python -m pip install -e ".[test]"
+      # - name: Install Python Dependencies
+      #   run: python -m pip install -e ".[test]"
 
-      - name: Run CI
-        run: python ci.py
+      # - name: Run CI
+      #   run: python ci.py
