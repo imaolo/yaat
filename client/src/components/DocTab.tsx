@@ -551,16 +551,6 @@ export default function DocTab({ metadata }: Props) {
 
   const getRowId = (params: { data: any }) => params.data._id
 
-  // interface QueryParams {
-  //   skip: any | number;
-  //   limit: any | number;
-  //   sort: any | [string, 1 | -1][];
-  //   filter: any | Record<string, unknown>;
-  //   rowGroupCols: string[]
-  //   groupKeys: string[]
-  //   count: boolean
-  // }
-
   // data source
 
   const datasource = useMemo<IServerSideDatasource>(() => ({
@@ -625,17 +615,6 @@ export default function DocTab({ metadata }: Props) {
         throw new Error()
       include_ids = selectionState.toggledNodes
     }
-  
-    // NOTE um deletes all on selects that arent select all?
-    // const payload: QueryParams = {
-    //   skip: 0,
-    //   limit: 10**10,
-    //   sort: [],
-    //   filter: mongoFilter(filterModel, include_ids, exclude_ids),
-    //   rowGroupCols: [],
-    //   groupKeys: [],
-    //   count: false
-    // }
 
     api
       .post(`/delete/${metadata.read.title}`, {filter: mongoFilter(filterModel), include_ids, exclude_ids})

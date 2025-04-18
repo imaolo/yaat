@@ -1,15 +1,12 @@
 from __future__ import annotations
-from beanie import Document, before_event, Insert, Update, Replace, Delete, PydanticObjectId
-from pydantic import BaseModel, Field
+from beanie import Document, before_event, Insert, Update, Replace, Delete
+from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Body
-from typing import ClassVar, TypeVar, Generic, Any, get_args
+from typing import ClassVar, Any, get_args
 from dataclasses import dataclass
 from bson import ObjectId
 from abc import ABC
 import functools, traceback
-
-class IdView(BaseModel):
-    id: PydanticObjectId | str = Field(alias='_id')
 
 @dataclass  
 class DocArgs:
@@ -40,20 +37,6 @@ class UIMetadataField:
                 delete=owner.schema_delete() if owner.doc_args.schema_deleteable else None,
             )
         return self.metadata
-
-class AggregationPayload(BaseModel):
-    filter: dict[str, Any] | None = {}
-    sort: list[tuple[str, int]] | None = []
-    skip: int = 0
-    limit: int = 10
-    rowGroupCols: list[str] = []
-    groupKeys: list[str]
-    count: bool = False
-
-DocType = TypeVar('DocType')
-class CRUDReadRes(BaseModel, Generic[DocType]):
-    items: list[DocType]
-    total: int
 
 class Doc(Document, ABC):
     ui_metadata: ClassVar[DocUIMetadata] = None # NOTE place holder
