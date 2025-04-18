@@ -2,6 +2,7 @@ from __future__ import annotations
 from beanie import Document, before_event, Insert, Update, Replace, Delete
 from pydantic import BaseModel
 from fastapi import APIRouter, HTTPException, Body
+from fastapi.encoders import jsonable_encoder
 from typing import ClassVar, Any, get_args
 from dataclasses import dataclass
 from bson import ObjectId
@@ -110,8 +111,8 @@ class Doc(Document, ABC):
         return ret
 
     @classmethod
-    async def crud_r(cls, payload: list[dict] = Body(...)) -> list[Doc]:
-        return list(map(lambda d: cls(**d), await cls.aggregate(payload).to_list()))
+    async def crud_r(cls, payload: list[dict] = Body(...)) -> list[dict]:
+        return jsonable_encoder(await cls.aggregate(payload).to_list(), custom_encoder={ObjectId: str})
 
     @classmethod
     async def crud_u(cls, doc: Doc) -> Doc:
@@ -148,7 +149,7 @@ class Doc(Document, ABC):
         def add_api_route(name, handler, methods, res_mod=Any):
             router.add_api_route(name, endpoint=wrap_endpoint(handler), methods=methods, response_model=res_mod)
         add_api_route('/'+cls.__name__, cls.crud_c, ['POST'])
-        add_api_route('/read/'+cls.__name__, cls.crud_r, ['POST'], list[cls])
+        add_api_route('/read/'+cls.__name__, cls.crud_r, ['POST'], list[dict])
         add_api_route('/read_agg/'+cls.__name__, cls.crud_r_agg, ['POST'], dict)
         add_api_route('/'+cls.__name__, cls.crud_u, ['PUT'])
         add_api_route('/delete/'+cls.__name__, cls.crud_d, ['POST'], str)
