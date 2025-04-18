@@ -501,22 +501,15 @@ export default function DocTab({ metadata }: Props) {
         },
         flex: 1,
         minWidth: 100,
-        valueGetter: (params) => {
-          let val = getObjVal(params.data, field)
-          if (agt !== 'date' ||  !val)
-            return val
-          else {
-            let d = new Date(val)
-            if (isNaN(d.getTime()))
-              throw Error(val)
-            return d
-          }
-        },
         valueFormatter: (params) => {
           let val = getObjVal(params.data, field)
           if (agt !== 'date' || !val)
             return val
           else {
+            if (typeof val === 'string' && !val.endsWith("Z"))
+              val += 'Z'
+            if (typeof val === 'number')
+              val *= 1000
             const d = new Date(val);
             if (isNaN(d.getTime())) throw Error(val);
             return d.toLocaleString(undefined, {

@@ -44,24 +44,6 @@ class APSJobDoc(Doc, doc_args=aps_job_doc_args):
         "extra": "allow",
     }
 
-    # field serializers
-
-    @field_serializer('next_run_time')
-    def serialize_next_run_time(self, next_run_time: float) -> str:
-        return str(utc_timestamp_to_datetime(next_run_time))
-
-    @field_serializer('job_state') # NOTE needed for network, not db
-    def serialize_job_state(self, job_state: bytes) -> str:
-        return base64.b64encode(job_state).decode("ascii")
-
-    @field_serializer('created_at')
-    def serialize_created_at(self, dt: datetime, _info) -> str:
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        else:
-            dt = dt.astimezone(timezone.utc)
-        return dt.isoformat().replace("+00:00", "Z")
-
     # json schema
 
     @classmethod
