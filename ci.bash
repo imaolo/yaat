@@ -19,7 +19,6 @@ echo "Deploying remotely..."
 ssh -o StrictHostKeyChecking=no -i "$pem_file" "$SSH_USERNAME@$SSH_HOST" bash <<EOF
 set -e
 cd yaat
-git pull https://imaolo:${GH_PAT}@github.com/imaolo/yaat
-docker-compose up --build --force-recreate --remove-orphans -d --wait
+bash deploy.sh
 EOF
 fi
