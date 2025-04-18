@@ -31,6 +31,8 @@ ModuleRegistry.registerModules([
   SetFilterModule
 ]); 
 
+// types
+
 type Props = {
   metadata: Metadata
 }
@@ -52,7 +54,25 @@ export type MultiFilter = {
   conditions: SingleFilter[]
 }
 
+export type Filter = SingleFilter | MultiFilter
+
 type Document = { [key: string]: any };
+
+// helpers
+
+const getFieldSchemaPairs = (schema: any, prefix: string = "", result: any[] = []): [string, Record<string, any>][] => {
+  if (!schema?.properties)
+    return result
+
+  for (const [key, propSchema] of Object.entries(schema.properties) as [string, any][]) {
+    const path = prefix ? `${prefix}.${key}` : key
+    if (propSchema.type === "object" && propSchema.properties)
+      getFieldSchemaPairs(propSchema, path, result)
+    else
+      result.push([path, propSchema])
+  }
+  return result
+}
 
 function generateGroupStages(cols: string[], keys: string[]): Document[] {
   const pipe: Document[] = [];
@@ -99,7 +119,9 @@ function generateGroupStages(cols: string[], keys: string[]): Document[] {
   return pipe;
 }
 
-function FloatingPanel({ selectedRows, rowCount, isLoading }: any) {
+// components
+
+function FloatingPanel({  selectedRows, rowCount, isLoading }: any) {
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -238,8 +260,6 @@ function FloatingPanel({ selectedRows, rowCount, isLoading }: any) {
   )
 }
 
-export type Filter = SingleFilter | MultiFilter
-
 export default function DocTab({ metadata }: Props) {
   const gridRef = useRef<AgGridReact>(null)
   const [gridCols, setGridCols] = useState<ColDef[]>([])
@@ -291,62 +311,55 @@ export default function DocTab({ metadata }: Props) {
     }
   }
 
-  const getColsFromSchema = (schema: any, prefix = "", result: ColDef[] = []): ColDef[] => {
-    if (!schema?.properties) return result
-    for (const [key, propSchema] of Object.entries(schema.properties) as [string, any][]) {
-      const path = prefix ? `${prefix}.${key}` : key
-      if (propSchema.type === "object" && propSchema.properties)
-        getColsFromSchema(propSchema, path, result)
-      else {
-        let agt = jsonSchema2AGT(propSchema)
-        result.push({
-          field: path,
-          headerName: path,
-          sortable: true,
-          enableRowGroup: true,
-          filter: jsonSchema2AgFilter(propSchema),
-          cellDataType: agt,
-          filterParams : { 
-            maxNumConditions: 10,
-            buttons: ['apply'],
-            closeOnApply: true,
-            key: `${Date.now()}`,
-            ...('enum' in propSchema && { values: propSchema['enum'] })
-          },
-          flex: 1,
-          minWidth: 100,
-          valueGetter: (params) => {
-            let val = getObjVal(params.data, path)
-            if (agt !== 'date' ||  !val)
-              return val
-            else {
-              let d = new Date(val)
-              if (isNaN(d.getTime()))
-                throw Error(val)
-              return d
-            }
-          },
-          valueFormatter: (params) => {
-            let val = getObjVal(params.data, path)
-            if (agt !== 'date' || !val)
-              return val
-            else {
-              const d = new Date(val);
-              if (isNaN(d.getTime())) throw Error(val);
-              return d.toLocaleString(undefined, {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit',
-                hour12: true,
-              });
-            }
+  const getColsFromSchema = (schema: any): ColDef[] => {
+    return getFieldSchemaPairs(schema).map(([field, fieldSchema]) => {
+      const agt = jsonSchema2AGT(fieldSchema)
+      return {
+        field: field,
+        headerName: field,
+        sortable: true,
+        enableRowGroup: true,
+        filter: jsonSchema2AgFilter(fieldSchema),
+        cellDataType: agt,
+        filterParams : { 
+          maxNumConditions: 10,
+          buttons: ['apply'],
+          closeOnApply: true,
+          key: `${Date.now()}`,
+          ...('enum' in fieldSchema && { values: fieldSchema['enum'] })
+        },
+        flex: 1,
+        minWidth: 100,
+        valueGetter: (params) => {
+          let val = getObjVal(params.data, field)
+          if (agt !== 'date' ||  !val)
+            return val
+          else {
+            let d = new Date(val)
+            if (isNaN(d.getTime()))
+              throw Error(val)
+            return d
           }
-        })
+        },
+        valueFormatter: (params) => {
+          let val = getObjVal(params.data, field)
+          if (agt !== 'date' || !val)
+            return val
+          else {
+            const d = new Date(val);
+            if (isNaN(d.getTime())) throw Error(val);
+            return d.toLocaleString(undefined, {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            });
+          }
+        }
       }
-    }
-    return result
+    })
   }
 
   const getGridApi = () => {
