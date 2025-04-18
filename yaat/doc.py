@@ -112,7 +112,7 @@ class Doc(Document, ABC):
 
     @classmethod
     async def crud_r(cls, payload: list[dict] = Body(...)) -> list[dict]:
-        return jsonable_encoder(await cls.aggregate(payload).to_list(), custom_encoder={ObjectId: str})
+        return jsonable_encoder(await cls.aggregate(payload).to_list(), exclude=('job_state',), custom_encoder={ObjectId: str})
 
     @classmethod
     async def crud_u(cls, doc: Doc) -> Doc:
@@ -121,12 +121,11 @@ class Doc(Document, ABC):
     @classmethod
     async def crud_d(cls, filter: dict = Body(...), include_ids:list[str] = Body(...), exclude_ids: list[str] = Body(...)) -> str:
         if str not in get_args(cls.model_fields['id'].annotation):
-            include_ids = list(map(lambda i: ObjectId(i), include_ids))
-            exclude_ids = list(map(lambda i: ObjectId(i), exclude_ids))
+            include_ids = [ObjectId(_id) for _id in include_ids]
+            exclude_ids = [ObjectId(_id) for _id in exclude_ids]
 
-        i_filter = { "_id": { "$in": include_ids }} if include_ids else {}
-        e_filter = { "_id": { "$nin": exclude_ids }} if exclude_ids else {}
-        return str(await cls.find(filter).find(i_filter).find(e_filter).delete_many())
+        make_id_filter = lambda op, ids: {"_id": {op : ids}}  if ids else {}
+        return str(await cls.find(filter).find(make_id_filter('$in', include_ids)).find(make_id_filter('$nin', exclude_ids)).delete_many())
 
     # configure endpoints
 
