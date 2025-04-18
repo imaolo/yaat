@@ -120,64 +120,15 @@ class Doc(Document, ABC):
     async def crud_c(cls, doc: dict) -> None:
         await cls(**doc).create()
 
-    # crud read helper
-    @staticmethod
-    def generate_group_stages(cols: list[str], keys: list[str]) -> list[dict]:
-        pipe = []
-        if not cols and not keys:
-            return pipe
-
-        if (d := (lcols:=len(cols)) - len(keys)) > 0:
-            distinct_field = cols[lcd:=(lcols - d)]
-            pipe.append({
-                '$group':{
-                    '_id': f"${distinct_field}"
-                }
-            })
-            pipe.append({
-                '$project':{
-                    distinct_field: "$_id",
-                    **{of:ov for (of, ov) in zip(cols[:lcd], keys)},
-                    'group': {'$literal': True},
-                    '_id': {
-                        '$function': {
-                            'body': 'function() { return new ObjectId(); }',
-                            'args': [],
-                            'lang': 'js'
-                        }
-                    }
-                }
-            })
-        elif d == 0:
-            pipe.append({
-                '$match': {k:v for k, v in zip(cols, keys)}
-            })
-        else:
-            raise RuntimeError(cols, keys)
-
-        return pipe
+    @classmethod
+    async def crud_r_agg(cls, payload: list[dict] = Body(...)) -> dict:
+        ret = await cls.aggregate(payload).to_list()
+        ret, = ret if ret else [{}]
+        return ret
 
     @classmethod
-    async def crud_r(cls, payload: AggregationPayload = Body(...)) -> list[Doc] | int :
-        pipeline = [
-            {'$match': payload.filter},
-            *([{ "$sort": dict(payload.sort) }] if payload.sort and not payload.count else []),
-            *cls.generate_group_stages(payload.rowGroupCols, payload.groupKeys)
-        ]
-
-        # docs vs count
-        if not payload.count:
-            pipeline.extend([
-                {"$skip": payload.skip},
-                {"$limit": payload.limit},
-            ])
-        else:
-            pipeline.append({'$count': 'total'})
-
-
-        # TODO custom validation/projection
-        data = await cls.aggregate(pipeline).to_list()
-        return data[0]['total'] if payload.count else list(map(lambda d: cls(**d), data))
+    async def crud_r(cls, payload: list[dict] = Body(...)) -> list[Doc]:
+        return list(map(lambda d: cls(**d), await cls.aggregate(payload).to_list()))
 
     @classmethod
     async def crud_u(cls, doc: Doc) -> Doc:
@@ -217,8 +168,16 @@ class Doc(Document, ABC):
             '/read/'+cls.__name__,
             endpoint=wrap_endpoint(cls.crud_r),
             methods=["POST"],
-            response_model=list[cls] | int
+            response_model=list[cls]
         )
+
+        router.add_api_route(
+            '/read_agg/'+cls.__name__,
+            endpoint=wrap_endpoint(cls.crud_r_agg),
+            methods=["POST"],
+            response_model=dict
+        )
+
 
         router.add_api_route(
             '/'+cls.__name__,

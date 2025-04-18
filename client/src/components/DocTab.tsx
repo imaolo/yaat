@@ -51,8 +51,54 @@ export type MultiFilter = {
   conditions: SingleFilter[]
 }
 
+type Document = { [key: string]: any };
 
-function FloatingPanel({ selectedRows }: any) {
+function generateGroupStages(cols: string[], keys: string[]): Document[] {
+  const pipe: Document[] = [];
+
+  if (cols.length === 0 && keys.length === 0) {
+    return pipe;
+  }
+
+  const lcols = cols.length;
+  const d = lcols - keys.length;
+
+  if (d > 0) {
+    const lcd = lcols - d;
+    const distinctField = cols[lcd];
+
+    pipe.push({
+      $group: {
+        _id: `$${distinctField}`,
+      },
+    });
+
+    pipe.push({
+      $project: {
+        [distinctField]: '$_id',
+        ...Object.fromEntries(cols.slice(0, lcd).map((col, i) => [col, keys[i]])),
+        group: { $literal: true },
+        _id: {
+          $function: {
+            body: `function() { return new ObjectId(); }`,
+            args: [],
+            lang: 'js',
+          },
+        },
+      },
+    });
+  } else if (d === 0) {
+    pipe.push({
+      $match: Object.fromEntries(cols.map((col, i) => [col, keys[i]])),
+    });
+  } else {
+    throw new Error(`Mismatched keys and columns: ${JSON.stringify({ cols, keys })}`);
+  }
+
+  return pipe;
+}
+
+function FloatingPanel({ selectedRows, rowCount }: any) {
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -64,7 +110,6 @@ function FloatingPanel({ selectedRows }: any) {
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
 
   useEffect(() => {
-    console.log("remounting")
     const vw = window.innerWidth;
     setPosition({ x: Math.floor((vw - size.width) / 2), y: 80 });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -157,7 +202,8 @@ function FloatingPanel({ selectedRows }: any) {
 
       {isOpen && (
         <div style={{ flex: 1, padding: '1rem' }}>
-          <h1>{selectedRows}</h1>
+          <p>selected rows: {selectedRows}</p>
+          <p>total rows: {rowCount}</p>
         </div>
       )}
 
@@ -190,6 +236,7 @@ export default function DocTab({ metadata }: Props) {
   const [gridCols, setGridCols] = useState<ColDef[]>([])
   const [displayForm, setDisplayForm] = useState(false)
   const [selectedRowsCount, setSelectedRowsCount] = useState(0)
+  const [rowCount, setRowCount] = useState(0)
   const api = axios.create()
 
   // mount hook
@@ -327,8 +374,12 @@ export default function DocTab({ metadata }: Props) {
     count: boolean
   }
 
-  async function fetchData ( payload:  QueryParams) {
+  async function fetchData ( payload:  any): Promise<any> {
     return (await api.post(`/read/${metadata.read.title}`, payload)).data
+  }
+
+  async function fetchData_agg ( payload:  any): Promise<any> {
+    return (await api.post(`/read_agg/${metadata.read.title}`, payload)).data
   }
 
   const convertToDatatype = (dataType: string, value: string): string | Date | Number => {
@@ -484,22 +535,32 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
   const datasource = useMemo<IServerSideDatasource>(() => ({
     getRows: async (params: IServerSideGetRowsParams) => {
       const req = params.request
-      const payload: QueryParams = {
-        skip: req.startRow,
-        limit: (!req.endRow || !req.startRow) ? 100 : (req.endRow - req.startRow),
-        sort: (req.sortModel ?? []).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1]),
-        filter: mongoFilter(req.filterModel as Record<string, Filter>),
-        rowGroupCols: req.rowGroupCols.map(group => group.id),
-        groupKeys: req.groupKeys,
-        count: false
-      }
-  
+      const payload: any[] = [{$match: mongoFilter(req.filterModel as Record<string, Filter>)}]
+      const sort = Object.fromEntries(
+        (req.sortModel ?? []).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1])
+      )
+      if (Object.keys(sort).length > 0)
+        payload.push({$sort:sort})
+      
+      // const sort = (req.sortModel ?? {}).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1])
+      for (const stage of generateGroupStages(req.rowGroupCols.map(group => group.id), req.groupKeys))
+        payload.push(stage)
+      payload.push({$skip: req.startRow})
+      payload.push({$limit: (!req.endRow || !req.startRow) ? 100 : (req.endRow - req.startRow)})
+
       try {
+        // get data
         const data = await fetchData(payload)
         params.success({rowData: data})
-        payload.count = true
-        // @ts-ignore 
-        params.success({rowCount: await fetchData(payload) as number, rowData: data})
+
+        // get count
+        payload.pop(); payload.pop()
+        payload.push({$count:'count'})
+        const { count } = await fetchData_agg(payload)
+        if (count !== undefined) {
+          params.success({rowCount: count, rowData: data})
+          setRowCount(count)
+        }
       } catch (e) {
         params.fail()
       }
@@ -564,7 +625,7 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
         <span className="ml-auto text-sm">Rows Selected: {selectedRowsCount}</span>
       </div>
 
-      <FloatingPanel selectedRows={selectedRowsCount}/>
+      <FloatingPanel selectedRows={selectedRowsCount} rowCount={rowCount}/>
 
       <div className="ag-theme-alpine w-full h-full border border-gray-600 rounded">
         <AgGridReact
