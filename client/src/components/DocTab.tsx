@@ -60,16 +60,16 @@ type Document = { [key: string]: any };
 
 // helpers
 
-const getFieldSchemaPairs = (schema: any, prefix: string = "", result: any[] = []): [string, Record<string, any>][] => {
+const getFieldsSchemas = (schema: any, prefix: string = "", result: any = {}): Record<string, Record<string, any>> => {
   if (!schema?.properties)
     return result
 
   for (const [key, propSchema] of Object.entries(schema.properties) as [string, any][]) {
     const path = prefix ? `${prefix}.${key}` : key
     if (propSchema.type === "object" && propSchema.properties)
-      getFieldSchemaPairs(propSchema, path, result)
+      getFieldsSchemas(propSchema, path, result)
     else
-      result.push([path, propSchema])
+      result[path] = propSchema
   }
   return result
 }
@@ -465,7 +465,7 @@ export default function DocTab({ metadata }: Props) {
   // helpers
 
   const getColsFromSchema = (schema: any): ColDef[] => {
-    return getFieldSchemaPairs(schema).map(([field, fieldSchema]) => {
+    return Object.entries(getFieldsSchemas(schema)).map(([field, fieldSchema]) => {
       const agt = jsonSchema2AGT(fieldSchema)
       return {
         field: field,
