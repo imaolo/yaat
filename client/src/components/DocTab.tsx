@@ -74,7 +74,7 @@ const getFieldsSchemas = (schema: any, prefix: string = "", result: any = {}): R
   return result
 }
 
-function generateGroupStages(cols: string[], keys: string[]): Document[] {
+const generateGroupStages = (cols: string[], keys: string[]): Document[] => {
   const pipe: Document[] = [];
 
   if (cols.length === 0 && keys.length === 0) {
@@ -258,12 +258,8 @@ const mongoSingleFilter = (field: string, filter: SingleFilter, not: boolean = f
   }
 }
 
-const mongoFilter = (filter: Record<string , Filter>, include_ids: string[] = [], exclude_ids: string[] = []): Record<string, any>  => {
+const mongoFilter = (filter: Record<string , Filter>): Record<string, any>  => {
   const new_filter: Record<string, any> = {$and: [{$or: []},]}
-
-  // cannot include both include and exclude ids
-  if (include_ids.length > 0 && exclude_ids.length > 0)
-    throw new Error(`${include_ids} - ${exclude_ids}`)
 
   // helpers
   const addOrFilter = (single_filter_field: string, single_filter: SingleFilter) => {
@@ -280,12 +276,6 @@ const mongoFilter = (filter: Record<string , Filter>, include_ids: string[] = []
         (field_filter.operator === 'AND' ? addAndFilter : addOrFilter)(field, condition)
     else
       addAndFilter(field, field_filter)
-
-  // add include/exclude ids
-  if (include_ids.length > 0)
-    addAndFilter('_id', { filterType: 'set', values: include_ids})
-  if (exclude_ids.length > 0)
-    addAndFilter('_id', { filterType: 'set', values: exclude_ids}, true)
 
   // pop OR if empty
   if (new_filter.$and[0].$or.length === 0)
@@ -312,29 +302,20 @@ async function fetchData_agg ( name: string, payload:  any): Promise<any> {
 }
 
 async function getNumberAverages(schema: any): Promise<any> {
-  console.log("here")
   // get number fields
   const numFields: string[] = Object.entries(getFieldsSchemas(schema)).map(([field, fieldSchema]) => {
     if (jsonSchema2AGT(fieldSchema) === 'number')
       return field
   }).filter(field => field !== undefined)
-  console.log(numFields)
 
   // get the group agg stage
   const group: Record<string, any> = {_id: null}
   for (const numField of numFields)
     group[numField] = { $avg : `$${numField}`}
 
-  console.log(group)
-
-  const ret  = await fetchData_agg(schema.title, [{$group : group}, {$project: {_id: 0}}])
-  console.log(ret)
-
-  // return data
-  return ret 
+  // fetch and return data
+  return await fetchData_agg(schema.title, [{$group : group}, {$project: {_id: 0}}])
 }
-
-
 
 // components
 
@@ -657,7 +638,7 @@ export default function DocTab({ metadata }: Props) {
     // }
 
     api
-      .post(`/delete/${metadata.read.title}`, mongoFilter(filterModel, include_ids, exclude_ids))
+      .post(`/delete/${metadata.read.title}`, {filter: mongoFilter(filterModel), include_ids, exclude_ids})
       .then(() => getGridApi(gridRef).refreshServerSide())
   }
 
