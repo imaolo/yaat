@@ -122,8 +122,7 @@ class Doc(Document, ABC):
 
     @classmethod
     async def crud_r_agg(cls, payload: list[dict] = Body(...)) -> dict:
-        ret = await cls.aggregate(payload).to_list()
-        ret, = ret if ret else [{}]
+        ret, = ret if (ret:=await cls.aggregate(payload).to_list()) else [{}]
         return ret
 
     @classmethod
