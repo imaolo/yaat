@@ -301,7 +301,7 @@ async function fetchData_agg ( name: string, payload:  any): Promise<any> {
   return (await axios.post(`/read_agg/${name}`, payload)).data
 }
 
-async function getNumberAverages(schema: any): Promise<any> {
+async function getNumberAverages(schema: any, gridRef: any): Promise<any> {
   // get number fields
   const numFields: string[] = Object.entries(getFieldsSchemas(schema)).map(([field, fieldSchema]) => {
     if (jsonSchema2AGT(fieldSchema) === 'number')
@@ -314,12 +314,13 @@ async function getNumberAverages(schema: any): Promise<any> {
     group[numField] = { $avg : `$${numField}`}
 
   // fetch and return data
-  return await fetchData_agg(schema.title, [{$group : group}, {$project: {_id: 0}}])
+  const filterModel = getGridApi(gridRef).getFilterModel() as Record<string, Filter>
+  return await fetchData_agg(schema.title, [{$match: mongoFilter(filterModel)}, {$group : group}, {$project: {_id: 0}}])
 }
 
 // components
 
-function FloatingPanel({  schema, rowCount, isLoading, selectedRows }: any) {
+function FloatingPanel({  gridRef, setIsLoading, schema, rowCount, isLoading, selectedRows }: any) {
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -331,12 +332,17 @@ function FloatingPanel({  schema, rowCount, isLoading, selectedRows }: any) {
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
   const [averages, setAverages] = useState<Record<string, any>>({})
 
+  useEffect(() => {setPosition({ x: Math.floor((window.innerWidth - size.width) / 2), y: 80 })}, []);
   useEffect(() => {
-    const vw = window.innerWidth;
-    setPosition({ x: Math.floor((vw - size.width) / 2), y: 80 });
-    getNumberAverages(schema).then(averages => setAverages(averages))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (isOpen)
+      setIsLoading(true)
+  }, [isOpen])
+  useEffect(() => {
+    if (isLoading)
+      getNumberAverages(schema, gridRef)
+        .then(averages => setAverages(averages))
+        .then(() => setIsLoading(false))
+  }, [isLoading])
 
   const handleHeaderMouseDown = (e: React.MouseEvent) => {
     dragStart.current = { x: e.clientX, y: e.clientY };
@@ -630,7 +636,14 @@ export default function DocTab({ metadata }: Props) {
         <span className="ml-auto text-sm">Rows Selected: {selectedRowsCount}</span>
       </div>
 
-      <FloatingPanel schema={metadata.read} selectedRows={selectedRowsCount} rowCount={rowCount} isLoading={isLoading}/>
+      <FloatingPanel
+        gridRef={gridRef}
+        setIsLoading={setIsLoading}
+        schema={metadata.read}
+        selectedRows={selectedRowsCount}
+        rowCount={rowCount}
+        isLoading={isLoading}
+      />
 
       <div className="ag-theme-alpine w-full h-full border border-gray-600 rounded">
         <AgGridReact
