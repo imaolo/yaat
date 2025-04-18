@@ -453,10 +453,7 @@ function FloatingPanel({  schema, rowCount, isLoading, selectedRows }: any) {
           )}
           <p>selected rows: {selectedRows}</p>
           <p>total rows: {rowCount}</p>
-          {Object.entries(averages).map(([field, average]) => {
-            console.log(field, average)
-            return (<p>{field} - {average}</p>)
-          })}
+          {Object.entries(averages).map(([field, average]) => (<p>{field} - {average}</p>))}
         </div>
       )}
 
@@ -573,15 +570,15 @@ export default function DocTab({ metadata }: Props) {
 
   const getRowId = (params: { data: any }) => params.data._id
 
-  interface QueryParams {
-    skip: any | number;
-    limit: any | number;
-    sort: any | [string, 1 | -1][];
-    filter: any | Record<string, unknown>;
-    rowGroupCols: string[]
-    groupKeys: string[]
-    count: boolean
-  }
+  // interface QueryParams {
+  //   skip: any | number;
+  //   limit: any | number;
+  //   sort: any | [string, 1 | -1][];
+  //   filter: any | Record<string, unknown>;
+  //   rowGroupCols: string[]
+  //   groupKeys: string[]
+  //   count: boolean
+  // }
 
   // data source
 
@@ -649,19 +646,19 @@ export default function DocTab({ metadata }: Props) {
     }
   
     // NOTE um deletes all on selects that arent select all?
-    const payload: QueryParams = {
-      skip: 0,
-      limit: 10**10,
-      sort: [],
-      filter: mongoFilter(filterModel, include_ids, exclude_ids),
-      rowGroupCols: [],
-      groupKeys: [],
-      count: false
-    }
+    // const payload: QueryParams = {
+    //   skip: 0,
+    //   limit: 10**10,
+    //   sort: [],
+    //   filter: mongoFilter(filterModel, include_ids, exclude_ids),
+    //   rowGroupCols: [],
+    //   groupKeys: [],
+    //   count: false
+    // }
 
     api
-      .post(`/delete/${metadata.read.title}`, payload)
-      .then((_) => getGridApi(gridRef).refreshServerSide())
+      .post(`/delete/${metadata.read.title}`, mongoFilter(filterModel, include_ids, exclude_ids))
+      .then(() => getGridApi(gridRef).refreshServerSide())
   }
 
   const handleSelectionChanged = (e: SelectionChangedEvent) => {

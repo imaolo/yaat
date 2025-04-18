@@ -135,10 +135,9 @@ class Doc(Document, ABC):
         raise RuntimeError("TODO not implemented")
 
     @classmethod
-    async def crud_d(cls, payload: AggregationPayload = Body(...)) -> str:
-        # NOTE - ignore everything except filter
+    async def crud_d(cls, payload: dict = Body(...)) -> str:
         # TODO - handle groups
-        return str(await cls.find(payload.filter).delete_many())
+        return str(await cls.find(payload).delete_many())
 
     # configure endpoints
 
