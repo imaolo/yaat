@@ -14,6 +14,7 @@ import type { ColDef, IServerSideDatasource, IServerSideGetRowsParams} from "ag-
 import type { IChangeEvent } from "@rjsf/core"
 import type { Metadata } from "@/App"
 import DateTimeFilterPopup from "@/components/DateTimeFilterPopup"
+import { Loader2 } from "lucide-react"
 
 ModuleRegistry.registerModules([
   ServerSideRowModelModule,
@@ -98,7 +99,7 @@ function generateGroupStages(cols: string[], keys: string[]): Document[] {
   return pipe;
 }
 
-function FloatingPanel({ selectedRows, rowCount }: any) {
+function FloatingPanel({ selectedRows, rowCount, isLoading }: any) {
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -188,6 +189,7 @@ function FloatingPanel({ selectedRows, rowCount }: any) {
         height: isOpen ? `${size.height}px` : 'auto',
       }}
     >
+      {/* header */}
       <div
         onMouseDown={handleHeaderMouseDown}
         style={{
@@ -199,14 +201,21 @@ function FloatingPanel({ selectedRows, rowCount }: any) {
       >
         📊 Metrics
       </div>
-
+    
+      {/* content */}
       {isOpen && (
-        <div style={{ flex: 1, padding: '1rem' }}>
+        <div className="relative flex-1 p-4">
+          {isLoading && (
+            <div className="absolute inset-0 z-10 bg-white/60 backdrop-blur-sm flex items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-gray-600" />
+            </div>
+          )}
           <p>selected rows: {selectedRows}</p>
           <p>total rows: {rowCount}</p>
         </div>
       )}
 
+      {/* resize handle */}
       {isOpen && (
         <div
           ref={resizeHandleRef}
@@ -237,6 +246,7 @@ export default function DocTab({ metadata }: Props) {
   const [displayForm, setDisplayForm] = useState(false)
   const [selectedRowsCount, setSelectedRowsCount] = useState(0)
   const [rowCount, setRowCount] = useState(0)
+  const [isLoading, setIsLoading] = useState(false)
   const api = axios.create()
 
   // mount hook
@@ -549,6 +559,7 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
       payload.push({$limit: (!req.endRow || !req.startRow) ? 100 : (req.endRow - req.startRow)})
 
       try {
+        setIsLoading(true)
         // get data
         const data = await fetchData(payload)
         params.success({rowData: data})
@@ -561,6 +572,7 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
           params.success({rowCount: count, rowData: data})
           setRowCount(count)
         }
+        setIsLoading(false)
       } catch (e) {
         params.fail()
       }
@@ -625,7 +637,7 @@ const getMongoFilterValue = (filter: SingleFilter): Record<string, any> | string
         <span className="ml-auto text-sm">Rows Selected: {selectedRowsCount}</span>
       </div>
 
-      <FloatingPanel selectedRows={selectedRowsCount} rowCount={rowCount}/>
+      <FloatingPanel selectedRows={selectedRowsCount} rowCount={rowCount} isLoading={isLoading}/>
 
       <div className="ag-theme-alpine w-full h-full border border-gray-600 rounded">
         <AgGridReact
