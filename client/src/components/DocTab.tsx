@@ -302,9 +302,43 @@ const getGridApi = (gridRef: any) => {
   return gridapi
 }
 
+async function fetchData ( name: string, payload:  any): Promise<any> {
+  return (await axios.post(`/read/${name}`, payload)).data
+}
+
+// metadata.read.title
+async function fetchData_agg ( name: string, payload:  any): Promise<any> {
+  return (await axios.post(`/read_agg/${name}`, payload)).data
+}
+
+async function getNumberAverages(schema: any): Promise<any> {
+  console.log("here")
+  // get number fields
+  const numFields: string[] = Object.entries(getFieldsSchemas(schema)).map(([field, fieldSchema]) => {
+    if (jsonSchema2AGT(fieldSchema) === 'number')
+      return field
+  }).filter(field => field !== undefined)
+  console.log(numFields)
+
+  // get the group agg stage
+  const group: Record<string, any> = {_id: null}
+  for (const numField of numFields)
+    group[numField] = { $avg : `$${numField}`}
+
+  console.log(group)
+
+  const ret  = await fetchData_agg(schema.title, [{$group : group}, {$project: {_id: 0}}])
+  console.log(ret)
+
+  // return data
+  return ret 
+}
+
+
+
 // components
 
-function FloatingPanel({  selectedRows, rowCount, isLoading }: any) {
+function FloatingPanel({  schema, rowCount, isLoading, selectedRows }: any) {
   const panelRef = useRef<HTMLDivElement>(null);
   const resizeHandleRef = useRef<HTMLDivElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -314,10 +348,12 @@ function FloatingPanel({  selectedRows, rowCount, isLoading }: any) {
   const hasMoved = useRef(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const resizeStart = useRef({ x: 0, y: 0, width: 0, height: 0 });
+  const [averages, setAverages] = useState<Record<string, any>>({})
 
   useEffect(() => {
     const vw = window.innerWidth;
     setPosition({ x: Math.floor((vw - size.width) / 2), y: 80 });
+    getNumberAverages(schema).then(averages => setAverages(averages))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -417,6 +453,10 @@ function FloatingPanel({  selectedRows, rowCount, isLoading }: any) {
           )}
           <p>selected rows: {selectedRows}</p>
           <p>total rows: {rowCount}</p>
+          {Object.entries(averages).map(([field, average]) => {
+            console.log(field, average)
+            return (<p>{field} - {average}</p>)
+          })}
         </div>
       )}
 
@@ -543,14 +583,6 @@ export default function DocTab({ metadata }: Props) {
     count: boolean
   }
 
-  async function fetchData ( payload:  any): Promise<any> {
-    return (await api.post(`/read/${metadata.read.title}`, payload)).data
-  }
-
-  async function fetchData_agg ( payload:  any): Promise<any> {
-    return (await api.post(`/read_agg/${metadata.read.title}`, payload)).data
-  }
-
   // data source
 
   const datasource = useMemo<IServerSideDatasource>(() => ({
@@ -572,13 +604,13 @@ export default function DocTab({ metadata }: Props) {
       try {
         setIsLoading(true)
         // get data
-        const data = await fetchData(payload)
+        const data = await fetchData(metadata.read.title, payload)
         params.success({rowData: data})
 
         // get count
         payload.pop(); payload.pop()
         payload.push({$count:'count'})
-        const { count } = await fetchData_agg(payload)
+        const { count } = await fetchData_agg(metadata.read.title, payload)
         if (count !== undefined) {
           params.success({rowCount: count, rowData: data})
           setRowCount(count)
@@ -648,7 +680,7 @@ export default function DocTab({ metadata }: Props) {
         <span className="ml-auto text-sm">Rows Selected: {selectedRowsCount}</span>
       </div>
 
-      <FloatingPanel selectedRows={selectedRowsCount} rowCount={rowCount} isLoading={isLoading}/>
+      <FloatingPanel schema={metadata.read} selectedRows={selectedRowsCount} rowCount={rowCount} isLoading={isLoading}/>
 
       <div className="ag-theme-alpine w-full h-full border border-gray-600 rounded">
         <AgGridReact
