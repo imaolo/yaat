@@ -1,6 +1,6 @@
 from __future__ import annotations
 from yaat.doc import Doc, DocArgs
-from yaat.helpers import fetchjson, urlQueryString
+from yaat.helpers import fetchjson
 from pydantic import BaseModel, Field, field_serializer
 from enum import Enum
 from datetime import datetime, timezone
@@ -13,8 +13,9 @@ class CoinGecko:
 
     @classmethod
     async def fetch(cls, ext, **kwargs):
-        return await fetchjson(cls.url + ext + urlQueryString(**kwargs),
-                               headers={"accept": "application/json", "x-cg-pro-api-key": cls.key})
+        return await fetchjson(cls.url + ext,
+                               headers={"accept": "application/json", "x-cg-pro-api-key": cls.key},
+                               **kwargs)
 
     @classmethod
     async def top_gainers_losers(cls, **kwargs) -> dict:
@@ -57,9 +58,9 @@ class TopMoverQueryDoc(BaseModel):
         match self.duration:
             case self.Duration.h1: return td(hours=1)
             case self.Duration.h24: return td(hours=24)
-            case self.Duration.d7: return td(days=7*24)
-            case self.Duration.d14: return td(days=14*24)
-            case self.Duration.d30: return td(days=30*24)
+            case self.Duration.d7: return td(days=7)
+            case self.Duration.d14: return td(days=14)
+            case self.Duration.d30: return td(days=30)
             case self.Duration.y1: return td(weeks=52)
             case _: raise RuntimeError(self.duration)
 
@@ -105,7 +106,11 @@ class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
             top_gainer.pop('image')
             async def get_percent_change(cid: str) -> float:
                 cg_data = await CoinGecko.historical_chart_range(cid, vs_currency='usd', **{'from':date.timestamp()}, to=(date + td(minutes=5)).timestamp(), precision='10')
-                old_price = cg_data['prices'][0][1]
+                try: _, old_price = cg_data['prices'][0]
+                except:
+                    from pprint import pprint
+                    pprint(cg_data)
+                    raise
                 cg_data = await CoinGecko.coin_data(cid, tickers='false', community_data='false', developer_data='false', market_data='true')
                 current_price = cg_data['market_data']['current_price']['usd']
                 return ((current_price-old_price)/old_price)*100
