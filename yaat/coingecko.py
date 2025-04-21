@@ -6,7 +6,6 @@ from enum import Enum
 from datetime import datetime, timezone
 from yaat.job import IntervalJobDoc
 from datetime import datetime, timedelta as td
-from pprint import pprint
 
 class CoinGecko:
     url: str = 'https://pro-api.coingecko.com/api/v3/'
@@ -75,8 +74,6 @@ class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_update
     market_cap_rank: int
     usd_24h_vol: float
     percent_change: float
-    # usd_1y_change: int
-    # TODO add a % change column
 
     @field_serializer('created_at')
     def serialize_created_at(self, dt: datetime, _info) -> str:
@@ -115,27 +112,3 @@ class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
             top_gainer['percent_change'] = await get_percent_change(top_gainer['cid'])
             result_docs.append(TopMoverResultDoc(query=self.query, **top_gainer))
         await TopMoverResultDoc.insert_many(result_docs)
-
-
-class HistoricalChartRangeQueryDoc(BaseModel):
-    class Interval(str, Enum):
-        m5 = '5m'
-        hourly = 'hourly'
-        daily = 'daily'
-
-    coin_id: str
-    vs_currency: str
-    from_: float
-    to: float
-    interval: Interval
-    precision: str = 'full'
-
-    @field_serializer('interval')
-    def interval_serializer(self, interval: Interval) -> str: return str(interval)
-
-class HistoricalChartRangeResultDoc(BaseModel):
-    # https://docs.coingecko.com/reference/coins-id-market-chart-range
-    query: HistoricalChartRangeQueryDoc
-    prices: list[float]
-    market_caps: list[float]
-    total_volumes: list[int]
