@@ -1,15 +1,38 @@
 from __future__ import annotations
 from yaat.doc import Doc, DocArgs
+from yaat.helpers import fetchjson, urlQueryString
 from pydantic import BaseModel, Field, field_serializer
 from enum import Enum
 from datetime import datetime, timezone
 from yaat.job import IntervalJobDoc
-import random
+from datetime import datetime, timedelta as td
+from pprint import pprint
+
+class CoinGecko:
+    url: str = 'https://pro-api.coingecko.com/api/v3/'
+    key : str = 'CG-ivjvmcDsabTGQg25HpTUa7H5'
+
+    @classmethod
+    async def fetch(cls, ext, **kwargs):
+        return await fetchjson(cls.url + ext + urlQueryString(**kwargs),
+                               headers={"accept": "application/json", "x-cg-pro-api-key": cls.key})
+
+    @classmethod
+    async def top_gainers_losers(cls, **kwargs) -> dict:
+        return await cls.fetch('coins/top_gainers_losers', **kwargs)
+
+    @classmethod
+    async def coin_data(cls, cid:str, **kwargs) -> dict:
+        return await cls.fetch(f"coins/{cid}", **kwargs)
+
+    @classmethod
+    async def historical_chart_range(cls, cid, **kwargs) -> dict:
+        return await cls.fetch(f"coins/{cid}/market_chart/range/", **kwargs)
 
 class TopMoverQueryDoc(BaseModel):
     class Duration(str, Enum):
         h1 = "1h"
-        d24 = "24h"
+        h24 = "24h"
         d7 = "7d"
         d14 = "14d"
         d30 = "30d"
@@ -21,8 +44,25 @@ class TopMoverQueryDoc(BaseModel):
         coins_1000 = "1000"
         coins_all = "all"
 
+    vs_currency: str = 'usd'
     duration: Duration = Field(..., description="duration of top movers")
     top_coin: TopCoins = Field(..., description="how many ordered coins to fetch")
+
+    @field_serializer('duration')
+    def duration_field_serializer(self, duration: Duration) -> str: return duration.value
+    
+    @field_serializer('top_coin')
+    def top_coin_field_serializer(self, top_coin: TopCoins) -> str: return top_coin.value
+
+    def get_timedelta(self) -> td:
+        match self.duration:
+            case self.Duration.h1: return td(hours=1)
+            case self.Duration.h24: return td(hours=24)
+            case self.Duration.d7: return td(days=7*24)
+            case self.Duration.d14: return td(days=14*24)
+            case self.Duration.d30: return td(days=30*24)
+            case self.Duration.y1: return td(weeks=52)
+            case _: raise RuntimeError(self.duration)
 
 class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_updateable=False)):
     # https://docs.coingecko.com/reference/coins-top-gainers-losers
@@ -33,8 +73,9 @@ class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_update
     name: str
     usd: float
     market_cap_rank: int
-    usd_24h_vol: int
-    usd_1y_change: int
+    usd_24h_vol: float
+    percent_change: float
+    # usd_1y_change: int
     # TODO add a % change column
 
     @field_serializer('created_at')
@@ -58,19 +99,43 @@ class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
         await cls(query=TopMoverQueryDoc(**doc.pop('query')), **doc).create()
 
     async def func(self):
-        await top_mover_func(self.query)
+        # https://docs.coingecko.com/reference/coins-top-gainers-losers
+        top_gainers: list[dict] = (await CoinGecko.top_gainers_losers(**self.query.model_dump()))['top_gainers']
+        result_docs: list[TopMoverResultDoc] = []
+        date = datetime.now() - self.query.get_timedelta()
+        for top_gainer in top_gainers:
+            top_gainer['cid'] = top_gainer.pop('id')
+            top_gainer.pop('image')
+            async def get_percent_change(cid: str) -> float:
+                cg_data = await CoinGecko.historical_chart_range(cid, vs_currency='usd', **{'from':date.timestamp()}, to=(date + td(minutes=5)).timestamp(), precision='10')
+                old_price = cg_data['prices'][0][1]
+                cg_data = await CoinGecko.coin_data(cid, tickers='false', community_data='false', developer_data='false', market_data='true')
+                current_price = cg_data['market_data']['current_price']['usd']
+                return ((current_price-old_price)/old_price)*100
+            top_gainer['percent_change'] = await get_percent_change(top_gainer['cid'])
+            result_docs.append(TopMoverResultDoc(query=self.query, **top_gainer))
+        await TopMoverResultDoc.insert_many(result_docs)
 
-async def top_mover_func(query: TopMoverQueryDoc):
-    url = "https://pro-api.coingecko.com/api/v3"
-    # https://docs.coingecko.com/reference/coins-top-gainers-losers
-    # TODO get the % change
-    await TopMoverResultDoc.insert_many([TopMoverResultDoc(
-        query=query,
-        cid='fdsafdsa',
-        symbol='btc',
-        name='bitcoin',
-        usd=random.uniform(1000.0, 1000000.0),
-        market_cap_rank=mcr,
-        usd_24h_vol=random.randint(100, 100000),
-        usd_1y_change=random.randint(-2**31, 2**31)
-    ) for mcr in range(1, int(query.top_coin.value if query.top_coin.value != 'all' else 2000)+1)])
+
+class HistoricalChartRangeQueryDoc(BaseModel):
+    class Interval(str, Enum):
+        m5 = '5m'
+        hourly = 'hourly'
+        daily = 'daily'
+
+    coin_id: str
+    vs_currency: str
+    from_: float
+    to: float
+    interval: Interval
+    precision: str = 'full'
+
+    @field_serializer('interval')
+    def interval_serializer(self, interval: Interval) -> str: return str(interval)
+
+class HistoricalChartRangeResultDoc(BaseModel):
+    # https://docs.coingecko.com/reference/coins-id-market-chart-range
+    query: HistoricalChartRangeQueryDoc
+    prices: list[float]
+    market_caps: list[float]
+    total_volumes: list[int]
