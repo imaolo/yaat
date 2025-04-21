@@ -100,6 +100,7 @@ class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
     async def func(self):
         # https://docs.coingecko.com/reference/coins-top-gainers-losers
         cg_data: list[dict] = (await CoinGecko.top_gainers_losers(**self.query.model_dump()))
+        created_at = datetime.now(timezone.utc)
         top_movers: list = cg_data['top_gainers']
         top_movers.extend(cg_data['top_losers'])
         result_docs: list = []
@@ -125,5 +126,5 @@ class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
                 current_price = cg_data['market_data']['current_price']['usd']
                 return ((current_price-old_price)/old_price)*100
             tm['percent_change'] = await get_percent_change(tm['cid'])
-            result_docs.append(TopMoverResultDoc(query=self.query, **tm))
+            result_docs.append(TopMoverResultDoc(query=self.query, created_at=created_at, **tm))
         await TopMoverResultDoc.insert_many(result_docs)
