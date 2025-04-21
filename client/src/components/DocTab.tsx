@@ -74,51 +74,6 @@ const getFieldsSchemas = (schema: any, prefix: string = "", result: any = {}): R
   return result
 }
 
-const generateGroupStages = (cols: string[], keys: string[]): Document[] => {
-  const pipe: Document[] = [];
-
-  if (cols.length === 0 && keys.length === 0) {
-    return pipe;
-  }
-
-  const lcols = cols.length;
-  const d = lcols - keys.length;
-
-  if (d > 0) {
-    const lcd = lcols - d;
-    const distinctField = cols[lcd];
-
-    pipe.push({
-      $group: {
-        _id: `$${distinctField}`,
-      },
-    });
-
-    pipe.push({
-      $project: {
-        [distinctField]: '$_id',
-        ...Object.fromEntries(cols.slice(0, lcd).map((col, i) => [col, keys[i]])),
-        group: { $literal: true },
-        _id: {
-          $function: {
-            body: `function() { return new ObjectId(); }`,
-            args: [],
-            lang: 'js',
-          },
-        },
-      },
-    });
-  } else if (d === 0) {
-    pipe.push({
-      $match: Object.fromEntries(cols.map((col, i) => [col, keys[i]])),
-    });
-  } else {
-    throw new Error(`Mismatched keys and columns: ${JSON.stringify({ cols, keys })}`);
-  }
-
-  return pipe;
-}
-
 const getObjVal = (obj: Record<string, any>, path: string): any => path.split('.').reduce((acc, key) => acc?.[key], obj)
 
 const jsonSchema2AGT = (schema: any): 'date' | 'number' | 'text' => {
@@ -530,6 +485,76 @@ export default function DocTab({ metadata }: Props) {
         }
       }
     })
+  }
+
+  const generateGroupStages = (cols: string[], keys: string[]): Document[] => {
+    const pipe: Document[] = [];
+  
+    if (cols.length === 0 && keys.length === 0) {
+      return pipe;
+    }
+  
+    const lcols = cols.length;
+    const d = lcols - keys.length;
+    const field_schemas = getFieldsSchemas(metadata.read)
+  
+    if (d > 0) {
+      const lcd = lcols - d;
+      const distinctField = cols[lcd];
+  
+      if (jsonSchema2AGT(field_schemas[distinctField]) !== 'date')
+        pipe.push({
+          $group: {
+            _id: `$${distinctField}`,
+          },
+        });
+      else
+        pipe.push({
+          $group: {
+            _id: {
+              $dateTrunc: {
+                date: `$${distinctField}`,
+                unit: 'minute'
+              }
+            }
+          }
+        });
+  
+      pipe.push({
+        $project: {
+          [distinctField]: '$_id',
+          ...Object.fromEntries(cols.slice(0, lcd).map((col, i) => [col, keys[i]])),
+          group: { $literal: true },
+          _id: {
+            $function: {
+              body: `function() { return new ObjectId(); }`,
+              args: [],
+              lang: 'js',
+            },
+          },
+        },
+      });
+    } else if (d === 0) {
+      const match_exprs: any[] = []
+      for (let i = 0; i < cols.length; i++){
+        if (jsonSchema2AGT(field_schemas[cols[i]]) !== 'date')
+          match_exprs.push({ $eq: [`$${cols[i]}`, keys[i]] });
+        else
+          match_exprs.push({$eq: [
+              { $dateTrunc: { date: `$${cols[i]}`, unit: 'minute' } },
+              { $dateTrunc: { date: { $toDate: keys[i] }, unit: 'minute' } }
+            ]
+          });
+      }
+      pipe.push({
+        $match: {
+          $expr: match_exprs.length === 1 ? match_exprs[0] : { $and: match_exprs }
+        }
+      });
+    } else {
+      throw new Error(`Mismatched keys and columns: ${JSON.stringify({ cols, keys })}`);
+    }
+    return pipe;
   }
 
   const getSelectedRowsCount = (e: SelectionChangedEvent): number => {
