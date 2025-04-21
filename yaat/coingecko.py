@@ -54,7 +54,8 @@ class TopMoverQueryDoc(BaseModel):
     @field_serializer('top_coin')
     def top_coin_field_serializer(self, top_coin: TopCoins) -> str: return top_coin.value
 
-    def get_timedelta(self) -> td:
+    @property
+    def timedelta(self) -> td:
         match self.duration:
             case self.Duration.h1: return td(hours=1)
             case self.Duration.h24: return td(hours=24)
@@ -98,22 +99,31 @@ class TopMoverJobDoc(IntervalJobDoc, doc_args=DocArgs()):
 
     async def func(self):
         # https://docs.coingecko.com/reference/coins-top-gainers-losers
-        top_gainers: list[dict] = (await CoinGecko.top_gainers_losers(**self.query.model_dump()))['top_gainers']
-        result_docs: list[TopMoverResultDoc] = []
-        date = datetime.now() - self.query.get_timedelta()
-        for top_gainer in top_gainers:
-            top_gainer['cid'] = top_gainer.pop('id')
-            top_gainer.pop('image')
+        cg_data: list[dict] = (await CoinGecko.top_gainers_losers(**self.query.model_dump()))
+        top_movers: list = cg_data['top_gainers']
+        top_movers.extend(cg_data['top_losers'])
+        result_docs: list = []
+        date = datetime.now() - self.query.timedelta
+        for tm in top_movers:
+            tm['cid'] = tm.pop('id')
+            tm.pop('image')
             async def get_percent_change(cid: str) -> float:
                 cg_data = await CoinGecko.historical_chart_range(cid, vs_currency='usd', **{'from':date.timestamp()}, to=(date + td(minutes=5)).timestamp(), precision='10')
+                midpoint = date
+                increments = (datetime.now() - midpoint)/8
+                while not cg_data['prices'] and midpoint < datetime.now() - td(minutes=4):
+                    print(f"searching for valid date ({midpoint}) for {tm['cid']}")
+                    midpoint = midpoint + increments
+                    cg_data = await CoinGecko.historical_chart_range(cid, vs_currency='usd', **{'from':midpoint.timestamp()}, to=(midpoint + td(minutes=5)).timestamp(), precision='10')
                 try: _, old_price = cg_data['prices'][0]
                 except:
                     from pprint import pprint
                     pprint(cg_data)
+                    pprint(tm)
                     raise
                 cg_data = await CoinGecko.coin_data(cid, tickers='false', community_data='false', developer_data='false', market_data='true')
                 current_price = cg_data['market_data']['current_price']['usd']
                 return ((current_price-old_price)/old_price)*100
-            top_gainer['percent_change'] = await get_percent_change(top_gainer['cid'])
-            result_docs.append(TopMoverResultDoc(query=self.query, **top_gainer))
+            tm['percent_change'] = await get_percent_change(tm['cid'])
+            result_docs.append(TopMoverResultDoc(query=self.query, **tm))
         await TopMoverResultDoc.insert_many(result_docs)
