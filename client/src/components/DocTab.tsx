@@ -584,15 +584,16 @@ export default function DocTab({ metadata }: Props) {
       const sort = Object.fromEntries(
         (req.sortModel ?? []).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1])
       )
-      if (Object.keys(sort).length > 0)
-        payload.push({$sort:sort})
-      
-      // const sort = (req.sortModel ?? {}).map(({ colId, sort }) => [colId, sort === "asc" ? 1 : -1])
+
+      // push stages
       for (const stage of generateGroupStages(req.rowGroupCols.map(group => group.id), req.groupKeys))
         payload.push(stage)
+      if (Object.keys(sort).length > 0)
+        payload.push({$sort:sort})
       payload.push({$skip: req.startRow})
       payload.push({$limit: (!req.endRow || !req.startRow) ? 100 : (req.endRow - req.startRow)})
 
+      // call api
       try {
         setIsLoading(true)
         // get data
