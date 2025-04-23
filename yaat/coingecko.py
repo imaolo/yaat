@@ -7,6 +7,10 @@ from datetime import datetime, timezone
 from yaat.job import IntervalJobDoc
 from datetime import datetime, timedelta as td
 
+class CoinGeckoCacheDoc(Doc, doc_args=DocArgs(schema_readable=False)):
+    hash: str
+    result: list | dict
+
 class CoinGecko:
     url: str = 'https://pro-api.coingecko.com/api/v3/'
     key : str = 'CG-ivjvmcDsabTGQg25HpTUa7H5'
@@ -27,7 +31,11 @@ class CoinGecko:
 
     @classmethod
     async def historical_chart_range(cls, cid, **kwargs) -> dict:
-        return await cls.fetch(f"coins/{cid}/market_chart/range/", **kwargs)
+        result = await CoinGeckoCacheDoc.get_motor_collection().find_one({'_id' : (_id := str(kwargs)+'historical_chart_range')})
+        if not result:
+            result = await cls.fetch(f"coins/{cid}/market_chart/range/", **kwargs)
+            await CoinGeckoCacheDoc.get_motor_collection().insert_one({'_id': _id} | result)
+        return result
 
 class TopMoverQueryDoc(BaseModel):
     class Duration(str, Enum):

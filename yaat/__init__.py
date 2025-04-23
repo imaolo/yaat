@@ -1,9 +1,10 @@
 from yaat.state import State
 from yaat.job import APSJobDoc
-from yaat.coingecko import TopMoverJobDoc, TopMoverResultDoc
+from yaat.coingecko import TopMoverJobDoc, TopMoverResultDoc, CoinGeckoCacheDoc
 
 State.document_models = [
     APSJobDoc,
     TopMoverJobDoc,
-    TopMoverResultDoc
+    TopMoverResultDoc,
+    CoinGeckoCacheDoc
 ]
