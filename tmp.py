@@ -6,6 +6,8 @@ from pprint import pprint
 import asyncio, numpy as np, pandas as pd
 
 window_size=4
+train_size=5000
+pred_size=1000
 cushion_len = td(minutes=5)
 window_len = td(minutes=15)
 
@@ -83,7 +85,7 @@ async def get_x_y_from_agg(agg: Any) -> tuple[pd.DataFrame, pd.Series]:
     return get_x_y_from_df(await get_set(agg))
 
 async def train() -> tuple[Any, Any, Any]:
-    X, y = await get_x_y_from_agg(TopMoverResultDoc.find().sort(('created_at',1),).limit(1000))
+    X, y = await get_x_y_from_agg(TopMoverResultDoc.find().sort(('created_at',1),).skip(window_size).limit(train_size))
 
     from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.preprocessing import RobustScaler
@@ -99,7 +101,7 @@ async def train() -> tuple[Any, Any, Any]:
     return model, x_scaler, y_scaler
 
 async def pred(model: Any, x_scaler: Any, y_scaler: Any):
-    X, y = await get_x_y_from_agg(TopMoverResultDoc.find().sort(('created_at', 1),).skip(1000).limit(250))
+    X, y = await get_x_y_from_agg(TopMoverResultDoc.find().sort(('created_at', 1),).skip(window_size+train_size).limit(pred_size))
 
     X_scaled = x_scaler.transform(X)
     y_scaled = y_scaler.transform(y.values.reshape(-1, 1)).ravel()
