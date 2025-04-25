@@ -5,9 +5,11 @@ from typing import Any
 from pprint import pprint
 import asyncio, numpy as np, pandas as pd
 
-window_size=4
-train_size=5000
-pred_size=1000
+from scipy.stats.mstats import winsorize
+
+window_size=2
+train_size=12000
+pred_size=4000
 cushion_len = td(minutes=5)
 window_len = td(minutes=15)
 
@@ -61,22 +63,27 @@ async def get_training_point(doc: TopMoverResultDoc) -> dict | None:
             **{k:v for i, x in enumerate(X) for k, v in get_training_fields(i, x).items()}
         }
     
-def create_df(records: list[dict]):
+def create_df(records: list[dict]) -> pd.DataFrame:
     df = pd.DataFrame(records)
     df = df.drop(columns=df.select_dtypes(exclude=['number']).columns)
     df = df.dropna(axis=1, how='all')  # drop all-NaN columns
     df = df.drop(columns=[col for col in df.columns if 'usd-' in col])
-    return df
+    def winsorize_series(s: pd.Series, limits=(0.05, 0.05)):
+        winsorized = winsorize(s.to_numpy(), limits=limits)
+        return pd.Series(np.asarray(winsorized), index=s.index)
+    return df.apply(winsorize_series)
 
 async def get_set(agg: Any) -> pd.DataFrame:
     ret = []
     i = 0
     async for doc in agg:
-        print(i); i+=1
+        i+=1
+        if not (i % 50):
+            print(i)
         point = await get_training_point(doc)
         if point:
             ret.append(point)
-    return pd.DataFrame(ret)
+    return create_df(ret)
 
 def get_x_y_from_df(df: pd.DataFrame) -> tuple[pd.DataFrame, pd.Series]:
     return df.drop(columns='percent_change'), df['percent_change']
@@ -85,7 +92,10 @@ async def get_x_y_from_agg(agg: Any) -> tuple[pd.DataFrame, pd.Series]:
     return get_x_y_from_df(await get_set(agg))
 
 async def train() -> tuple[Any, Any, Any]:
-    X, y = await get_x_y_from_agg(TopMoverResultDoc.find().sort(('created_at',1),).skip(window_size).limit(train_size))
+    X, y = await get_x_y_from_agg(TopMoverResultDoc.find({'query.duration': '1h'}).sort(('created_at',1),).skip(window_size).limit(train_size))
+
+    import matplotlib.pyplot as plt
+    import seaborn as sns
 
     from sklearn.ensemble import HistGradientBoostingRegressor
     from sklearn.preprocessing import RobustScaler
@@ -101,7 +111,7 @@ async def train() -> tuple[Any, Any, Any]:
     return model, x_scaler, y_scaler
 
 async def pred(model: Any, x_scaler: Any, y_scaler: Any):
-    X, y = await get_x_y_from_agg(TopMoverResultDoc.find().sort(('created_at', 1),).skip(window_size+train_size).limit(pred_size))
+    X, y = await get_x_y_from_agg(TopMoverResultDoc.find({'query.duration': '1h'}).sort(('created_at', 1),).skip(window_size+train_size).limit(pred_size))
 
     X_scaled = x_scaler.transform(X)
     y_scaled = y_scaler.transform(y.values.reshape(-1, 1)).ravel()
