@@ -6,8 +6,17 @@ import os, time, httpx
 load_dotenv()
 
 async def fetchjson(url: str, headers: dict | None = None, **kwargs):
-    async with httpx.AsyncClient() as client:
-        return (await client.get(url, params=kwargs, headers=headers)).json()
+    retries = 0
+    while True:
+        try:
+            async with httpx.AsyncClient() as client:
+                return (await client.get(url, params=kwargs, headers=headers)).json()
+        except Exception as e:
+            if retries > 5:
+                raise e
+            print(f"fetchjson() retry exception({retries})")
+            print(e)
+            retries += 1
 def getenv(key:str, default:Any=0): return type(default)(int(os.getenv(key, default)) if isinstance(default, bool) else os.getenv(key, default))
 def wait_until_true(fn: Callable[[], bool], timeout:float=30.0, pause:float=5.0, msg:str=''):
     end = time.time() + timeout
