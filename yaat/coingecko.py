@@ -33,13 +33,12 @@ class CoinGecko:
     async def historical_chart_range(cls, cid, **kwargs) -> dict:
         result = await CoinGeckoCacheDoc.get_motor_collection().find_one({'_id' : (_id := str(kwargs)+'historical_chart_range'+cid)})
         if not result:
+            result = await cls.fetch(f"coins/{cid}/market_chart/range/", **kwargs)
             try:
-                result = await cls.fetch(f"coins/{cid}/market_chart/range/", **kwargs)
                 await CoinGeckoCacheDoc.get_motor_collection().insert_one({'_id': _id} | result)
             except Exception as e:
                 print("historical_chart_range exception! trying again")
                 print(e)
-                result = await cls.fetch(f"coins/{cid}/market_chart/range/", **kwargs)
                 await CoinGeckoCacheDoc.get_motor_collection().insert_one({'_id': _id} | result)
         return result
 
