@@ -84,6 +84,7 @@ class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_update
     market_cap_rank: int
     usd_24h_vol: float
     percent_change: float
+    hour_later_change: float | None = None
 
     @field_serializer('created_at')
     def serialize_created_at(self, dt: datetime, _info) -> str:
