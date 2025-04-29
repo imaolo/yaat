@@ -39,7 +39,9 @@ class CoinGecko:
             except Exception as e:
                 print("historical_chart_range exception! trying again")
                 print(e)
-                await CoinGeckoCacheDoc.get_motor_collection().insert_one({'_id': _id} | result)
+                result = await CoinGeckoCacheDoc.get_motor_collection().find_one({'_id' : (_id := str(kwargs)+'historical_chart_range'+cid)})
+                if not result:
+                    raise RuntimeError()
         return result
 
 class TopMoverQueryDoc(BaseModel):
