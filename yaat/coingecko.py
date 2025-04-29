@@ -1,11 +1,12 @@
 from __future__ import annotations
 from yaat.doc import Doc, DocArgs
 from yaat.helpers import fetchjson
-from pydantic import BaseModel, Field, field_serializer
+from pydantic import BaseModel, Field, field_serializer, WithJsonSchema
 from enum import Enum
 from datetime import datetime, timezone
 from yaat.job import IntervalJobDoc
 from datetime import datetime, timedelta as td
+from typing import Annotated
 
 class CoinGeckoCacheDoc(Doc, doc_args=DocArgs(schema_readable=False)):
     hash: str
@@ -91,7 +92,7 @@ class TopMoverResultDoc(Doc, doc_args=DocArgs(schema_updateable=False, db_update
     market_cap_rank: int
     usd_24h_vol: float
     percent_change: float
-    hour_later_change: float | None = None
+    hour_later_change: Annotated[float | None, WithJsonSchema({'type':'number'})] = None
 
     @field_serializer('created_at')
     def serialize_created_at(self, dt: datetime, _info) -> str:
