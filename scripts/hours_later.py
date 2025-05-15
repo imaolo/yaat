@@ -10,7 +10,7 @@ async def main():
 
     hour = timedelta(hours=1.0)
     hour_2 = timedelta(hours=2.0)
-    async for doc in TopMoverResultDoc.find():
+    async for doc in TopMoverResultDoc.find(TopMoverResultDoc.hour_later_change == None):
 
         diff = datetime.now() - doc.created_at
         if diff > hour:
