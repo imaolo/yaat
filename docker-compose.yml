@@ -43,3 +43,12 @@ services:
       interval: 30s
       timeout: 3s
       retries: 10
+
+  glances:
+    image: nicolargo/glances:latest
+    ports:
+      - "8765:61208"
+    pid: host
+    environment:
+      - GLANCES_OPT=-w
+    restart: unless-stopped
