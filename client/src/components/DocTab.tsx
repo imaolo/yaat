@@ -170,25 +170,38 @@ const mongoSingleFilter = (field: string, filter: SingleFilter, not: boolean = f
             default:
               throw new Error(scalar_filter.type)
           }
-        case 'number':
-          switch (scalar_filter.type){
-            case 'equals':
-              return {[field]: value}
-            case 'notEqual': 
-              return { [field]: { $ne:  value } }
-            case 'lessThan':
-              return { [field]: { $lt: value } }
-            case 'lessThanOrEqual':
-              return { [field]: { $lte: value } }
-            case 'greaterThan':
-              return { [field]: { $gt: value } }
-            case 'greaterThanOrEqual':
-              return { [field]: { $gte: value } }
-            case 'blank':
-            case 'notBlank':
-            default:
-              throw new Error(scalar_filter.type)
-          }
+          case 'number':
+            switch (scalar_filter.type){
+              case 'equals':
+                return {[field]: value}
+              case 'notEqual': 
+                return { [field]: { $ne: value } }
+              case 'lessThan':
+                return { [field]: { $lt: value } }
+              case 'lessThanOrEqual':
+                return { [field]: { $lte: value } }
+              case 'greaterThan':
+                return { [field]: { $gt: value } }
+              case 'greaterThanOrEqual':
+                return { [field]: { $gte: value } }
+              case 'blank':
+                return {
+                  $or: [
+                    { [field]: { $exists: false } },
+                    { [field]: null },
+                  ]
+                }
+              case 'notBlank':
+                return {
+                  $and: [
+                    { [field]: { $exists: true } },
+                    { [field]: { $ne: null } },
+                  ]
+                }
+              default:
+                throw new Error(scalar_filter.type)
+            }
+          
         case 'date':
           switch (scalar_filter.type){
             case 'after':
