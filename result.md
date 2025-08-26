@@ -1,0 +1,1 @@
+on this commit (one before), the bot has doubled its money in a few hours
