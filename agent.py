@@ -155,7 +155,7 @@ async def main() -> None:
                 setattr(agent, "mcp_servers", [alpaca_mcp])
 
         # Run the plan
-        result = await Runner.run(agent, AGENT_GOALS)
+        result = await Runner.run(agent, AGENT_GOALS, max_turns=50)
 
         print("\n===== FINAL OUTPUT =====\n")
         final: Optional[str] = getattr(result, "final_output", None) or getattr(result, "text", None)
